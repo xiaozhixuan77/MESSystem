@@ -9,3 +9,8 @@ spring:
       host: redis
       port: 6379
       database: 0
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
