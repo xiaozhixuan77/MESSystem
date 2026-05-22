@@ -3,6 +3,8 @@ package org.example.service;
 import org.example.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.Set;
+
 /**
  * <p>
  * 人员表 服务类
@@ -13,4 +15,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface UserService extends IService<User> {
 
+    User getByEmployeeNo(String employeeNo);
+
+    Set<String> getUserPermissions(Long userId);
 }

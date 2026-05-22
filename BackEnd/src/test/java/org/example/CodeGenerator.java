@@ -2,6 +2,7 @@ package org.example;
 
 import com.baomidou.mybatisplus.generator.FastAutoGenerator;
 import com.baomidou.mybatisplus.generator.config.OutputFile;
+import com.baomidou.mybatisplus.generator.config.TemplateType;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
 import com.baomidou.mybatisplus.generator.engine.VelocityTemplateEngine;
 import org.junit.jupiter.api.Test;
@@ -50,8 +51,6 @@ public class CodeGenerator {
                                     "role_permission",
                                     "line_process_support"
                             )
-                            .controllerBuilder()
-                            .disable()
                             .entityBuilder()
                             .enableLombok()
                             .enableChainModel()
@@ -65,6 +64,7 @@ public class CodeGenerator {
                             .formatServiceFileName("%sService")
                             .formatServiceImplFileName("%sServiceImpl");
                 })
+                .templateConfig(builder -> builder.disable(TemplateType.CONTROLLER))
                 .templateEngine(new VelocityTemplateEngine())
                 .execute();
     }
