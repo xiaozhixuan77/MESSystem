@@ -76,6 +76,22 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- MyBatis-Plus Generator (test scope) -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-generator</artifactId>
+            <version>${mybatis-plus.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Velocity Template Engine for MyBatis-Plus Generator -->
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity-engine-core</artifactId>
+            <version>2.3</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
