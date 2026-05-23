@@ -1,6 +1,9 @@
 {
   "module": {
     "name": "production",
-    "type": "har"
+    "type": "har",
+    "deviceTypes": [
+      "default"
+    ]
   }
 }

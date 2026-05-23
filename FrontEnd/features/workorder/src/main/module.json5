@@ -1,6 +1,9 @@
 {
   "module": {
     "name": "workorder",
-    "type": "har"
+    "type": "har",
+    "deviceTypes": [
+      "default"
+    ]
   }
 }

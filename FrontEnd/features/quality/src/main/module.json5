@@ -1,6 +1,9 @@
 {
   "module": {
     "name": "quality",
-    "type": "har"
+    "type": "har",
+    "deviceTypes": [
+      "default"
+    ]
   }
 }

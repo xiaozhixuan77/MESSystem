@@ -29,86 +29,30 @@
     {
       "name": "common",
       "srcPath": "./common",
-      "targets": [
-        {
-          "name": "default",
-          "applyToProducts": [
-            "default"
-          ]
-        }
-      ]
     },
     {
       "name": "login",
       "srcPath": "./features/login",
-      "targets": [
-        {
-          "name": "default",
-          "applyToProducts": [
-            "default"
-          ]
-        }
-      ]
     },
     {
       "name": "home",
       "srcPath": "./features/home",
-      "targets": [
-        {
-          "name": "default",
-          "applyToProducts": [
-            "default"
-          ]
-        }
-      ]
     },
     {
       "name": "workorder",
       "srcPath": "./features/workorder",
-      "targets": [
-        {
-          "name": "default",
-          "applyToProducts": [
-            "default"
-          ]
-        }
-      ]
     },
     {
       "name": "production",
       "srcPath": "./features/production",
-      "targets": [
-        {
-          "name": "default",
-          "applyToProducts": [
-            "default"
-          ]
-        }
-      ]
     },
     {
       "name": "quality",
       "srcPath": "./features/quality",
-      "targets": [
-        {
-          "name": "default",
-          "applyToProducts": [
-            "default"
-          ]
-        }
-      ]
     },
     {
       "name": "user",
       "srcPath": "./features/user",
-      "targets": [
-        {
-          "name": "default",
-          "applyToProducts": [
-            "default"
-          ]
-        }
-      ]
     },
     {
       "name": "default",
