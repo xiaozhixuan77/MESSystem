@@ -10,20 +10,18 @@ export struct InspectionDetailView {
   }
 
   build() {
-    NavDestination() {
-      Column() {
-        Text('抽检详情')
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
-          .margin({ top: 16, bottom: 16 });
+    Column() {
+      Text('抽检详情')
+        .fontSize(20)
+        .fontWeight(FontWeight.Bold)
+        .margin({ top: 16, bottom: 16 });
 
-        Text('抽检录入表单（后续 Phase 实现）')
-          .fontSize(14)
-          .fontColor('#999');
-      }
-      .padding(16)
-      .width('100%')
-      .height('100%');
+      Text('抽检录入表单（后续 Phase 实现）')
+        .fontSize(14)
+        .fontColor('#999');
     }
+    .padding(16)
+    .width('100%')
+    .height('100%');
   }
 }

@@ -11,20 +11,18 @@ export struct StationDetailView {
   }
 
   build() {
-    NavDestination() {
-      Column() {
-        Text(this.station.name || '工作站详情')
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
-          .margin({ top: 16, bottom: 16 });
+    Column() {
+      Text(this.station.name || '工作站详情')
+        .fontSize(20)
+        .fontWeight(FontWeight.Bold)
+        .margin({ top: 16, bottom: 16 });
 
-        Text(`设备状态: ${this.station.deviceStatus}`)
-          .fontSize(14)
-          .fontColor('#666');
-      }
-      .padding(16)
-      .width('100%')
-      .height('100%');
+      Text(`设备状态: ${this.station.deviceStatus}`)
+        .fontSize(14)
+        .fontColor('#666');
     }
+    .padding(16)
+    .width('100%')
+    .height('100%');
   }
 }

@@ -14,35 +14,33 @@ export struct WorkOrderListView {
   }
 
   build() {
-    NavDestination() {
-      Column() {
-        Search({ placeholder: '搜索工单号...', value: this.searchKeyword })
-          .onSubmit((value: string) => {
-            this.searchKeyword = value;
-          })
-          .margin({ bottom: 12 });
+    Column() {
+      Search({ placeholder: '搜索工单号...', value: this.searchKeyword })
+        .onSubmit((value: string) => {
+          this.searchKeyword = value;
+        })
+        .margin({ bottom: 12 });
 
-        if (this.isLoading) {
-          LoadingProgress();
-        } else {
-          List() {
-            ForEach(this.workOrderList, (wo: WorkOrderModel) => {
-              ListItem() {
-                WorkOrderCard({
-                  workOrderCode: wo.code,
-                  status: wo.status,
-                  productName: wo.productName,
-                  planQty: wo.planQty,
-                  role: this.role
-                });
-              }
-            });
-          };
-        }
+      if (this.isLoading) {
+        LoadingProgress();
+      } else {
+        List() {
+          ForEach(this.workOrderList, (wo: WorkOrderModel) => {
+            ListItem() {
+              WorkOrderCard({
+                workOrderCode: wo.code,
+                status: wo.status,
+                productName: wo.productName,
+                planQty: wo.planQty,
+                role: this.role
+              });
+            }
+          });
+        };
       }
-      .padding(16)
-      .width('100%')
-      .height('100%');
     }
+    .padding(16)
+    .width('100%')
+    .height('100%');
   }
 }

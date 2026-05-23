@@ -1,44 +1,31 @@
-import { LeaderHomeView, OperatorHomeView, InspectorHomeView, AdminHomeView } from '@ohos/home';
-import { ProfileView } from '@ohos/user';
+import { HomeTab } from './HomeTab';
+import { DataTab } from './DataTab';
+import { WorkOrderTab } from './WorkOrderTab';
+import { ProfileTab } from './ProfileTab';
 
 @ComponentV2
 export struct PhoneMainLayout {
-  @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
-  @Consumer('currentRole') currentRole: string = '';
   @Local currentIndex: number = 0;
-
-  @Builder
-  buildHomePage() {
-    if (this.currentRole === 'leader') {
-      LeaderHomeView();
-    } else if (this.currentRole === 'operator') {
-      OperatorHomeView();
-    } else if (this.currentRole === 'inspector') {
-      InspectorHomeView();
-    } else {
-      AdminHomeView();
-    }
-  }
 
   build() {
     Tabs({ barPosition: BarPosition.End }) {
       TabContent() {
-        this.buildHomePage();
+        HomeTab();
       }
       .tabBar(this.buildTabBar('工作台'));
 
       TabContent() {
-        LineListView();
+        DataTab();
       }
       .tabBar(this.buildTabBar('数据'));
 
       TabContent() {
-        WorkOrderListView({ role: this.currentRole });
+        WorkOrderTab();
       }
       .tabBar(this.buildTabBar('工单'));
 
       TabContent() {
-        ProfileView();
+        ProfileTab();
       }
       .tabBar(this.buildTabBar('我的'));
     }

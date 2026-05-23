@@ -12,38 +12,36 @@ export struct LineDetailView {
   }
 
   build() {
-    NavDestination() {
-      Column() {
-        Text(this.line.name || '产线详情')
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
-          .margin({ top: 16, bottom: 8 });
+    Column() {
+      Text(this.line.name || '产线详情')
+        .fontSize(20)
+        .fontWeight(FontWeight.Bold)
+        .margin({ top: 16, bottom: 8 });
 
-        Text(`状态: ${this.line.status}`)
-          .fontSize(14)
-          .fontColor('#666')
-          .margin({ bottom: 16 });
+      Text(`状态: ${this.line.status}`)
+        .fontSize(14)
+        .fontColor('#666')
+        .margin({ bottom: 16 });
 
-        Grid() {
-          ForEach(this.stations, (station: StationModel) => {
-            GridItem() {
-              StationCard({
-                opCode: station.opCode,
-                name: station.name,
-                deviceStatus: station.deviceStatus,
-                rawCount: station.rawCount,
-                finishedCount: station.finishedCount,
-                ngCount: station.ngCount
-              });
-            }
-          });
-        }
-        .columnsTemplate('1fr 1fr')
-        .rowsGap(12).columnsGap(12);
+      Grid() {
+        ForEach(this.stations, (station: StationModel) => {
+          GridItem() {
+            StationCard({
+              opCode: station.opCode,
+              name: station.name,
+              deviceStatus: station.deviceStatus,
+              rawCount: station.rawCount,
+              finishedCount: station.finishedCount,
+              ngCount: station.ngCount
+            });
+          }
+        });
       }
-      .padding(16)
-      .width('100%')
-      .height('100%');
+      .columnsTemplate('1fr 1fr')
+      .rowsGap(12).columnsGap(12);
     }
+    .padding(16)
+    .width('100%')
+    .height('100%');
   }
 }
