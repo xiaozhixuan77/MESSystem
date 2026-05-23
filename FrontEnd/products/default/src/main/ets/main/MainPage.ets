@@ -1,4 +1,4 @@
-import { LeaderHomePage, OperatorHomePage, InspectorHomePage, AdminHomePage } from '@ohos/home';
+import { LeaderHomeView, OperatorHomeView, InspectorHomeView, AdminHomeView } from '@ohos/home';
 import { BreakpointUtil } from '@ohos/common';
 import { window } from '@kit.ArkUI';
 import { PhoneMainLayout } from '../product/phone/PhoneMainLayout';

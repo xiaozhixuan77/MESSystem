@@ -1,5 +1,5 @@
 @ComponentV2
-export struct OperatorHomePage {
+export struct OperatorHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
 

@@ -1,5 +1,5 @@
 @ComponentV2
-export struct ProfilePage {
+export struct ProfileView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
 

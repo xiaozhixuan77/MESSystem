@@ -1,16 +1,17 @@
 @ComponentV2
-export struct DashboardPage {
+export struct WorkOrderEditView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Local workOrderId: number = 0;
 
   build() {
     NavDestination() {
       Column() {
-        Text('质检看板')
+        Text('编辑工单')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .margin({ top: 16, bottom: 16 });
 
-        Text('KPI 图表（后续 Phase 实现）')
+        Text('工单编辑表单（后续 Phase 实现）')
           .fontSize(14)
           .fontColor('#999');
       }

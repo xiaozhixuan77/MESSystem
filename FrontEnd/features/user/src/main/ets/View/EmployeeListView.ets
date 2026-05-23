@@ -1,5 +1,5 @@
 @ComponentV2
-export struct EmployeeListPage {
+export struct EmployeeListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
 
   build() {

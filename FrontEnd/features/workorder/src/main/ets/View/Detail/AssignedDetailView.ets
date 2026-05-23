@@ -1,5 +1,5 @@
 @ComponentV2
-export struct ReportedDetailPage {
+export struct AssignedDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Local workOrderId: number = 0;
 
@@ -12,7 +12,7 @@ export struct ReportedDetailPage {
   build() {
     NavDestination() {
       Column() {
-        Text('工单详情（已报工/完工/报废终态）')
+        Text('已派工详情')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .margin({ top: 16, bottom: 16 });

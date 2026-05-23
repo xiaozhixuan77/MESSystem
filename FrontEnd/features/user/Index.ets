@@ -1,3 +1,3 @@
-export { EmployeeListPage } from './src/main/ets/View/EmployeeListPage';
-export { ProfilePage } from './src/main/ets/View/ProfilePage';
+export { EmployeeListView } from './src/main/ets/View/EmployeeListView';
+export { ProfileView } from './src/main/ets/View/ProfileView';
 export { UserViewModel } from './src/main/ets/ViewModel/UserViewModel';

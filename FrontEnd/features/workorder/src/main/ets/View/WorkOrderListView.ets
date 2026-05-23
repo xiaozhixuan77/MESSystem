@@ -1,7 +1,7 @@
 import { WorkOrderCard } from '@ohos/common';
 
 @ComponentV2
-export struct WorkOrderListPage {
+export struct WorkOrderListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('currentRole') currentRole: string = '';
   @Param role: string = '';

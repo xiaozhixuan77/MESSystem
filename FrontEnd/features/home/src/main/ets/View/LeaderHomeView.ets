@@ -1,5 +1,5 @@
 @ComponentV2
-export struct InspectorHomePage {
+export struct LeaderHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
 
@@ -11,8 +11,9 @@ export struct InspectorHomePage {
           .fontWeight(FontWeight.Bold)
           .margin({ top: 16, bottom: 16 });
 
+        // 待办卡片（后续 Phase 实现）
         Column() {
-          Text('待抽检工单')
+          Text('待派工工单')
             .fontSize(14)
             .fontColor('#999');
         }

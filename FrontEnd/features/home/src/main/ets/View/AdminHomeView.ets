@@ -1,7 +1,7 @@
 import { KpiCard } from '@ohos/common';
 
 @ComponentV2
-export struct AdminHomePage {
+export struct AdminHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
 

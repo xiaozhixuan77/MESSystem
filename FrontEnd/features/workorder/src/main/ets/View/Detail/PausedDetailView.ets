@@ -1,22 +1,23 @@
 @ComponentV2
-export struct StationDetailPage {
+export struct PausedDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
-  @Param stationId: number = 0;
-  @Local station: StationModel = new StationModel();
+  @Local workOrderId: number = 0;
 
   aboutToAppear(): void {
-    // 加载工作站详情（后续 Phase 实现）
+    const navInfo = this.queryNavDestinationInfo();
+    const param = navInfo?.param as Record<string, Object>;
+    this.workOrderId = (param?.['workOrderId'] as number) ?? 0;
   }
 
   build() {
     NavDestination() {
       Column() {
-        Text(this.station.name || '工作站详情')
+        Text('暂停中详情')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .margin({ top: 16, bottom: 16 });
 
-        Text(`设备状态: ${this.station.deviceStatus}`)
+        Text(`工单 ID: ${this.workOrderId}`)
           .fontSize(14)
           .fontColor('#666');
       }

@@ -1,5 +1,5 @@
-import { LeaderHomePage, OperatorHomePage, InspectorHomePage, AdminHomePage } from '@ohos/home';
-import { ProfilePage } from '@ohos/user';
+import { LeaderHomeView, OperatorHomeView, InspectorHomeView, AdminHomeView } from '@ohos/home';
+import { ProfileView } from '@ohos/user';
 
 @ComponentV2
 export struct PhoneMainLayout {
@@ -10,13 +10,13 @@ export struct PhoneMainLayout {
   @Builder
   buildHomePage() {
     if (this.currentRole === 'leader') {
-      LeaderHomePage();
+      LeaderHomeView();
     } else if (this.currentRole === 'operator') {
-      OperatorHomePage();
+      OperatorHomeView();
     } else if (this.currentRole === 'inspector') {
-      InspectorHomePage();
+      InspectorHomeView();
     } else {
-      AdminHomePage();
+      AdminHomeView();
     }
   }
 
@@ -28,17 +28,17 @@ export struct PhoneMainLayout {
       .tabBar(this.buildTabBar('工作台'));
 
       TabContent() {
-        LineListPage();
+        LineListView();
       }
       .tabBar(this.buildTabBar('数据'));
 
       TabContent() {
-        WorkOrderListPage({ role: this.currentRole });
+        WorkOrderListView({ role: this.currentRole });
       }
       .tabBar(this.buildTabBar('工单'));
 
       TabContent() {
-        ProfilePage();
+        ProfileView();
       }
       .tabBar(this.buildTabBar('我的'));
     }

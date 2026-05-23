@@ -1,8 +1,8 @@
-import { LoginPage as LoginView } from '@ohos/login';
+import { LoginView } from '@ohos/login';
 
 @Builder
 export function LoginPageBuilder() {
-  LoginPage();
+  LoginView();
 }
 
 @ComponentV2

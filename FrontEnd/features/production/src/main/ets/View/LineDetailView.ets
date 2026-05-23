@@ -1,7 +1,7 @@
 import { StationCard } from '@ohos/common';
 
 @ComponentV2
-export struct LineDetailPage {
+export struct LineDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Param lineId: number = 0;
   @Local line: LineModel = new LineModel();

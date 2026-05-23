@@ -9,7 +9,7 @@ import {
 import { emitter } from '@kit.BasicServicesKit';
 
 @ComponentV2
-export struct LoginPage {
+export struct LoginView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Local viewModel: LoginViewModel = new LoginViewModel();
   @Local showPassword: boolean = false;
