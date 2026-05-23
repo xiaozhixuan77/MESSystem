@@ -1,4 +1,5 @@
-import { AuthApi, LoginResponseModel } from '@ohos/common';
+import { AuthApi } from '../api/AuthApi';
+import { LoginResponseModel } from '../Model/LoginResponseModel';
 
 @ObservedV2
 export class LoginViewModel {

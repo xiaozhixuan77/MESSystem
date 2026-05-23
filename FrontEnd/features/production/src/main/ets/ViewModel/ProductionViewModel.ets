@@ -1,4 +1,6 @@
-import { LineApi, LineModel, StationModel } from '@ohos/common';
+import { LineApi } from '@ohos/common';
+import { LineModel } from '../Model/LineModel';
+import { StationModel } from '../Model/StationModel';
 
 @ObservedV2
 export class ProductionViewModel {

@@ -9,3 +9,4 @@ export { CompletedDetailView } from './src/main/ets/View/Detail/CompletedDetailV
 export { ReportedDetailView } from './src/main/ets/View/Detail/ReportedDetailView';
 export { PausedDetailView } from './src/main/ets/View/Detail/PausedDetailView';
 export { WorkOrderViewModel } from './src/main/ets/ViewModel/WorkOrderViewModel';
+export { WorkOrderModel } from './src/main/ets/Model/WorkOrderModel';

@@ -1,4 +1,4 @@
-import { StationModel } from "@ohos/common";
+import { StationModel } from '../Model/StationModel';
 
 @ComponentV2
 export struct StationDetailView {

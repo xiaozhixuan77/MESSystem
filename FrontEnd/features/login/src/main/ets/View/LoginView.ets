@@ -1,12 +1,6 @@
 import { LoginViewModel } from '../ViewModel/LoginViewModel';
-import {
-  preferencesUtil,
-  httpClient,
-  ApiConstants,
-  LOGIN_SUCCESS_EVENT,
-  LoginResponseModel,
-  LoginResponseUserModel
-} from '@ohos/common';
+import { preferencesUtil, httpClient, ApiConstants, LOGIN_SUCCESS_EVENT } from '@ohos/common';
+import { LoginResponseModel, LoginResponseUserModel } from '../Model/LoginResponseModel';
 import { emitter } from '@kit.BasicServicesKit';
 
 @ComponentV2

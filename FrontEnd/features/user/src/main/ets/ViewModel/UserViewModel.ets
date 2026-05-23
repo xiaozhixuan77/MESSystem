@@ -1,4 +1,5 @@
-import { UserApi, UserModel } from '@ohos/common';
+import { UserApi } from '@ohos/common';
+import { UserModel } from '../Model/UserModel';
 
 @ObservedV2
 export class UserViewModel {

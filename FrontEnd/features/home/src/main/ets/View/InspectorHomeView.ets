@@ -1,4 +1,4 @@
-import { UserModel } from "@ohos/common";
+import { UserModel } from '@ohos/user';
 
 @ComponentV2
 export struct InspectorHomeView {

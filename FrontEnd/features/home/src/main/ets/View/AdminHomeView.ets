@@ -1,4 +1,5 @@
-import { KpiCard, UserModel } from '@ohos/common';
+import { KpiCard } from '@ohos/common';
+import { UserModel } from '@ohos/user';
 
 @ComponentV2
 export struct AdminHomeView {

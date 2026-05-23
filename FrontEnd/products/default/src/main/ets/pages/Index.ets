@@ -1,4 +1,5 @@
-import { UserModel, preferencesUtil, httpClient, ApiConstants, LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT } from '@ohos/common';
+import { preferencesUtil, httpClient, ApiConstants, LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT } from '@ohos/common';
+import { UserModel } from '@ohos/user';
 import { emitter } from '@kit.BasicServicesKit';
 import { LoginPage } from '../login/LoginPage';
 import { MainPage } from '../main/MainPage';

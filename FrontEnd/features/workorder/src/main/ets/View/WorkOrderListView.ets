@@ -1,4 +1,5 @@
-import { WorkOrderCard, WorkOrderModel } from '@ohos/common';
+import { WorkOrderCard } from '@ohos/common';
+import { WorkOrderModel } from '../Model/WorkOrderModel';
 
 @ComponentV2
 export struct WorkOrderListView {

@@ -1,5 +1,5 @@
-import { httpClient } from './HttpClient';
-import { LoginResponseModel, LoginResponseUserModel } from '../models/LoginResponseModel';
+import { httpClient } from '@ohos/common';
+import { LoginResponseModel, LoginResponseUserModel } from '../Model/LoginResponseModel';
 
 interface LoginRequest {
   username: string;

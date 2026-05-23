@@ -6,6 +6,7 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "@ohos/common": "file:../../common"
+    "@ohos/common": "file:../../common",
+    "@ohos/user": "file:../../features/user"
   }
 }

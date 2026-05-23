@@ -1,4 +1,6 @@
-import { LineModel, StationCard, StationModel } from '@ohos/common';
+import { StationCard } from '@ohos/common';
+import { LineModel } from '../Model/LineModel';
+import { StationModel } from '../Model/StationModel';
 
 @ComponentV2
 export struct LineDetailView {
