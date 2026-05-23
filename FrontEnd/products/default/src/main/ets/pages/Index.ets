@@ -29,16 +29,9 @@ struct Index {
       if (payload) {
         const user = payload['user'] as Record<string, Object> | undefined;
         if (user) {
-          this.currentUser.id = (user['id'] as number) || 0;
-          this.currentUser.employeeNo = (user['employeeNo'] as string) || '';
-          this.currentUser.name = (user['name'] as string) || '';
-          this.currentUser.role = (user['role'] as string) || '';
-          this.currentUser.workshopId = (user['workshopId'] as number) || null;
-          this.currentUser.teamId = (user['teamId'] as number) || null;
-          this.currentUser.status = (user['status'] as string) || '';
-          this.currentUser.avatarUrl = (user['avatarUrl'] as string) || '';
+          this.applyCurrentUser(user);
         }
-        this.currentRole = (payload['role'] as string) || '';
+        this.currentRole = (payload['role'] as string) ?? '';
       }
     });
 
@@ -52,14 +45,7 @@ struct Index {
         if (userJson) {
           try {
             const userObj: Record<string, Object> = JSON.parse(userJson as string);
-            this.currentUser.id = (userObj['id'] as number) || 0;
-            this.currentUser.employeeNo = (userObj['employeeNo'] as string) || '';
-            this.currentUser.name = (userObj['name'] as string) || '';
-            this.currentUser.role = (userObj['role'] as string) || '';
-            this.currentUser.workshopId = (userObj['workshopId'] as number) || null;
-            this.currentUser.teamId = (userObj['teamId'] as number) || null;
-            this.currentUser.status = (userObj['status'] as string) || '';
-            this.currentUser.avatarUrl = (userObj['avatarUrl'] as string) || '';
+            this.applyCurrentUser(userObj);
           } catch (parseErr) {
             // JSON 解析失败，忽略
           }
@@ -73,6 +59,17 @@ struct Index {
     } catch (e) {
       this.pageStack.replacePath({ name: 'LoginPage' });
     }
+  }
+
+  private applyCurrentUser(userObj: Record<string, Object>): void {
+    this.currentUser.id = (userObj['id'] as number) ?? 0;
+    this.currentUser.employeeNo = (userObj['employeeNo'] as string) ?? '';
+    this.currentUser.name = (userObj['name'] as string) ?? '';
+    this.currentUser.role = (userObj['role'] as string) ?? '';
+    this.currentUser.workshopId = (userObj['workshopId'] as number) ?? null;
+    this.currentUser.teamId = (userObj['teamId'] as number) ?? null;
+    this.currentUser.status = (userObj['status'] as string) ?? '';
+    this.currentUser.avatarUrl = (userObj['avatarUrl'] as string) ?? '';
   }
 
   build() {
