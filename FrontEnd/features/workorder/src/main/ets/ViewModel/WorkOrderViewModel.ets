@@ -1,4 +1,4 @@
-import { WorkOrderApi } from '@ohos/common';
+import { WorkOrderApi, WorkOrderModel } from '@ohos/common';
 
 @ObservedV2
 export class WorkOrderViewModel {
@@ -11,7 +11,8 @@ export class WorkOrderViewModel {
   async loadWorkOrders(role: string, filters?: object): Promise<void> {
     this.isLoading = true;
     try {
-      this.workOrderList = await WorkOrderApi.getWorkOrders({ role, ...filters }) as WorkOrderModel[];
+      const params: Record<string, Object> = Object.assign({ role: role }, filters || {});
+      this.workOrderList = await WorkOrderApi.getWorkOrders(params) as WorkOrderModel[];
     } catch (e) {
       this.errorMessage = (e as Error).message;
     } finally {

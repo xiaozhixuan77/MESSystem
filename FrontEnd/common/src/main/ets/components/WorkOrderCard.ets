@@ -1,3 +1,5 @@
+import { StatusTag } from '@ohos/common';
+
 @ComponentV2
 export struct WorkOrderCard {
   @Param workOrderCode: string = '';
@@ -5,7 +7,7 @@ export struct WorkOrderCard {
   @Param productName: string = '';
   @Param planQty: number = 0;
   @Param role: string = '';
-  @Event onClick: () => void = () => {};
+  @Event onCardClick: () => void = () => {};
   @Event onDispatch: () => void = () => {};
 
   build() {
@@ -32,6 +34,6 @@ export struct WorkOrderCard {
     .backgroundColor('#fff')
     .borderRadius(8)
     .width('100%')
-    .onClick(() => this.onClick());
+    .onClick(() => this.onCardClick());
   }
 }

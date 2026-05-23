@@ -42,7 +42,7 @@ class HttpClient {
       }
       return result['data'] as T;
     } catch (error) {
-      throw error;
+      throw new Error(String(error));
     }
   }
 

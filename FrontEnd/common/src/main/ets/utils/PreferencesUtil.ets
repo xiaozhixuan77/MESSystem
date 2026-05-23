@@ -7,18 +7,19 @@ class PreferencesUtil {
     this.pref = await preferences.getPreferences(context, 'mes_prefs');
   }
 
-  set(key: string, value: string): void {
-    this.pref?.put(key, value);
-    this.pref?.flush();
+  async set(key: string, value: string): Promise<void> {
+    await this.pref?.put(key, value);
+    await this.pref?.flush();
   }
 
-  get(key: string): string {
-    return (this.pref?.get(key, '') as string) || '';
+  async get(key: string): Promise<string> {
+    const value = await this.pref?.get(key, '');
+    return (value as string) || '';
   }
 
-  delete(key: string): void {
-    this.pref?.delete(key);
-    this.pref?.flush();
+  async delete(key: string): Promise<void> {
+    await this.pref?.delete(key);
+    await this.pref?.flush();
   }
 }
 

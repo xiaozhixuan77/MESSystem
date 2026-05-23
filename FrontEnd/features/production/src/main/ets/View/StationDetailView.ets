@@ -1,3 +1,5 @@
+import { StationModel } from "@ohos/common";
+
 @ComponentV2
 export struct StationDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();

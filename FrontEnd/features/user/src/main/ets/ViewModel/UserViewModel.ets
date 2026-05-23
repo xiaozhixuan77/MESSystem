@@ -1,4 +1,4 @@
-import { UserApi } from '@ohos/common';
+import { UserApi, UserModel } from '@ohos/common';
 
 @ObservedV2
 export class UserViewModel {
@@ -9,7 +9,11 @@ export class UserViewModel {
   async loadUsers(role?: string): Promise<void> {
     this.isLoading = true;
     try {
-      this.userList = await UserApi.getUsers({ role }) as UserModel[];
+      const params: Record<string, string> = {};
+      if (role) {
+        params['role'] = role;
+      }
+      this.userList = await UserApi.getUsers(params) as UserModel[];
     } finally {
       this.isLoading = false;
     }

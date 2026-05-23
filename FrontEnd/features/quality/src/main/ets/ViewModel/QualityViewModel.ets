@@ -1,4 +1,4 @@
-import { QualityApi } from '@ohos/common';
+import { InspectionModel, QualityApi } from '@ohos/common';
 
 @ObservedV2
 export class QualityViewModel {

@@ -1,4 +1,4 @@
-import { StationCard } from '@ohos/common';
+import { LineModel, StationCard, StationModel } from '@ohos/common';
 
 @ComponentV2
 export struct LineDetailView {
@@ -39,7 +39,7 @@ export struct LineDetailView {
           });
         }
         .columnsTemplate('1fr 1fr')
-        .gap(12);
+        .rowsGap(12).columnsGap(12);
       }
       .padding(16)
       .width('100%')

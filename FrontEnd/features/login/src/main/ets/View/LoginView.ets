@@ -27,10 +27,10 @@ export struct LoginView {
     const result: LoginResponseModel = this.viewModel.loginResult;
     const userData: LoginResponseUserModel | null = result.user;
 
-    preferencesUtil.set('token', result.token);
-    preferencesUtil.set('role', result.role);
+    await preferencesUtil.set('token', result.token);
+    await preferencesUtil.set('role', result.role);
     if (userData) {
-      preferencesUtil.set('currentUser', JSON.stringify(userData));
+      await preferencesUtil.set('currentUser', JSON.stringify(userData));
     }
 
     httpClient.configure('http://localhost:8080', result.token);

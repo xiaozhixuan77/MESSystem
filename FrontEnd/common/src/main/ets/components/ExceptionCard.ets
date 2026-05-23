@@ -4,7 +4,7 @@ export struct ExceptionCard {
   @Param lineName: string = '';
   @Param resolved: boolean = false;
   @Param createdAt: string = '';
-  @Event onClick: () => void = () => {};
+  @Event onCardClick: () => void = () => {};
 
   build() {
     Column() {
@@ -34,6 +34,6 @@ export struct ExceptionCard {
     .backgroundColor('#fff')
     .borderRadius(8)
     .width('100%')
-    .onClick(() => this.onClick());
+    .onClick(() => this.onCardClick());
   }
 }

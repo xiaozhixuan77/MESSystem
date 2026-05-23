@@ -3,6 +3,8 @@ import { preferencesUtil } from '@ohos/common';
 import { httpClient } from '@ohos/common';
 import { LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT } from '@ohos/common';
 import { emitter } from '@kit.BasicServicesKit';
+import { LoginPage } from '../login/LoginPage';
+import { MainPage } from '../main/MainPage';
 
 @Entry
 @ComponentV2
@@ -45,11 +47,11 @@ struct Index {
 
     try {
       await preferencesUtil.init(getContext(this));
-      const token = preferencesUtil.get('token');
+      const token = await preferencesUtil.get('token');
       if (token) {
-        this.currentRole = preferencesUtil.get('role') || '';
+        this.currentRole = await preferencesUtil.get('role') || '';
 
-        const userJson = preferencesUtil.get('currentUser');
+        const userJson = await preferencesUtil.get('currentUser');
         if (userJson) {
           try {
             const userObj: Record<string, Object> = JSON.parse(userJson as string);

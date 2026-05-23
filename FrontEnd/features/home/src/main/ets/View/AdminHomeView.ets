@@ -1,4 +1,4 @@
-import { KpiCard } from '@ohos/common';
+import { KpiCard, UserModel } from '@ohos/common';
 
 @ComponentV2
 export struct AdminHomeView {
@@ -29,7 +29,7 @@ export struct AdminHomeView {
           }
         }
         .columnsTemplate('1fr 1fr')
-        .gap(12);
+        .rowsGap(12).columnsGap(12);
       }
       .padding(16)
       .width('100%')

@@ -1,3 +1,5 @@
+import { UserModel } from "@ohos/common";
+
 @ComponentV2
 export struct ProfileView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();

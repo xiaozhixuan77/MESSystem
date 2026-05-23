@@ -3,7 +3,7 @@ export struct KpiCard {
   @Param title: string = '';
   @Param value: string = '';
   @Param color: ResourceColor = '#1890ff';
-  @Event onClick: () => void = () => {};
+  @Event onCardClick: () => void = () => {};
 
   build() {
     Column() {
@@ -20,6 +20,6 @@ export struct KpiCard {
     .backgroundColor('#fff')
     .borderRadius(8)
     .width('100%')
-    .onClick(() => this.onClick());
+    .onClick(() => this.onCardClick());
   }
 }

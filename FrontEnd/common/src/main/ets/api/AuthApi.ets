@@ -1,9 +1,15 @@
 import { httpClient } from './HttpClient';
 import { LoginResponseModel, LoginResponseUserModel } from '../models/LoginResponseModel';
 
+interface LoginRequest {
+  username: string;
+  password: string;
+}
+
 export class AuthApi {
   static async login(username: string, password: string): Promise<LoginResponseModel> {
-    return httpClient.post<LoginResponseModel>('/auth/login', { username, password });
+    const params: LoginRequest = { username: username, password: password };
+    return httpClient.post<LoginResponseModel>('/auth/login', params);
   }
 
   static async getCurrentUser(): Promise<LoginResponseUserModel> {
@@ -11,6 +17,6 @@ export class AuthApi {
   }
 
   static async logout(): Promise<void> {
-    await httpClient.post('/auth/logout');
+    await httpClient.post<void>('/auth/logout');
   }
 }
