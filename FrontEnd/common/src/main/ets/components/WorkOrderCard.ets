@@ -1,4 +1,4 @@
-import { StatusTag } from '@ohos/common';
+import { StatusTag } from './StatusTag';
 
 @ComponentV2
 export struct WorkOrderCard {

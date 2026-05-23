@@ -11,7 +11,16 @@ export class WorkOrderViewModel {
   async loadWorkOrders(role: string, filters?: object): Promise<void> {
     this.isLoading = true;
     try {
-      const params: Record<string, Object> = Object.assign({ role: role }, filters || {});
+      const params: Record<string, Object> = {};
+      params['role'] = role;
+      if (filters) {
+        const filterRecord = filters as Record<string, Object>;
+        const filterKeys = Object.keys(filterRecord);
+        for (let i = 0; i < filterKeys.length; i++) {
+          const key = filterKeys[i];
+          params[key] = filterRecord[key];
+        }
+      }
       this.workOrderList = await WorkOrderApi.getWorkOrders(params) as WorkOrderModel[];
     } catch (e) {
       this.errorMessage = (e as Error).message;

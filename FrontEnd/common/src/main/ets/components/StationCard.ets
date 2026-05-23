@@ -7,7 +7,7 @@ export struct StationCard {
   @Param finishedCount: number = 0;
   @Param ngCount: number = 0;
   @Param isActive: boolean = false;
-  @Event onClick: () => void = () => {};
+  @Event onCardClick: () => void = () => {};
 
   private getBorderColor(): ResourceColor {
     if (this.deviceStatus === '运行中') return '#52c41a';
@@ -45,6 +45,6 @@ export struct StationCard {
     .borderRadius(8)
     .border({ width: { left: 3 }, color: this.getBorderColor() })
     .width('100%')
-    .onClick(() => this.onClick());
+    .onClick(() => this.onCardClick());
   }
 }
