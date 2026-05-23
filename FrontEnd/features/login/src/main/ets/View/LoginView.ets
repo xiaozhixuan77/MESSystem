@@ -19,6 +19,10 @@ export struct LoginView {
   }
 
   async handleLogin(): Promise<void> {
+    if (this.viewModel.isLoading) {
+      return;
+    }
+
     const success = await this.viewModel.login();
     if (!success || !this.viewModel.loginResult) {
       return;
@@ -36,13 +40,14 @@ export struct LoginView {
     httpClient.configure('http://localhost:8080', result.token);
 
     if (userData) {
-      emitter.emit(LOGIN_SUCCESS_EVENT, {
+      const eventData: emitter.EventData = {
         data: {
           token: result.token,
           role: result.role,
           user: userData
         }
-      });
+      };
+      emitter.emit(LOGIN_SUCCESS_EVENT, eventData);
     }
 
     this.pageStack.replacePath({ name: 'MainPage' });

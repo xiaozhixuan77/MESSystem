@@ -9,7 +9,7 @@ export class LoginViewModel {
   @Trace loginResult: LoginResponseModel | null = null;
 
   isFormValid(): boolean {
-    return this.username.trim().length > 0 && this.password.trim().length > 0;
+    return this.username.trim().length > 0 && this.password.length > 0;
   }
 
   async login(): Promise<boolean> {

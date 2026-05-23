@@ -42,6 +42,10 @@ class HttpClient {
       }
       return result['data'] as T;
     } catch (error) {
+      const err = error as Error;
+      if (err.message) {
+        throw err;
+      }
       throw new Error(String(error));
     }
   }
