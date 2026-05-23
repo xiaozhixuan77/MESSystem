@@ -7,6 +7,7 @@ export { ExceptionCard } from './src/main/ets/components/ExceptionCard';
 
 // 网络接口
 export { HttpClient, httpClient, LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT } from './src/main/ets/api/HttpClient';
+export { AuthApi, LoginResponseModel, LoginResponseUserModel } from './src/main/ets/api/AuthApi';
 export { WorkOrderApi } from './src/main/ets/api/WorkOrderApi';
 export { LineApi } from './src/main/ets/api/LineApi';
 export { QualityApi } from './src/main/ets/api/QualityApi';
