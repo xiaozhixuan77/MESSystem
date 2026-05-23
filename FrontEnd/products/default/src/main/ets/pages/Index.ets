@@ -1,7 +1,4 @@
-import { UserModel } from '@ohos/common';
-import { preferencesUtil } from '@ohos/common';
-import { httpClient } from '@ohos/common';
-import { LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT } from '@ohos/common';
+import { UserModel, preferencesUtil, httpClient, ApiConstants, LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT } from '@ohos/common';
 import { emitter } from '@kit.BasicServicesKit';
 import { LoginPage } from '../login/LoginPage';
 import { MainPage } from '../main/MainPage';
@@ -68,7 +65,7 @@ struct Index {
           }
         }
 
-        httpClient.configure('http://localhost:8080', token as string);
+        httpClient.configure(ApiConstants.BASE_URL, token as string);
         this.pageStack.replacePath({ name: 'MainPage' });
       } else {
         this.pageStack.replacePath({ name: 'LoginPage' });

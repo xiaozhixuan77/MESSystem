@@ -2,6 +2,7 @@ import { LoginViewModel } from '../ViewModel/LoginViewModel';
 import {
   preferencesUtil,
   httpClient,
+  ApiConstants,
   LOGIN_SUCCESS_EVENT,
   LoginResponseModel,
   LoginResponseUserModel
@@ -52,7 +53,7 @@ export struct LoginView {
       await preferencesUtil.set('currentUser', JSON.stringify(userData));
     }
 
-    httpClient.configure('http://localhost:8080', result.token);
+    httpClient.configure(ApiConstants.BASE_URL, result.token);
 
     if (userData) {
       const eventData: emitter.EventData = {
