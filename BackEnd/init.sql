@@ -361,7 +361,7 @@ ALTER TABLE inspection_record
 -- 12. production_log（产线运行日志表）
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS production_log (
-    id              BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    id              BIGINT AUTO_INCREMENT,
     line_id         BIGINT NOT NULL COMMENT '产线ID',
     station_id      BIGINT NULL COMMENT '工作站ID',
     work_order_id   BIGINT NULL COMMENT '工单ID',
@@ -373,10 +373,26 @@ CREATE TABLE IF NOT EXISTS production_log (
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     version         INT DEFAULT 0 COMMENT '乐观锁版本号',
     is_deleted      TINYINT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
+    PRIMARY KEY (id, event_time),
     INDEX idx_line_id (line_id),
     INDEX idx_event_time (event_time),
     INDEX idx_work_order_id (work_order_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='产线运行日志表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='产线运行日志表'
+PARTITION BY RANGE (YEAR(event_time) * 100 + MONTH(event_time)) (
+    PARTITION p202501 VALUES LESS THAN (202502),
+    PARTITION p202502 VALUES LESS THAN (202503),
+    PARTITION p202503 VALUES LESS THAN (202504),
+    PARTITION p202504 VALUES LESS THAN (202505),
+    PARTITION p202505 VALUES LESS THAN (202506),
+    PARTITION p202506 VALUES LESS THAN (202507),
+    PARTITION p202507 VALUES LESS THAN (202508),
+    PARTITION p202508 VALUES LESS THAN (202509),
+    PARTITION p202509 VALUES LESS THAN (202510),
+    PARTITION p202510 VALUES LESS THAN (202511),
+    PARTITION p202511 VALUES LESS THAN (202512),
+    PARTITION p202512 VALUES LESS THAN (202601),
+    PARTITION pmax VALUES LESS THAN MAXVALUE
+);
 
 ALTER TABLE production_log
     ADD CONSTRAINT fk_pl_line
@@ -508,15 +524,30 @@ INSERT INTO role_permission (role, permission) VALUES
 ('leader', 'workorder.view_team'),
 ('leader', 'workorder.create'),
 ('leader', 'workorder.dispatch'),
+('leader', 'workorder.pause'),
+('leader', 'workorder.resume'),
 ('leader', 'workorder.confirm'),
+('leader', 'workorder.scrap'),
 ('leader', 'line.view'),
+('leader', 'line.operate'),
+('leader', 'station.operate'),
+('leader', 'exception.view'),
+('leader', 'exception.handle'),
+('leader', 'dashboard.view'),
 ('operator', 'workorder.view_own'),
 ('operator', 'workorder.start'),
+('operator', 'workorder.pause'),
+('operator', 'workorder.resume'),
 ('operator', 'workorder.report'),
+('operator', 'line.view'),
 ('operator', 'line.operate'),
+('operator', 'station.operate'),
+('operator', 'exception.report'),
+('operator', 'dashboard.view'),
 ('inspector', 'inspection.create'),
 ('inspector', 'workorder.view_inspection'),
-('inspector', 'line.view');
+('inspector', 'line.view'),
+('inspector', 'dashboard.view');
 
 -- --------------------------------------------------------
 -- 9. line_process_support（产线支持工艺关联）
