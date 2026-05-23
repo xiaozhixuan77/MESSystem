@@ -1,0 +1,11 @@
+{
+  "name": "@ohos/workorder",
+  "version": "1.0.0",
+  "description": "工单管理模块",
+  "main": "Index.ets",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/common": "file:../../common"
+  }
+}

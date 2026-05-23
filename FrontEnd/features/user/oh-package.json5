@@ -1,0 +1,11 @@
+{
+  "name": "@ohos/user",
+  "version": "1.0.0",
+  "description": "人员与账号模块",
+  "main": "Index.ets",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/common": "file:../../common"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "default",
+  "version": "1.0.0",
+  "description": "MES 工业管理 APP 默认设备泛类",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/common": "file:../../common",
+    "@ohos/login": "file:../../features/login",
+    "@ohos/home": "file:../../features/home",
+    "@ohos/workorder": "file:../../features/workorder",
+    "@ohos/production": "file:../../features/production",
+    "@ohos/quality": "file:../../features/quality",
+    "@ohos/user": "file:../../features/user"
+  }
+}

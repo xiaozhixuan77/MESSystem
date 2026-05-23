@@ -1,0 +1,11 @@
+export { WorkOrderListPage } from './src/main/ets/View/WorkOrderListPage';
+export { WorkOrderAddPage } from './src/main/ets/View/WorkOrderAddPage';
+export { WorkOrderEditPage } from './src/main/ets/View/WorkOrderEditPage';
+export { WorkOrderCopyPage } from './src/main/ets/View/WorkOrderCopyPage';
+export { PendingDetailPage } from './src/main/ets/View/Detail/PendingDetailPage';
+export { AssignedDetailPage } from './src/main/ets/View/Detail/AssignedDetailPage';
+export { RunningDetailPage } from './src/main/ets/View/Detail/RunningDetailPage';
+export { CompletedDetailPage } from './src/main/ets/View/Detail/CompletedDetailPage';
+export { ReportedDetailPage } from './src/main/ets/View/Detail/ReportedDetailPage';
+export { PausedDetailPage } from './src/main/ets/View/Detail/PausedDetailPage';
+export { WorkOrderViewModel } from './src/main/ets/ViewModel/WorkOrderViewModel';

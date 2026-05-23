@@ -1,0 +1,11 @@
+{
+  "name": "@ohos/quality",
+  "version": "1.0.0",
+  "description": "质检管理模块",
+  "main": "Index.ets",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/common": "file:../../common"
+  }
+}

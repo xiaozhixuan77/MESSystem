@@ -1,0 +1,11 @@
+{
+  "name": "@ohos/production",
+  "version": "1.0.0",
+  "description": "生产执行模块",
+  "main": "Index.ets",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/common": "file:../../common"
+  }
+}

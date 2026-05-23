@@ -1,0 +1,11 @@
+{
+  "name": "@ohos/login",
+  "version": "1.0.0",
+  "description": "登录认证模块",
+  "main": "Index.ets",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/common": "file:../../common"
+  }
+}
