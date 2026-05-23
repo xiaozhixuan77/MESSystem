@@ -1,6 +1,14 @@
 import { http } from '@kit.NetworkKit';
 import { preferencesUtil } from '../utils/PreferencesUtil';
 import { emitter } from '@kit.BasicServicesKit';
+import { promptAction } from '@kit.ArkUI';
+
+interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+  timestamp: number;
+}
 
 const LOGIN_EXPIRED_EVENT: emitter.InnerEvent = { eventId: 10001 };
 const LOGIN_SUCCESS_EVENT: emitter.InnerEvent = { eventId: 10002 };
@@ -45,14 +53,31 @@ class HttpClient {
         result = rawResult as Record<string, Object>;
       }
 
-      if ((result['code'] as number) !== 200) {
+      const code = result['code'] as number;
+      if (code !== 200) {
         const message = (result['message'] as string) || '请求失败';
+        if (code === 401) {
+          this.clearAuth();
+          promptAction.showToast({ message: '登录已过期，请重新登录' });
+        } else if (code === 403) {
+          promptAction.showToast({ message: '无权限执行此操作' });
+        } else {
+          promptAction.showToast({ message: message });
+        }
         throw new Error(message);
       }
       return result['data'] as T;
     } catch (error) {
       const err = error as Error;
-      if (err.message) {
+      if (err instanceof SyntaxError) {
+        promptAction.showToast({ message: '服务器响应异常' });
+        throw err;
+      }
+      const errMsg = err.message || '';
+      if (errMsg.includes('Network') || errMsg.includes('connect') || errMsg.includes('timeout')) {
+        promptAction.showToast({ message: '网络连接失败，请检查网络' });
+      }
+      if (errMsg) {
         throw err;
       }
       throw new Error(String(error));
