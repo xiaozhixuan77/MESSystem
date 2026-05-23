@@ -16,6 +16,15 @@ export struct LoginView {
 
   aboutToAppear(): void {
     this.viewModel.reset();
+    this.loadRememberedUsername();
+  }
+
+  async loadRememberedUsername(): Promise<void> {
+    const saved = await preferencesUtil.get('rememberedUsername');
+    if (saved) {
+      this.viewModel.username = saved;
+      this.viewModel.rememberMe = true;
+    }
   }
 
   async handleLogin(): Promise<void> {
@@ -30,6 +39,12 @@ export struct LoginView {
 
     const result: LoginResponseModel = this.viewModel.loginResult;
     const userData: LoginResponseUserModel | null = result.user;
+
+    if (this.viewModel.rememberMe) {
+      await preferencesUtil.set('rememberedUsername', this.viewModel.username.trim());
+    } else {
+      await preferencesUtil.delete('rememberedUsername');
+    }
 
     await preferencesUtil.set('token', result.token);
     await preferencesUtil.set('role', result.role);
@@ -122,6 +137,24 @@ export struct LoginView {
           }
           .width('100%')
           .margin({ bottom: 16 });
+
+          Row() {
+            Checkbox({ name: 'rememberMe', group: 'rememberMeGroup' })
+              .select($$this.viewModel.rememberMe)
+              .selectedColor('#1890ff')
+              .width(20)
+              .height(20);
+
+            Text('记住我')
+              .fontSize(14)
+              .fontColor('#666666')
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.viewModel.rememberMe = !this.viewModel.rememberMe;
+              });
+          }
+          .width('100%')
+          .margin({ bottom: 20 });
 
           if (this.viewModel.errorMessage) {
             Text(this.viewModel.errorMessage)

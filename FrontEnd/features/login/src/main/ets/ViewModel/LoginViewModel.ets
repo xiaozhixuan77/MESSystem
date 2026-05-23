@@ -4,6 +4,7 @@ import { AuthApi, LoginResponseModel } from '@ohos/common';
 export class LoginViewModel {
   @Trace username: string = '';
   @Trace password: string = '';
+  @Trace rememberMe: boolean = false;
   @Trace isLoading: boolean = false;
   @Trace errorMessage: string = '';
   @Trace loginResult: LoginResponseModel | null = null;
