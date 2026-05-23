@@ -74,6 +74,7 @@ export struct LoginView {
         Column() {
           Text('\u{1F3ED}')
             .fontSize(64)
+            .margin({ top: 40 });
 
           Text('MES 工业管理系统')
             .fontSize(24)

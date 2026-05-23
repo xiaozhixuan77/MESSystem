@@ -18,7 +18,7 @@ export class WorkOrderApi {
   }
 
   static async dispatchWorkOrder(id: number, operatorId: number): Promise<Object> {
-    const params: Record<string, number> = { operatorId: operatorId };
+    const params: Record<string, number> = { "operatorId": operatorId };
     return httpClient.post(`/workorders/${id}/dispatch`, params);
   }
 
