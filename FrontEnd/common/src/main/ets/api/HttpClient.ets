@@ -3,6 +3,7 @@ import { preferencesUtil } from '../utils/PreferencesUtil';
 import { emitter } from '@kit.BasicServicesKit';
 
 const LOGIN_EXPIRED_EVENT: emitter.InnerEvent = { eventId: 10001 };
+const LOGIN_SUCCESS_EVENT: emitter.InnerEvent = { eventId: 10002 };
 
 class HttpClient {
   private client = http.createHttp();
@@ -63,4 +64,4 @@ class HttpClient {
 }
 
 export const httpClient = new HttpClient();
-export { HttpClient, LOGIN_EXPIRED_EVENT };
+export { HttpClient, LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT };

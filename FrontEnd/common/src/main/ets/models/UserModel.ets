@@ -1,11 +1,12 @@
+@ObservedV2
 export class UserModel {
-  id: number = 0;
-  employeeNo: string = '';
-  name: string = '';
-  role: string = '';
-  teamId: number | null = null;
-  workshopId: number | null = null;
-  status: string = 'active';
-  avatarUrl: string = '';
+  @Trace id: number = 0;
+  @Trace employeeNo: string = '';
+  @Trace name: string = '';
+  @Trace role: string = '';
+  @Trace teamId: number | null = null;
+  @Trace workshopId: number | null = null;
+  @Trace status: string = 'active';
+  @Trace avatarUrl: string = '';
   createdAt: string = '';
 }
