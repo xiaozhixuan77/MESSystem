@@ -24,6 +24,7 @@ class HttpClient {
 
   private async request<T>(method: http.RequestMethod, path: string, data?: object): Promise<T> {
     const url = `${this.baseUrl}${path}`;
+    let result: Record<string, Object>;
     try {
       const response = await this.client.request(url, {
         method,
@@ -32,13 +33,21 @@ class HttpClient {
           'Authorization': this.token ? `Bearer ${this.token}` : ''
         },
         extraData: data ? JSON.stringify(data) : '',
+        expectDataType: http.HttpDataType.STRING,
         connectTimeout: 10000,
         readTimeout: 30000
       });
 
-      const result: Record<string, Object> = JSON.parse(response.result as string);
+      const rawResult = response.result;
+      if (typeof rawResult === 'string') {
+        result = JSON.parse(rawResult) as Record<string, Object>;
+      } else {
+        result = rawResult as Record<string, Object>;
+      }
+
       if ((result['code'] as number) !== 200) {
-        throw new Error(result['message'] as string);
+        const message = (result['message'] as string) || '请求失败';
+        throw new Error(message);
       }
       return result['data'] as T;
     } catch (error) {
