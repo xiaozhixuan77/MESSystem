@@ -17,7 +17,7 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 jwt:
-  secret: your-256-bit-secret-key-here-mes-system-2024
+  secret: ${JWT_SECRET:your-256-bit-secret-key-here-mes-system-2024}
   expiration: 86400000
 
 simulator:
