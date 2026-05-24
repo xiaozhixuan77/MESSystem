@@ -10,6 +10,7 @@ struct Index {
   @Provider('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Provider('currentUser') currentUser: UserModel = new UserModel();
   @Provider('currentRole') currentRole: string = '';
+  @Local targetPage: string = '';
 
   @Builder
   PageMap(name: string) {
@@ -53,12 +54,12 @@ struct Index {
         }
 
         httpClient.configure(ApiConstants.BASE_URL, token as string);
-        this.pageStack.replacePath({ name: 'MainPage' });
+        this.targetPage = 'MainPage';
       } else {
-        this.pageStack.replacePath({ name: 'LoginPage' });
+        this.targetPage = 'LoginPage';
       }
     } catch (e) {
-      this.pageStack.replacePath({ name: 'LoginPage' });
+      this.targetPage = 'LoginPage';
     }
   }
 
@@ -77,6 +78,11 @@ struct Index {
     Navigation(this.pageStack) {
       Stack() {}
     }
+    .onAppear(() => {
+      if (this.targetPage) {
+        this.pageStack.replacePath({ name: this.targetPage });
+      }
+    })
     .hideTitleBar(true)
     .hideNavBar(true)
     .navDestination(this.PageMap);

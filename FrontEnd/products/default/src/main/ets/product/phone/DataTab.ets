@@ -3,7 +3,7 @@ import { InspectionListView, InspectionDetailView, DashboardView } from '@ohos/q
 
 @ComponentV2
 export struct DataTab {
-  @Provider('pageStack') dataStack: NavPathStack = new NavPathStack();
+  @Local dataStack: NavPathStack = new NavPathStack();
 
   @Builder
   PageMap(name: string) {
@@ -22,15 +22,14 @@ export struct DataTab {
     }
   }
 
-  aboutToAppear(): void {
-    this.dataStack.replacePath({ name: 'LineList' });
-  }
-
   build() {
     Navigation(this.dataStack) {
       Stack() {}
     }
     .navDestination(this.PageMap)
     .hideTitleBar(true)
+    .onAppear(() => {
+      this.dataStack.replacePath({ name: 'LineList' });
+    })
   }
 }

@@ -13,7 +13,7 @@ import {
 
 @ComponentV2
 export struct WorkOrderTab {
-  @Provider('pageStack') workOrderStack: NavPathStack = new NavPathStack();
+  @Local workOrderStack: NavPathStack = new NavPathStack();
   @Consumer('currentRole') currentRole: string = '';
 
   @Builder
@@ -41,15 +41,14 @@ export struct WorkOrderTab {
     }
   }
 
-  aboutToAppear(): void {
-    this.workOrderStack.replacePath({ name: 'WorkOrderList' });
-  }
-
   build() {
     Navigation(this.workOrderStack) {
       Stack() {}
     }
     .navDestination(this.PageMap)
     .hideTitleBar(true)
+    .onAppear(() => {
+      this.workOrderStack.replacePath({ name: 'WorkOrderList' });
+    })
   }
 }

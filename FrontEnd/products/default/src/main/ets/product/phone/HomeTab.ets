@@ -2,7 +2,7 @@ import { LeaderHomeView, OperatorHomeView, InspectorHomeView, AdminHomeView } fr
 
 @ComponentV2
 export struct HomeTab {
-  @Provider('pageStack') homeStack: NavPathStack = new NavPathStack();
+  @Local homeStack: NavPathStack = new NavPathStack();
   @Consumer('currentRole') currentRole: string = '';
 
   @Builder
@@ -20,15 +20,14 @@ export struct HomeTab {
     }
   }
 
-  aboutToAppear(): void {
-    this.homeStack.replacePath({ name: 'Home' });
-  }
-
   build() {
     Navigation(this.homeStack) {
       Stack() {}
     }
     .navDestination(this.PageMap)
     .hideTitleBar(true)
+    .onAppear(() => {
+      this.homeStack.replacePath({ name: 'Home' });
+    })
   }
 }
