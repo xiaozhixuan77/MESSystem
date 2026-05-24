@@ -27,6 +27,7 @@ public class R<T> {
         R<T> r = new R<>();
         r.setCode(code);
         r.setMessage(message);
+        r.setData(null);
         r.setTimestamp(System.currentTimeMillis());
         return r;
     }
