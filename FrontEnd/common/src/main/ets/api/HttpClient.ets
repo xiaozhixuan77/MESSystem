@@ -30,6 +30,14 @@ class HttpClient {
     emitter.emit(LOGIN_EXPIRED_EVENT, { data: {} });
   }
 
+  private showToast(message: string): void {
+    try {
+      promptAction.showToast({ message: message, duration: 2000 });
+    } catch (e) {
+      // HAR 模块可能无 UIContext，静默忽略 Toast 失败
+    }
+  }
+
   private async request<T>(method: http.RequestMethod, path: string, data?: object): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     let result: Record<string, Object>;
@@ -58,11 +66,11 @@ class HttpClient {
         const message = (result['message'] as string) || '请求失败';
         if (code === 401) {
           this.clearAuth();
-          promptAction.showToast({ message: '登录已过期，请重新登录' });
+          this.showToast('登录已过期，请重新登录');
         } else if (code === 403) {
-          promptAction.showToast({ message: '无权限执行此操作' });
+          this.showToast('无权限执行此操作');
         } else {
-          promptAction.showToast({ message: message });
+          this.showToast(message);
         }
         throw new Error(message);
       }
@@ -70,12 +78,12 @@ class HttpClient {
     } catch (error) {
       const err = error as Error;
       if (err instanceof SyntaxError) {
-        promptAction.showToast({ message: '服务器响应异常' });
+        this.showToast('服务器响应异常');
         throw err;
       }
       const errMsg = err.message || '';
       if (errMsg.includes('Network') || errMsg.includes('connect') || errMsg.includes('timeout')) {
-        promptAction.showToast({ message: '网络连接失败，请检查网络' });
+        this.showToast('网络连接失败，请检查网络');
       }
       if (errMsg) {
         throw err;
