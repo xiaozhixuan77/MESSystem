@@ -9,3 +9,6 @@ Thumbs.db
 
 # Root-level temp
 *.log
+
+# Environment
+.env
