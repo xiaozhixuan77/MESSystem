@@ -19,6 +19,7 @@ struct Index {
   @Provider('currentUser') currentUser: UserModel = new UserModel();
   @Provider('currentRole') currentRole: string = '';
   @Local targetPage: string = '';
+  @Local isReady: boolean = false;
   private windowChangeCallback?: (size: window.Size) => void;
 
   @Builder
@@ -110,6 +111,7 @@ struct Index {
     } catch (e) {
       this.targetPage = 'LoginPage';
     }
+    this.isReady = true;
   }
 
   aboutToDisappear(): void {
@@ -124,40 +126,61 @@ struct Index {
   }
 
   build() {
-    Stack() {
-      Column() {
-        Row() {
-          // md/lg → 侧边导航栏
-          if (this.showTabBar && this.currentBreakpoint !== 'sm') {
-            this.Sidebar()
-          }
-
-          Navigation(this.pageStack) {
-            Stack() {}
-          }
-          .navDestination(this.PageMap)
-          .hideTitleBar(true)
-          .hideNavBar(true)
-          .layoutWeight(1)
-          .backgroundColor(Color.Transparent)
-          .onAppear(() => {
-            if (this.targetPage) {
-              this.pageStack.replacePath({ name: this.targetPage });
+    if (!this.isReady) {
+      Stack() {
+        Column() {
+          LoadingProgress()
+            .width(48)
+            .height(48)
+            .color('#1890ff')
+          Text('加载中...')
+            .fontSize(14)
+            .fontColor('#999999')
+            .margin({ top: 16 })
+        }
+        .width('100%')
+        .height('100%')
+        .justifyContent(FlexAlign.Center)
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#f5f5f5')
+    } else {
+      Stack() {
+        Column() {
+          Row() {
+            // md/lg → 侧边导航栏
+            if (this.showTabBar && this.currentBreakpoint !== 'sm') {
+              this.Sidebar()
             }
-          })
-        }
-        .layoutWeight(1)
 
-        // sm → 底部导航栏
-        if (this.showTabBar && this.currentBreakpoint === 'sm') {
-          this.BottomTabBar()
+            Navigation(this.pageStack) {
+              Stack() {}
+            }
+            .navDestination(this.PageMap)
+            .hideTitleBar(true)
+            .hideNavBar(true)
+            .layoutWeight(1)
+            .backgroundColor(Color.Transparent)
+            .onAppear(() => {
+              if (this.targetPage) {
+                this.pageStack.replacePath({ name: this.targetPage });
+              }
+            })
+          }
+          .layoutWeight(1)
+
+          // sm → 底部导航栏
+          if (this.showTabBar && this.currentBreakpoint === 'sm') {
+            this.BottomTabBar()
+          }
         }
+        .width('100%')
+        .height('100%')
       }
       .width('100%')
       .height('100%')
     }
-    .width('100%')
-    .height('100%')
   }
 
   @Builder
