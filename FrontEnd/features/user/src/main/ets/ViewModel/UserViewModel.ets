@@ -1,4 +1,4 @@
-import { UserApi } from '@ohos/common';
+import { UserApi } from '@ohos/network';
 import { UserModel } from '../Model/UserModel';
 
 @ObservedV2

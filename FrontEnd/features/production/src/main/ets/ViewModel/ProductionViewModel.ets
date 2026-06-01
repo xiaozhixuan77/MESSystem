@@ -1,4 +1,4 @@
-import { LineApi } from '@ohos/common';
+import { LineApi } from '@ohos/network';
 import { LineModel } from '../Model/LineModel';
 import { StationModel } from '../Model/StationModel';
 

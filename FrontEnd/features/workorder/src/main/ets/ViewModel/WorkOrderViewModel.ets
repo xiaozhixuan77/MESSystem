@@ -1,4 +1,4 @@
-import { WorkOrderApi } from '@ohos/common';
+import { WorkOrderApi } from '@ohos/network';
 import { WorkOrderModel } from '../Model/WorkOrderModel';
 
 @ObservedV2

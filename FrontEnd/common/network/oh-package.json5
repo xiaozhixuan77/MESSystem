@@ -1,0 +1,11 @@
+{
+  "name": "@ohos/network",
+  "version": "1.0.0",
+  "description": "HTTP API services and WebSocket client",
+  "main": "Index.ets",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/datastore": "file:../datastore"
+  }
+}

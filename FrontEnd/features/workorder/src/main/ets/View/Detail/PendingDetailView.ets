@@ -1,4 +1,4 @@
-import { StatusTag } from '@ohos/common';
+import { StatusTag } from '@ohos/uicomponents';
 
 @ComponentV2
 export struct PendingDetailView {

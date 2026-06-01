@@ -1,11 +1,14 @@
 import { LoginViewModel } from '../ViewModel/LoginViewModel';
-import { preferencesUtil, httpClient, ApiConstants, LOGIN_SUCCESS_EVENT } from '@ohos/common';
+import { preferencesUtil, LOGIN_SUCCESS_EVENT } from '@ohos/datastore';
+import { httpClient } from '@ohos/network';
+import { ApiConstants } from '@ohos/utils';
 import { LoginResponseModel, LoginResponseUserModel } from '../Model/LoginResponseModel';
 import { emitter } from '@kit.BasicServicesKit';
 
 @ComponentV2
 export struct LoginView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('showTabBar') showTabBar: boolean = false;
   @Local viewModel: LoginViewModel = new LoginViewModel();
   @Local showPassword: boolean = false;
 
@@ -60,12 +63,12 @@ export struct LoginView {
       emitter.emit(LOGIN_SUCCESS_EVENT, eventData);
     }
 
-    this.pageStack.replacePath({ name: 'MainPage' });
+    this.showTabBar = true;
+    this.pageStack.replacePath({ name: 'HomeTab' });
   }
 
   build() {
-    NavDestination() {
-      Scroll() {
+    Scroll() {
         Column() {
           Text('\u{1F3ED}')
             .fontSize(64)
@@ -188,7 +191,5 @@ export struct LoginView {
       .scrollable(ScrollDirection.Vertical)
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.None);
-    }
-    .hideTitleBar(true);
   }
 }

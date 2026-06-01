@@ -1,4 +1,4 @@
-import { QualityApi } from '@ohos/common';
+import { QualityApi } from '@ohos/network';
 import { InspectionModel } from '../Model/InspectionModel';
 
 @ObservedV2

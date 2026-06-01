@@ -6,6 +6,7 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "@ohos/common": "file:../../common"
+    "@ohos/network": "file:../../common/network",
+    "@ohos/uicomponents": "file:../../common/uicomponents"
   }
 }

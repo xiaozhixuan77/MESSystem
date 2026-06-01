@@ -27,8 +27,20 @@
   },
   "modules": [
     {
-      "name": "common",
-      "srcPath": "./common",
+      "name": "datastore",
+      "srcPath": "./common/datastore",
+    },
+    {
+      "name": "network",
+      "srcPath": "./common/network",
+    },
+    {
+      "name": "uicomponents",
+      "srcPath": "./common/uicomponents",
+    },
+    {
+      "name": "utils",
+      "srcPath": "./common/utils",
     },
     {
       "name": "login",

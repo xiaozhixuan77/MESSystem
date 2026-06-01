@@ -1,9 +1,0 @@
-{
-  "name": "@ohos/common",
-  "version": "1.0.0",
-  "description": "MES 公共能力层：组件、模型、API、工具类、常量",
-  "main": "Index.ets",
-  "author": "",
-  "license": "",
-  "dependencies": {}
-}

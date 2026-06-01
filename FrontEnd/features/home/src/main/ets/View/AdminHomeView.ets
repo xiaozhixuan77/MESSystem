@@ -1,4 +1,4 @@
-import { KpiCard } from '@ohos/common';
+import { KpiCard } from '@ohos/uicomponents';
 import { UserModel } from '@ohos/user';
 
 @ComponentV2

@@ -1,4 +1,4 @@
-import { WorkOrderCard } from '@ohos/common';
+import { WorkOrderCard } from '@ohos/uicomponents';
 import { WorkOrderModel } from '../Model/WorkOrderModel';
 
 @ComponentV2

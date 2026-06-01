@@ -1,4 +1,4 @@
-import { StationCard } from '@ohos/common';
+import { StationCard } from '@ohos/uicomponents';
 import { LineModel } from '../Model/LineModel';
 import { StationModel } from '../Model/StationModel';
 
