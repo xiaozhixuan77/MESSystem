@@ -1,6 +1,6 @@
 import { preferencesUtil, LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT } from '@ohos/datastore';
 import { httpClient } from '@ohos/network';
-import { ApiConstants, BreakpointUtil } from '@ohos/utils';
+import { ApiConstants, BreakpointUtil, NetworkConfig } from '@ohos/utils';
 import { UserModel } from '@ohos/user';
 import { emitter } from '@kit.BasicServicesKit';
 import { window } from '@kit.ArkUI';
@@ -38,6 +38,12 @@ struct Index {
   }
 
   async aboutToAppear(): Promise<void> {
+    // 自动检测后端地址（模拟器→10.0.2.2，真机→网关IP）
+    const detectedUrl = NetworkConfig.detectBaseUrl();
+    ApiConstants.autoBaseUrl = detectedUrl;
+    ApiConstants.autoWsUrl = detectedUrl.replace('http', 'ws') + '/ws';
+    httpClient.configure(detectedUrl, '');
+
     // 窗口断点监听
     try {
       const ctx = getContext(this);
@@ -102,7 +108,7 @@ struct Index {
           }
         }
 
-        httpClient.configure(ApiConstants.BASE_URL, token as string);
+        httpClient.configure(ApiConstants.autoBaseUrl, token as string);
         this.showTabBar = true;
         this.targetPage = 'HomeTab';
       } else {
