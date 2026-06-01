@@ -25,7 +25,7 @@ export class LoginViewModel {
     this.loginResult = null;
 
     try {
-      const result = await AuthApi.login(this.username.trim(), this.password);
+      const result = await AuthApi.login<LoginResponseModel>(this.username.trim(), this.password);
       this.loginResult = result;
       return true;
     } catch (e) {

@@ -1,11 +1,17 @@
 import { httpClient } from './HttpClient';
 
+interface LoginParams {
+  username: string;
+  password: string;
+}
+
 export class AuthApi {
-  static async login(username: string, password: string): Promise<Object> {
-    return httpClient.post('/auth/login', { username, password });
+  static async login<T>(username: string, password: string): Promise<T> {
+    const params: LoginParams = { username, password };
+    return httpClient.post<T>('/auth/login', params);
   }
-  static async getCurrentUser(): Promise<Object> {
-    return httpClient.get('/me');
+  static async getCurrentUser<T>(): Promise<T> {
+    return httpClient.get<T>('/me');
   }
   static async logout(): Promise<void> {
     await httpClient.post<void>('/auth/logout');
