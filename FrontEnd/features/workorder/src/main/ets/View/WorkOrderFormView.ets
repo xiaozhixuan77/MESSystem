@@ -52,26 +52,8 @@ export struct WorkOrderFormView {
   FormLabel(label: string, required: boolean) {
     Text(required ? `${label} *` : label)
       .fontSize(12)
-      .fontColor(required ? '#5A5A6E' : '#5A5A6E')
+      .fontColor('#5A5A6E')
       .margin({ bottom: 6 })
-  }
-
-  @Builder
-  DropdownRow(label: string, placeholder: string) {
-    Row() {
-      Text(label || placeholder)
-        .fontSize(14)
-        .fontColor(label ? '#1A1A2E' : '#9A9AA8')
-        .layoutWeight(1)
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-    }
-    .width('100%').height(44)
-    .backgroundColor('#F5F7FA')
-    .borderRadius(12)
-    .border({ width: 1, color: '#E8EBF0' })
-    .padding({ left: 12, right: 12 })
-    .alignItems(VerticalAlign.Center)
   }
 
   @Builder
@@ -151,12 +133,25 @@ export struct WorkOrderFormView {
             }
 
             this.FormLabel('工单类型', true)
-            this.DropdownRow(this.viewModel.formType, '请选择工单类型')
-              .bindMenu([
-                MenuItem({ content: '试产' }).onClick(() => { this.viewModel.formType = '试产' }),
-                MenuItem({ content: '量产' }).onClick(() => { this.viewModel.formType = '量产' }),
-                MenuItem({ content: '返工' }).onClick(() => { this.viewModel.formType = '返工' }),
-              ])
+            Row() {
+              Text(this.viewModel.formType || '请选择工单类型')
+                .fontSize(14)
+                .fontColor(this.viewModel.formType ? '#1A1A2E' : '#9A9AA8')
+                .layoutWeight(1)
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+            }
+            .width('100%').height(44)
+            .backgroundColor('#F5F7FA')
+            .borderRadius(12)
+            .border({ width: 1, color: '#E8EBF0' })
+            .padding({ left: 12, right: 12 })
+            .alignItems(VerticalAlign.Center)
+            .bindMenu([
+              MenuItem({ content: '试产' }).onClick(() => { this.viewModel.formType = '试产' }),
+              MenuItem({ content: '量产' }).onClick(() => { this.viewModel.formType = '量产' }),
+              MenuItem({ content: '返工' }).onClick(() => { this.viewModel.formType = '返工' }),
+            ])
           }
           .padding(16)
           .borderRadius(16)
@@ -167,16 +162,27 @@ export struct WorkOrderFormView {
             this.SectionTitle('产品信息')
 
             this.FormLabel('产品选择', true)
-            this.DropdownRow(
-              this.viewModel.formProductName || this.viewModel.formProductCode,
-              this.viewModel.products.length > 0 ? '点击选择产品' : '加载中...'
-            )
-              .bindMenu(
-                this.viewModel.products.map((p: ProductModel) =>
-                  MenuItem({ content: `${p.code} - ${p.name}` })
-                    .onClick(() => { this.viewModel.selectProduct(p) })
-                )
+            Row() {
+              Text(this.viewModel.formProductName || this.viewModel.formProductCode ||
+                (this.viewModel.products.length > 0 ? '点击选择产品' : '加载中...'))
+                .fontSize(14)
+                .fontColor(this.viewModel.formProductName || this.viewModel.formProductCode ? '#1A1A2E' : '#9A9AA8')
+                .layoutWeight(1)
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+            }
+            .width('100%').height(44)
+            .backgroundColor('#F5F7FA')
+            .borderRadius(12)
+            .border({ width: 1, color: '#E8EBF0' })
+            .padding({ left: 12, right: 12 })
+            .alignItems(VerticalAlign.Center)
+            .bindMenu(
+              this.viewModel.products.map((p: ProductModel) =>
+                MenuItem({ content: `${p.code} - ${p.name}` })
+                  .onClick(() => { this.viewModel.selectProduct(p) })
               )
+            )
 
             if (this.viewModel.formProductName) {
               Blank().height(12)
@@ -229,7 +235,7 @@ export struct WorkOrderFormView {
                     if (index < this.viewModel.formProcessSteps.length - 1) {
                       Text('→').fontSize(12).fontColor('#9A9AA8')
                     }
-                  })
+                  }, (step: ProcessStepModel, index: number) => `${index}`)
                 }
               }
             }
@@ -294,34 +300,54 @@ export struct WorkOrderFormView {
             this.SectionTitle('生产资源')
 
             this.FormLabel('所属车间', true)
-            this.DropdownRow(
-              this.viewModel.formWorkshopId > 0
-                ? this.viewModel.workshops.find((w: WorkshopModel) => w.id === this.viewModel.formWorkshopId)?.name ?? ''
-                : '',
-              '请选择车间'
-            )
-              .bindMenu(
-                this.viewModel.workshops.map((w: WorkshopModel) =>
-                  MenuItem({ content: w.name })
-                    .onClick(() => { this.viewModel.onWorkshopChange(w.id) })
-                )
+            Row() {
+              Text(this.viewModel.formWorkshopId > 0
+                ? (this.viewModel.workshops.find((w: WorkshopModel) => w.id === this.viewModel.formWorkshopId)?.name ?? '')
+                : '请选择车间')
+                .fontSize(14)
+                .fontColor(this.viewModel.formWorkshopId > 0 ? '#1A1A2E' : '#9A9AA8')
+                .layoutWeight(1)
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+            }
+            .width('100%').height(44)
+            .backgroundColor('#F5F7FA')
+            .borderRadius(12)
+            .border({ width: 1, color: '#E8EBF0' })
+            .padding({ left: 12, right: 12 })
+            .alignItems(VerticalAlign.Center)
+            .bindMenu(
+              this.viewModel.workshops.map((w: WorkshopModel) =>
+                MenuItem({ content: w.name })
+                  .onClick(() => { this.viewModel.onWorkshopChange(w.id) })
               )
+            )
 
             Blank().height(12)
 
             this.FormLabel('所属产线', true)
-            this.DropdownRow(
-              this.viewModel.formLineId > 0
-                ? this.viewModel.lines.find((l: LineModel) => l.id === this.viewModel.formLineId)?.name ?? ''
-                : '',
-              '请选择产线'
-            )
-              .bindMenu(
-                this.viewModel.lines.map((l: LineModel) =>
-                  MenuItem({ content: l.name })
-                    .onClick(() => { this.viewModel.formLineId = l.id })
-                )
+            Row() {
+              Text(this.viewModel.formLineId > 0
+                ? (this.viewModel.lines.find((l: LineModel) => l.id === this.viewModel.formLineId)?.name ?? '')
+                : '请选择产线')
+                .fontSize(14)
+                .fontColor(this.viewModel.formLineId > 0 ? '#1A1A2E' : '#9A9AA8')
+                .layoutWeight(1)
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+            }
+            .width('100%').height(44)
+            .backgroundColor('#F5F7FA')
+            .borderRadius(12)
+            .border({ width: 1, color: '#E8EBF0' })
+            .padding({ left: 12, right: 12 })
+            .alignItems(VerticalAlign.Center)
+            .bindMenu(
+              this.viewModel.lines.map((l: LineModel) =>
+                MenuItem({ content: l.name })
+                  .onClick(() => { this.viewModel.formLineId = l.id })
               )
+            )
           }
           .padding(16)
           .borderRadius(16)

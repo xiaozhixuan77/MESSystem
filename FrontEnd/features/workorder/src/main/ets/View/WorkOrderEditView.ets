@@ -6,8 +6,11 @@ export struct WorkOrderEditView {
   @Local workOrderId: number = 0;
 
   aboutToAppear(): void {
-    const param = this.pageStack.getParamByName('WorkOrderEdit');
-    this.workOrderId = ((param as Record<string, Object>)?.['workOrderId'] as number) ?? 0;
+    const raw: Object = this.pageStack.getParamByName('WorkOrderEdit') as Object;
+    if (raw) {
+      const param = raw as Record<string, Object>;
+      this.workOrderId = (param['workOrderId'] as number) ?? 0;
+    }
   }
 
   build() {
