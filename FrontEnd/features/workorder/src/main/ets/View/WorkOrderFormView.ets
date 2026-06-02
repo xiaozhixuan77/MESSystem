@@ -42,10 +42,10 @@ export struct WorkOrderFormView {
       .fontSize(14)
       .fontWeight(600)
       .fontColor('#1A1A2E')
-      .margin({ bottom: 12 })
-      .padding({ bottom: 8 })
+      .padding({ bottom: 10 })
       .border({ width: { bottom: 1 }, color: '#E8EBF0' })
       .width('100%')
+      .margin({ bottom: 16 })
   }
 
   @Builder
@@ -111,21 +111,34 @@ export struct WorkOrderFormView {
     Column() {
       // Header
       Row() {
-        Text('←')
-          .fontSize(22)
-          .fontColor('#1565C0')
-          .onClick(() => this.pageStack.pop())
-          .margin({ right: 8 })
+        Button() {
+          Image($r('app.media.icon_arrow_left_gray'))
+            .width(20).height(20).fillColor('#1A1A2E');
+        }
+        .width(36).height(36)
+        .backgroundColor(Color.Transparent)
+        .borderRadius(12)
+        .onClick(() => this.pageStack.pop());
 
         Text(this.getTitle())
           .fontSize(18)
           .fontWeight(700)
           .fontColor('#1A1A2E')
           .layoutWeight(1)
+          .textAlign(TextAlign.Center)
+          .margin({ left: 12 });
+
+        Row({ space: 8 }) {
+          Image($r('app.media.icon_save_gray'))
+            .width(18).height(18);
+        }
+        .width(36).height(36)
+        .backgroundColor('#F5F7FA')
+        .borderRadius(12)
+        .justifyContent(FlexAlign.Center);
       }
       .width('100%')
-      .height(48)
-      .padding({ left: 16, right: 16 })
+      .padding({ left: 16, right: 16, top: 48, bottom: 12 })
       .backgroundColor('#FFFFFF')
       .border({ width: { bottom: 1 }, color: '#E8EBF0' })
 
@@ -159,6 +172,7 @@ export struct WorkOrderFormView {
             .border({ width: 1, color: '#42A5F5', style: BorderStyle.Dashed })
             .backgroundColor('#E3F2FD')
             .width('100%')
+            .margin({ bottom: 4 })
           }
 
           // Section: 基本信息

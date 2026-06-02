@@ -1,7 +1,24 @@
-import { WorkOrderCard } from '@ohos/uicomponents';
-import { RoleConstants, StatusConstants } from '@ohos/utils';
+import { RoleConstants } from '@ohos/utils';
 import { WorkOrderModel } from '../Model/WorkOrderModel';
 import { WorkOrderViewModel } from '../ViewModel/WorkOrderViewModel';
+
+interface StatusColor {
+  text: string;
+  bg: string;
+}
+
+const STATUS_TABS: string[] = ['全部', '待派工', '生产中', '已暂停', '待报工', '已完成'];
+
+const STATUS_COLORS: Record<string, StatusColor> = {
+  '待派工': { text: '#1565C0', bg: '#E3F2FD' } as StatusColor,
+  '已派工': { text: '#1890ff', bg: '#E6F7FF' } as StatusColor,
+  '生产中': { text: '#4CAF50', bg: '#E8F5E9' } as StatusColor,
+  '暂停中': { text: '#FF9800', bg: '#FFF3E0' } as StatusColor,
+  '生产完成': { text: '#722ED1', bg: '#F3E5F5' } as StatusColor,
+  '已报工': { text: '#00897B', bg: '#E0F2F1' } as StatusColor,
+  '完工': { text: '#4CAF50', bg: '#E8F5E9' } as StatusColor,
+  '报废': { text: '#F44336', bg: '#FFEBEE' } as StatusColor,
+};
 
 @ComponentV2
 export struct WorkOrderListView {
@@ -13,6 +30,16 @@ export struct WorkOrderListView {
 
   aboutToAppear(): void {
     this.viewModel.loadWorkOrders();
+  }
+
+  private statusLabelToFilter(label: string): string {
+    switch (label) {
+      case '生产中': return '生产中';
+      case '已暂停': return '暂停中';
+      case '待报工': return '生产完成';
+      case '已完成': return '已报工';
+      default: return label === '全部' ? '' : label;
+    }
   }
 
   private getDetailPageName(status: string): string {
@@ -33,155 +60,234 @@ export struct WorkOrderListView {
     return this.currentRole === RoleConstants.ADMIN || this.currentRole === RoleConstants.LEADER;
   }
 
+  @Builder
+  StatusBadge(status: string) {
+    Text(status)
+      .fontSize(10).fontWeight(600).fontColor(STATUS_COLORS[status]?.text || '#9A9AA8')
+      .padding({ left: 10, right: 10, top: 3, bottom: 3 })
+      .backgroundColor(STATUS_COLORS[status]?.bg || '#F5F7FA')
+      .borderRadius(10);
+  }
+
+  @Builder
+  WoButtons(wo: WorkOrderModel) {
+    if (wo.status === '待派工') {
+      Row({ space: 8 }) {
+        Button('复制')
+          .fontSize(12).fontWeight(600).fontColor('#5A5A6E')
+          .backgroundColor('#F5F7FA').borderRadius(8)
+          .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+          .onClick(() => {
+            const p: Record<string, number> = { 'sourceWorkOrderId': wo.id };
+            this.pageStack.pushPathByName('WorkOrderCopy', p);
+          });
+        Button('派工')
+          .fontSize(12).fontWeight(600).fontColor(Color.White)
+          .backgroundColor('#1565C0').borderRadius(8)
+          .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+          .onClick(() => {
+            const p: Record<string, number> = { 'workOrderId': wo.id };
+            this.pageStack.pushPathByName('PendingDetail', p);
+          });
+      }
+    } else if (wo.status === '生产中') {
+      Button('查看')
+        .fontSize(12).fontWeight(600).fontColor('#5A5A6E')
+        .backgroundColor('#F5F7FA').borderRadius(8)
+        .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+        .onClick(() => {
+          const p: Record<string, number> = { 'workOrderId': wo.id };
+          this.pageStack.pushPathByName('RunningDetail', p);
+        });
+    } else if (wo.status === '暂停中') {
+      Button('恢复')
+        .fontSize(12).fontWeight(600).fontColor(Color.White)
+        .backgroundColor('#1565C0').borderRadius(8)
+        .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+        .onClick(() => {
+          const p: Record<string, number> = { 'workOrderId': wo.id };
+          this.pageStack.pushPathByName('PausedDetail', p);
+        });
+    } else {
+      Button('详情')
+        .fontSize(12).fontWeight(600).fontColor('#5A5A6E')
+        .backgroundColor('#F5F7FA').borderRadius(8)
+        .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+        .onClick(() => {
+          const p: Record<string, number> = { 'workOrderId': wo.id };
+          this.pageStack.pushPathByName(this.getDetailPageName(wo.status), p);
+        });
+    }
+  }
+
   build() {
     Stack({ alignContent: Alignment.BottomEnd }) {
       Column() {
-        Search({ placeholder: '搜索工单号...', value: this.searchText })
-          .onChange((value: string) => {
-            this.searchText = value;
-            this.viewModel.searchKeyword = value;
-          })
-          .margin({ left: 16, right: 16, top: 12, bottom: 8 });
-
-        Scroll() {
-          Row({ space: 8 }) {
-            ForEach(['全部', ...StatusConstants.WORK_ORDER_STATUSES], (label: string) => {
-              Text(label)
-                .fontSize(13)
-                .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-                .borderRadius(16)
-                .backgroundColor(this.viewModel.statusFilter === label ||
-                  (label === '全部' && this.viewModel.statusFilter === '')
-                  ? '#1565C0' : '#F0F0F0')
-                .fontColor(this.viewModel.statusFilter === label ||
-                  (label === '全部' && this.viewModel.statusFilter === '')
-                  ? '#fff' : '#666')
-                .onClick(() => {
-                  this.viewModel.statusFilter = label === '全部' ? '' : label;
-                  this.viewModel.loadWorkOrders();
-                })
-            })
+        // 搜索栏
+        Row({ space: 10 }) {
+          Stack() {
+            TextInput({ placeholder: '搜索工单号、产品名称', text: $$this.searchText })
+              .height(40)
+              .fontSize(14).fontColor('#1A1A2E')
+              .placeholderColor('#9A9AA8')
+              .backgroundColor('#F5F7FA')
+              .borderRadius(12)
+              .border({ width: 1.5, color: '#E8EBF0' })
+              .padding({ left: 40, right: 16 })
+              .layoutWeight(1)
+              .onChange((v: string) => { this.viewModel.searchKeyword = v; });
+            Image($r('app.media.icon_search_gray'))
+              .width(18).height(18)
+              .position({ x: 12, y: 11 });
           }
-          .padding({ left: 16, right: 16 })
-        }
-        .scrollable(ScrollDirection.Horizontal)
-        .scrollBar(BarState.Off)
-        .height(40)
-        .margin({ bottom: 8 });
+          .layoutWeight(1);
 
-        Row() {
-          Row({ space: 8 }) {
-            ForEach(['全部', '试产', '量产', '返工'], (label: string) => {
-              Text(label)
-                .fontSize(12)
-                .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-                .borderRadius(12)
-                .backgroundColor(this.viewModel.typeFilter === label ||
-                  (label === '全部' && this.viewModel.typeFilter === '')
-                  ? '#E3F2FD' : 'transparent')
-                .fontColor(this.viewModel.typeFilter === label ||
-                  (label === '全部' && this.viewModel.typeFilter === '')
-                  ? '#1565C0' : '#9A9AA8')
-                .onClick(() => {
-                  this.viewModel.typeFilter = label === '全部' ? '' : label;
-                  this.viewModel.loadWorkOrders();
-                })
-            })
+          Button() {
+            Image($r('app.media.icon_plus_white'))
+              .width(18).height(18);
           }
-
-          Blank()
-
-          Text(`共 ${this.viewModel.filteredList.length} 条`)
-            .fontSize(12)
-            .fontColor('#9A9AA8')
+          .width(40).height(40)
+          .backgroundColor('#1565C0')
+          .borderRadius(12)
+          .onClick(() => { this.pageStack.pushPathByName('WorkOrderAdd', undefined); });
         }
         .width('100%')
-        .padding({ left: 16, right: 16 })
-        .margin({ bottom: 8 });
+        .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+        .backgroundColor(Color.White)
+        .border({ width: { bottom: 1 }, color: '#E8EBF0' });
 
+        // 状态筛选标签
+        Row({ space: 8 }) {
+          Scroll() {
+            Row({ space: 8 }) {
+              ForEach(STATUS_TABS, (label: string) => {
+                Text(label)
+                  .fontSize(12).fontWeight(500)
+                  .fontColor(this.viewModel.statusFilter === this.statusLabelToFilter(label) ? Color.White : '#5A5A6E')
+                  .backgroundColor(this.viewModel.statusFilter === this.statusLabelToFilter(label) ? '#1565C0' : '#F5F7FA')
+                  .borderRadius(20)
+                  .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+                  .onClick(() => {
+                    this.viewModel.statusFilter = this.statusLabelToFilter(label);
+                    this.viewModel.loadWorkOrders();
+                  });
+              }, (label: string) => label)
+            }
+          }
+          .scrollable(ScrollDirection.Horizontal)
+          .scrollBar(BarState.Off);
+        }
+        .width('100%')
+        .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+        .backgroundColor(Color.White)
+        .border({ width: { bottom: 1 }, color: '#E8EBF0' });
+
+        // 工单列表
         Refresh({ refreshing: this.viewModel.isLoading }) {
           List() {
             if (this.viewModel.isLoading) {
               ListItem() {
                 Row() {
-                  LoadingProgress()
-                    .width(40).height(40)
+                  LoadingProgress().width(40).height(40);
                 }
-                .width('100%').height(200)
-                .justifyContent(FlexAlign.Center)
+                .width('100%').height(200).justifyContent(FlexAlign.Center);
               }
             } else if (this.viewModel.errorMessage) {
               ListItem() {
                 Column({ space: 12 }) {
-                  Text('加载失败').fontSize(16).fontColor('#666')
+                  Text('加载失败').fontSize(16).fontColor('#5A5A6E');
                   Text(this.viewModel.errorMessage).fontSize(13).fontColor('#9A9AA8')
-                    .maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis })
-                  Button('重试')
-                    .onClick(() => this.viewModel.loadWorkOrders())
+                    .maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis });
+                  Button('重试').onClick(() => this.viewModel.loadWorkOrders());
                 }
-                .width('100%').padding(40)
-                .alignItems(HorizontalAlign.Center)
+                .width('100%').padding(40).alignItems(HorizontalAlign.Center);
               }
             } else if (this.viewModel.filteredList.length === 0) {
               ListItem() {
                 Column({ space: 8 }) {
-                  Text('暂无工单').fontSize(16).fontColor('#666')
-                  Text('下拉刷新重试').fontSize(13).fontColor('#9A9AA8')
+                  Text('暂无工单').fontSize(16).fontColor('#5A5A6E');
+                  Text('下拉刷新或点击新增').fontSize(13).fontColor('#9A9AA8');
                 }
-                .width('100%').padding(40)
-                .alignItems(HorizontalAlign.Center)
+                .width('100%').padding(40).alignItems(HorizontalAlign.Center);
               }
             } else {
               ForEach(this.viewModel.filteredList, (wo: WorkOrderModel) => {
                 ListItem() {
-                  WorkOrderCard({
-                    workOrderCode: wo.code,
-                    status: wo.status,
-                    productName: wo.productName,
-                    planQty: wo.planQty,
-                    role: this.role,
-                    onCardClick: () => {
-                      const pageName = this.getDetailPageName(wo.status);
-                      const navParams: Record<string, Object> = { 'workOrderId': wo.id };
-                      this.pageStack.pushPathByName(pageName, navParams);
-                    },
-                    onDispatch: () => {
-                      const navParams: Record<string, Object> = { 'workOrderId': wo.id };
-                      this.pageStack.pushPathByName('PendingDetail', navParams);
+                  Column() {
+                    // wo-header: 工单号 + 状态标签
+                    Row() {
+                      Text(wo.code)
+                        .fontSize(14).fontWeight(700).fontColor('#1A1A2E');
+                      this.StatusBadge(wo.status);
                     }
-                  })
-                    .margin({ left: 16, right: 16, bottom: 8 })
+                    .width('100%')
+                    .justifyContent(FlexAlign.SpaceBetween)
+                    .margin({ bottom: 10 });
+
+                    // wo-product: 产品名 + 工序
+                    Text(wo.productName + (wo.processName ? ' · ' + wo.processName : ''))
+                      .fontSize(13).fontColor('#5A5A6E')
+                      .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
+                      .margin({ bottom: 12 });
+
+                    // wo-stats: 3 列统计
+                    Row({ space: 8 }) {
+                      this.StatItem('计划数量', `${wo.planQty} 件`);
+                      this.StatItem('工单类型', wo.type || '—');
+                      this.StatItem('操作员', wo.operatorName || '—');
+                    }
+                    .width('100%')
+                    .padding(10)
+                    .backgroundColor('#F5F7FA')
+                    .borderRadius(12)
+                    .margin({ bottom: 12 });
+
+                    // wo-footer: 时间 + 操作按钮
+                    Row() {
+                      Text(wo.createdAt || '')
+                        .fontSize(11).fontColor('#9A9AA8');
+                      this.WoButtons(wo);
+                    }
+                    .width('100%')
+                    .justifyContent(FlexAlign.SpaceBetween);
+                  }
+                  .padding(14)
+                  .backgroundColor(Color.White)
+                  .borderRadius(16)
+                  .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' });
                 }
-              }, (wo: WorkOrderModel) => wo.id.toString())
+                .margin({ left: 16, right: 16, bottom: 10 })
+                .onClick(() => {
+                  const p: Record<string, Object> = { 'workOrderId': wo.id };
+                  this.pageStack.pushPathByName(this.getDetailPageName(wo.status), p);
+                });
+              }, (wo: WorkOrderModel) => `${wo.id}`);
             }
           }
           .width('100%')
           .scrollBar(BarState.Off)
+          .edgeEffect(EdgeEffect.None);
         }
         .layoutWeight(1)
-        .onRefreshing(() => {
-          this.viewModel.loadWorkOrders();
-        })
+        .onRefreshing(() => { this.viewModel.loadWorkOrders(); });
       }
-      .width('100%')
-      .height('100%')
-      .backgroundColor('#F5F7FA')
+      .width('100%').height('100%')
+      .backgroundColor('#F5F7FA');
 
-      if (this.canCreate()) {
-        Button('+ 新增工单')
-          .fontSize(15)
-          .fontColor('#fff')
-          .backgroundColor('#1565C0')
-          .borderRadius(24)
-          .padding({ left: 20, right: 20, top: 10, bottom: 10 })
-          .shadow({ radius: 8, color: 'rgba(21,101,192,0.3)', offsetY: 4 })
-          .margin({ right: 16, bottom: 16 })
-          .onClick(() => {
-            this.pageStack.pushPathByName('WorkOrderAdd', undefined);
-          })
-      }
     }
-    .width('100%')
-    .height('100%')
+    .width('100%').height('100%');
+  }
+
+  @Builder
+  StatItem(label: string, value: string) {
+    Column() {
+      Text(value)
+        .fontSize(13).fontWeight(600).fontColor('#1A1A2E')
+        .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
+        .margin({ bottom: 2 });
+      Text(label)
+        .fontSize(10).fontColor('#5A5A6E');
+    }
+    .layoutWeight(1);
   }
 }
