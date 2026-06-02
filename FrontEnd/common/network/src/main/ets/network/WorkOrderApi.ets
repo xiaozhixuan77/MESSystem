@@ -1,7 +1,17 @@
 import { httpClient } from './HttpClient';
 
 export class WorkOrderApi {
-  static async getWorkOrders(params?: object): Promise<Object[]> { return httpClient.get('/workorders'); }
+  static async getWorkOrders(params?: Record<string, string | number>): Promise<Object[]> {
+    let path = '/workorders';
+    if (params) {
+      const qs = Object.keys(params)
+        .filter(k => params[k] !== undefined && params[k] !== null && params[k] !== '')
+        .map(k => `${k}=${encodeURIComponent(String(params[k]))}`)
+        .join('&');
+      if (qs) path += '?' + qs;
+    }
+    return httpClient.get<Object[]>(path);
+  }
   static async getWorkOrderDetail(id: number): Promise<Object> { return httpClient.get(`/workorders/${id}`); }
   static async createWorkOrder(data: object): Promise<Object> { return httpClient.post('/workorders', data); }
   static async updateWorkOrder(id: number, data: object): Promise<Object> { return httpClient.put(`/workorders/${id}`, data); }

@@ -4,24 +4,28 @@ import { WorkOrderModel } from '../Model/WorkOrderModel';
 @ObservedV2
 export class WorkOrderViewModel {
   @Trace workOrderList: WorkOrderModel[] = [];
-  @Trace currentWorkOrder: WorkOrderModel | null = null;
   @Trace isLoading: boolean = false;
-  @Trace statusFilter: string = '';
   @Trace errorMessage: string = '';
+  @Trace searchKeyword: string = '';
+  @Trace statusFilter: string = '';
+  @Trace typeFilter: string = '';
+  @Trace currentWorkOrder: WorkOrderModel | null = null;
 
-  async loadWorkOrders(role: string, filters?: object): Promise<void> {
+  get filteredList(): WorkOrderModel[] {
+    if (!this.searchKeyword) {
+      return this.workOrderList;
+    }
+    const kw = this.searchKeyword.toLowerCase();
+    return this.workOrderList.filter(wo => wo.code.toLowerCase().includes(kw));
+  }
+
+  async loadWorkOrders(): Promise<void> {
     this.isLoading = true;
+    this.errorMessage = '';
     try {
-      const params: Record<string, Object> = {};
-      params['role'] = role;
-      if (filters) {
-        const filterRecord = filters as Record<string, Object>;
-        const filterKeys = Object.keys(filterRecord);
-        for (let i = 0; i < filterKeys.length; i++) {
-          const key = filterKeys[i];
-          params[key] = filterRecord[key];
-        }
-      }
+      const params: Record<string, string | number> = {};
+      if (this.statusFilter) params['status'] = this.statusFilter;
+      if (this.typeFilter) params['type'] = this.typeFilter;
       this.workOrderList = await WorkOrderApi.getWorkOrders(params) as WorkOrderModel[];
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -32,8 +36,11 @@ export class WorkOrderViewModel {
 
   async loadDetail(id: number): Promise<void> {
     this.isLoading = true;
+    this.errorMessage = '';
     try {
       this.currentWorkOrder = await WorkOrderApi.getWorkOrderDetail(id) as WorkOrderModel;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
     } finally {
       this.isLoading = false;
     }
