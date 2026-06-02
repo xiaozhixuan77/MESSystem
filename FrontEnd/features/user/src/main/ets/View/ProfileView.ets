@@ -202,7 +202,7 @@ export struct ProfileView {
         }
         .width('100%')
         .backgroundColor('#0D47A1')
-        .padding({ top: 70, left: 16, right: 16, bottom: 24 });
+        .padding({ top: 16, left: 16, right: 16, bottom: 24 });
 
         // ===== 统计卡片 =====
         Row({ space: 10 }) {

@@ -106,7 +106,7 @@ export struct LoginView {
         }
         .justifyContent(FlexAlign.Center)
         .width('100%')
-        .margin({ top: 40, bottom: 40 });
+        .margin({ top: 16, bottom: 40 });
 
         // 登录卡片
         Column() {

@@ -153,7 +153,7 @@ export struct OperatorHomeView {
           .width('100%')
           .margin({ top: 16 });
         }
-        .padding({ left: 20, right: 20, top: 48, bottom: 20 })
+        .padding({ left: 20, right: 20, top: 16, bottom: 20 })
         .backgroundColor('#1565C0');
 
         // 内容区域
