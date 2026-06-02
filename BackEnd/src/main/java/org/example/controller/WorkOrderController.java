@@ -7,11 +7,13 @@ import org.example.dto.request.WorkOrderPauseRequest;
 import org.example.dto.request.WorkOrderReportRequest;
 import org.example.dto.request.WorkOrderScrapRequest;
 import org.example.dto.response.R;
+import org.example.entity.Process;
 import org.example.entity.Product;
 import org.example.entity.User;
 import org.example.entity.WorkOrder;
 import org.example.entity.WorkOrderRouteStep;
 import org.example.security.RequiresPermission;
+import org.example.service.ProcessService;
 import org.example.service.ProductService;
 import org.example.service.UserService;
 import org.example.service.WorkOrderRouteStepService;
@@ -35,15 +37,18 @@ public class WorkOrderController {
     private final WorkOrderService workOrderService;
     private final UserService userService;
     private final ProductService productService;
+    private final ProcessService processService;
     private final WorkOrderRouteStepService workOrderRouteStepService;
 
     public WorkOrderController(WorkOrderService workOrderService,
                                UserService userService,
                                ProductService productService,
+                               ProcessService processService,
                                WorkOrderRouteStepService workOrderRouteStepService) {
         this.workOrderService = workOrderService;
         this.userService = userService;
         this.productService = productService;
+        this.processService = processService;
         this.workOrderRouteStepService = workOrderRouteStepService;
     }
 
@@ -234,6 +239,12 @@ public class WorkOrderController {
             Product product = productService.getById(wo.getProductId());
             if (product != null) {
                 vo.setProductName(product.getName());
+            }
+        }
+        if (wo.getProcessId() != null) {
+            Process process = processService.getById(wo.getProcessId());
+            if (process != null) {
+                vo.setProcessName(process.getName());
             }
         }
         if (wo.getOperatorId() != null) {

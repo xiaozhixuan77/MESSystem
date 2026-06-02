@@ -22,4 +22,5 @@ public class WorkOrderDetailVO extends WorkOrderVO {
     private String createdByName;
     private Long sourceWorkorderId;
     private List<WorkOrderRouteStepVO> routeSteps;
+    private String processName;
 }
