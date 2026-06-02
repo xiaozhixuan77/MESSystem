@@ -217,6 +217,7 @@ public class WorkOrderController {
         vo.setPlanStartTime(wo.getPlanStartTime());
         vo.setPlanEndTime(wo.getPlanEndTime());
         vo.setCreatedAt(wo.getCreatedAt());
+        vo.setVersion(wo.getVersion());
 
         vo.setSource(wo.getSource());
         vo.setDispatchTime(wo.getDispatchTime());
