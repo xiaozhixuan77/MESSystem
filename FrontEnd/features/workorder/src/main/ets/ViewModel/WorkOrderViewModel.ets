@@ -1,9 +1,11 @@
-import { WorkOrderApi, WorkshopApi, ProductApi, LineApi } from '@ohos/network';
+import { WorkOrderApi, WorkshopApi, ProductApi, LineApi, UserApi } from '@ohos/network';
+import { UserModel } from '@ohos/user';
 import { WorkOrderModel } from '../Model/WorkOrderModel';
 import { WorkshopModel } from '../Model/WorkshopModel';
 import { ProductModel } from '../Model/ProductModel';
 import { ProcessStepModel } from '../Model/ProcessStepModel';
 import { LineModel } from '../Model/LineModel';
+import { WorkOrderRouteModel } from '../Model/WorkOrderRouteModel';
 
 @ObservedV2
 export class WorkOrderViewModel {
@@ -38,6 +40,16 @@ export class WorkOrderViewModel {
   @Trace formSourceWorkOrderCode: string = '';
   @Trace isSubmitting: boolean = false;
 
+  // —— 详情页状态 ——
+  @Trace operators: UserModel[] = [];
+  @Trace selectedOperatorId: number = 0;
+  @Trace pauseReason: string = '';
+  @Trace scrapReason: string = '';
+  @Trace reportFormGood: number = 0;
+  @Trace reportFormNg: number = 0;
+  @Trace reportFormHours: number = 0;
+  @Trace reportFormNote: string = '';
+
   get filteredList(): WorkOrderModel[] {
     if (!this.searchKeyword) {
       return this.workOrderList;
@@ -65,7 +77,47 @@ export class WorkOrderViewModel {
     this.isLoading = true;
     this.errorMessage = '';
     try {
-      this.currentWorkOrder = await WorkOrderApi.getWorkOrderDetail(id) as WorkOrderModel;
+      const raw = await WorkOrderApi.getWorkOrderDetail(id) as Record<string, Object>;
+      const wo = new WorkOrderModel();
+      wo.id = raw['id'] as number;
+      wo.code = raw['code'] as string;
+      wo.type = raw['type'] as string;
+      wo.workshopId = raw['workshopId'] as number;
+      wo.lineId = raw['lineId'] as number;
+      wo.productId = raw['productId'] as number;
+      wo.processId = raw['processId'] as number;
+      wo.planQty = raw['planQty'] as number;
+      wo.status = raw['status'] as string;
+      wo.operatorId = (raw['operatorId'] as number) ?? null;
+      wo.productName = (raw['productName'] as string) ?? '';
+      wo.operatorName = (raw['operatorName'] as string) ?? '';
+      wo.planStartTime = (raw['planStartTime'] as string) ?? '';
+      wo.planEndTime = (raw['planEndTime'] as string) ?? '';
+      wo.createdAt = (raw['createdAt'] as string) ?? '';
+      wo.version = raw['version'] as number;
+      wo.dispatchTime = (raw['dispatchTime'] as string) ?? '';
+      wo.actualStartTime = (raw['actualStartTime'] as string) ?? '';
+      wo.actualEndTime = (raw['actualEndTime'] as string) ?? '';
+      wo.reportedQtyGood = (raw['reportedQtyGood'] as number) ?? 0;
+      wo.reportedQtyNg = (raw['reportedQtyNg'] as number) ?? 0;
+      wo.reportedHours = (raw['reportedHours'] as number) ?? 0;
+      wo.exceptionNote = (raw['exceptionNote'] as string) ?? '';
+      wo.source = (raw['source'] as string) ?? '';
+      wo.createdByName = (raw['createdByName'] as string) ?? '';
+      wo.sourceWorkorderId = (raw['sourceWorkorderId'] as number) ?? 0;
+      wo.processName = (raw['processName'] as string) ?? '';
+      const stepsRaw = raw['routeSteps'] as Object[];
+      wo.routeSteps = (stepsRaw || []).map((s: Object) => {
+        const step = new WorkOrderRouteModel();
+        const r = s as Record<string, Object>;
+        step.id = r['id'] as number;
+        step.seqNo = r['seqNo'] as number;
+        step.opCode = r['opCode'] as string;
+        step.name = r['name'] as string;
+        step.stationId = (r['stationId'] as number) ?? null;
+        return step;
+      });
+      this.currentWorkOrder = wo;
     } catch (e) {
       this.errorMessage = (e as Error).message;
     } finally {
@@ -95,6 +147,138 @@ export class WorkOrderViewModel {
 
   get canConfirm(): boolean {
     return this.currentWorkOrder?.status === '已报工';
+  }
+
+  // ========== 详情页动作方法 ==========
+
+  async loadOperators(): Promise<void> {
+    try {
+      const params: Record<string, string> = { 'role': '操作员' };
+      const raw = await UserApi.getUsers(params) as Record<string, Object>[];
+      this.operators = raw.map((r: Record<string, Object>): UserModel => {
+        const u = new UserModel();
+        u.id = r['id'] as number;
+        u.employeeNo = r['employeeNo'] as string;
+        u.name = r['name'] as string;
+        u.role = r['role'] as string;
+        u.workshopId = (r['workshopId'] as number) ?? null;
+        u.teamId = (r['teamId'] as number) ?? null;
+        return u;
+      });
+      if (this.operators.length > 0 && this.selectedOperatorId === 0) {
+        this.selectedOperatorId = this.operators[0].id;
+      }
+    } catch (e) {
+      // 忽略加载失败
+    }
+  }
+
+  async dispatchWorkOrder(workOrderId: number): Promise<boolean> {
+    if (this.selectedOperatorId <= 0) {
+      this.errorMessage = '请选择操作员';
+      return false;
+    }
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    try {
+      await WorkOrderApi.dispatchWorkOrder(workOrderId, this.selectedOperatorId);
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async startWorkOrder(workOrderId: number): Promise<boolean> {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    try {
+      await WorkOrderApi.startWorkOrder(workOrderId);
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async pauseWorkOrder(workOrderId: number): Promise<boolean> {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    try {
+      await WorkOrderApi.pauseWorkOrder(workOrderId);
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async resumeWorkOrder(workOrderId: number): Promise<boolean> {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    try {
+      await WorkOrderApi.resumeWorkOrder(workOrderId);
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async reportWorkOrder(workOrderId: number): Promise<boolean> {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    try {
+      const data: Record<string, Object> = {
+        'good': this.reportFormGood,
+        'ng': this.reportFormNg,
+        'hours': this.reportFormHours,
+        'note': this.reportFormNote
+      };
+      await WorkOrderApi.reportWorkOrder(workOrderId, data);
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async confirmWorkOrder(workOrderId: number): Promise<boolean> {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    try {
+      await WorkOrderApi.confirmWorkOrder(workOrderId);
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async scrapWorkOrder(workOrderId: number): Promise<boolean> {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    try {
+      await WorkOrderApi.scrapWorkOrder(workOrderId);
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSubmitting = false;
+    }
   }
 
   // ========== 表单方法 ==========

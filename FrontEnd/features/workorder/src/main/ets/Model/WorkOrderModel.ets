@@ -1,3 +1,5 @@
+import { WorkOrderRouteModel } from './WorkOrderRouteModel';
+
 export class WorkOrderModel {
   id: number = 0;
   code: string = '';
@@ -15,4 +17,17 @@ export class WorkOrderModel {
   planEndTime: string = '';
   createdAt: string = '';
   version: number = 0;
+  // 详情扩展字段（WorkOrderDetailVO）
+  dispatchTime: string = '';
+  actualStartTime: string = '';
+  actualEndTime: string = '';
+  reportedQtyGood: number = 0;
+  reportedQtyNg: number = 0;
+  reportedHours: number = 0;
+  exceptionNote: string = '';
+  source: string = '';
+  createdByName: string = '';
+  sourceWorkorderId: number = 0;
+  routeSteps: WorkOrderRouteModel[] = [];
+  processName: string = '';
 }
