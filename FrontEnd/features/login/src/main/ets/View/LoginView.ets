@@ -58,7 +58,7 @@ export struct LoginView {
       await preferencesUtil.set('currentUser', JSON.stringify(userData));
     }
 
-    httpClient.configure(ApiConstants.BASE_URL, result.token);
+    httpClient.configure(ApiConstants.autoBaseUrl, result.token);
 
     if (userData) {
       const eventData: emitter.EventData = {
