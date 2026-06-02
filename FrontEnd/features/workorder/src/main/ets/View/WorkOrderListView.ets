@@ -7,7 +7,7 @@ interface StatusColor {
   bg: string;
 }
 
-const STATUS_TABS: string[] = ['全部', '待派工', '生产中', '已暂停', '待报工', '已完成'];
+const STATUS_TABS: string[] = ['全部', '待派工', '已派工', '生产中', '已暂停', '待报工', '已完成', '完工', '报废'];
 
 const STATUS_COLORS: Record<string, StatusColor> = {
   '待派工': { text: '#1565C0', bg: '#E3F2FD' } as StatusColor,
@@ -254,7 +254,8 @@ export struct WorkOrderListView {
                   .padding(14)
                   .backgroundColor(Color.White)
                   .borderRadius(16)
-                  .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' });
+                  .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
+                  .border({ width: 1, color: '#E8EBF0' });
                 }
                 .margin({ left: 16, right: 16, bottom: 10 })
                 .onClick(() => {

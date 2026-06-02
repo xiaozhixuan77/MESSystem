@@ -65,7 +65,9 @@ export class WorkOrderViewModel {
       const params: Record<string, string | number> = {};
       if (this.statusFilter) params['status'] = this.statusFilter;
       if (this.typeFilter) params['type'] = this.typeFilter;
-      this.workOrderList = await WorkOrderApi.getWorkOrders(params) as WorkOrderModel[];
+      const raw = await WorkOrderApi.getWorkOrders(params) as WorkOrderModel[];
+      raw.sort((a, b) => a.code.localeCompare(b.code));
+      this.workOrderList = raw;
     } catch (e) {
       this.errorMessage = (e as Error).message;
     } finally {
@@ -304,12 +306,9 @@ export class WorkOrderViewModel {
   }
 
   async searchProducts(keyword: string): Promise<void> {
-    if (!keyword || keyword.trim().length === 0) {
-      this.products = [];
-      return;
-    }
     try {
-      this.products = await ProductApi.getProducts(keyword.trim()) as ProductModel[];
+      const kw = keyword?.trim();
+      this.products = await ProductApi.getProducts(kw || undefined) as ProductModel[];
     } catch (e) {
       // 忽略加载失败
     }

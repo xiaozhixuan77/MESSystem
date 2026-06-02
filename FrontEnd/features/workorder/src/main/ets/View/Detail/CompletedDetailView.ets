@@ -107,7 +107,7 @@ export struct CompletedDetailView {
       .justifyContent(FlexAlign.Center);
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -165,7 +165,7 @@ export struct CompletedDetailView {
         .onChange((v: string) => { this.viewModel.reportFormNote = v; });
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -190,7 +190,7 @@ export struct CompletedDetailView {
       .width('100%').padding(12).backgroundColor('#F5F7FA').borderRadius(12);
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -203,7 +203,7 @@ export struct CompletedDetailView {
       this.LastTimelineItem('生产完成', this.viewModel.currentWorkOrder?.actualEndTime || '—', true);
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%');
   }
 

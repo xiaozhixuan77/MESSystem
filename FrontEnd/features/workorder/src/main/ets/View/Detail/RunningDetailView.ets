@@ -110,7 +110,7 @@ export struct RunningDetailView {
       .width('100%').justifyContent(FlexAlign.Center).margin({ top: 20 });
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -134,7 +134,7 @@ export struct RunningDetailView {
       .columnsTemplate('1fr 1fr').rowsGap(12).columnsGap(12).width('100%');
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -159,7 +159,7 @@ export struct RunningDetailView {
       .width('100%').padding(12).backgroundColor('#F5F7FA').borderRadius(12);
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -171,7 +171,7 @@ export struct RunningDetailView {
       this.LastTimelineItem('开始生产', this.viewModel.currentWorkOrder?.actualStartTime || '—', true);
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%');
   }
 

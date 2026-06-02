@@ -106,7 +106,7 @@ export struct PendingDetailView {
       .columnsTemplate('1fr 1fr').rowsGap(12).columnsGap(12).width('100%');
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -159,7 +159,7 @@ export struct PendingDetailView {
       }, (step: WorkOrderRouteModel, index: number) => `${step.seqNo}`);
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -218,7 +218,7 @@ export struct PendingDetailView {
       }
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%');
   }
 

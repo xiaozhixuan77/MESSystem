@@ -118,7 +118,7 @@ export struct AssignedDetailView {
       .border({ width: { top: 1 }, color: '#E8EBF0', style: BorderStyle.Dashed });
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -131,7 +131,7 @@ export struct AssignedDetailView {
       this.LastTimelineItem('开始生产', '等待操作员开始...', false);
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -203,7 +203,7 @@ export struct AssignedDetailView {
       .columnsTemplate('1fr 1fr').rowsGap(12).columnsGap(12).width('100%');
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
@@ -233,7 +233,7 @@ export struct AssignedDetailView {
       }, (step: WorkOrderRouteModel, index: number) => `${step.seqNo}`);
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
-    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
     .width('100%').margin({ bottom: 12 });
   }
 
