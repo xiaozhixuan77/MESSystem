@@ -68,6 +68,45 @@ export struct WorkOrderFormView {
       .textAlign(TextAlign.Start)
   }
 
+  @Builder
+  TypeMenu() {
+    Menu() {
+      MenuItem({ content: '试产' }).onClick(() => { this.viewModel.formType = '试产' })
+      MenuItem({ content: '量产' }).onClick(() => { this.viewModel.formType = '量产' })
+      MenuItem({ content: '返工' }).onClick(() => { this.viewModel.formType = '返工' })
+    }
+  }
+
+  @Builder
+  ProductMenu() {
+    Menu() {
+      ForEach(this.viewModel.products, (p: ProductModel) => {
+        MenuItem({ content: `${p.code} - ${p.name}` })
+          .onClick(() => { this.viewModel.selectProduct(p) })
+      })
+    }
+  }
+
+  @Builder
+  WorkshopMenu() {
+    Menu() {
+      ForEach(this.viewModel.workshops, (w: WorkshopModel) => {
+        MenuItem({ content: w.name })
+          .onClick(() => { this.viewModel.onWorkshopChange(w.id) })
+      })
+    }
+  }
+
+  @Builder
+  LineMenu() {
+    Menu() {
+      ForEach(this.viewModel.lines, (l: LineModel) => {
+        MenuItem({ content: l.name })
+          .onClick(() => { this.viewModel.formLineId = l.id })
+      })
+    }
+  }
+
   build() {
     Column() {
       // Header
@@ -147,11 +186,7 @@ export struct WorkOrderFormView {
             .border({ width: 1, color: '#E8EBF0' })
             .padding({ left: 12, right: 12 })
             .alignItems(VerticalAlign.Center)
-            .bindMenu([
-              MenuItem({ content: '试产' }).onClick(() => { this.viewModel.formType = '试产' }),
-              MenuItem({ content: '量产' }).onClick(() => { this.viewModel.formType = '量产' }),
-              MenuItem({ content: '返工' }).onClick(() => { this.viewModel.formType = '返工' }),
-            ])
+            .bindMenu(this.TypeMenu)
           }
           .padding(16)
           .borderRadius(16)
@@ -177,12 +212,7 @@ export struct WorkOrderFormView {
             .border({ width: 1, color: '#E8EBF0' })
             .padding({ left: 12, right: 12 })
             .alignItems(VerticalAlign.Center)
-            .bindMenu(
-              this.viewModel.products.map((p: ProductModel) =>
-                MenuItem({ content: `${p.code} - ${p.name}` })
-                  .onClick(() => { this.viewModel.selectProduct(p) })
-              )
-            )
+            .bindMenu(this.ProductMenu)
 
             if (this.viewModel.formProductName) {
               Blank().height(12)
@@ -316,12 +346,7 @@ export struct WorkOrderFormView {
             .border({ width: 1, color: '#E8EBF0' })
             .padding({ left: 12, right: 12 })
             .alignItems(VerticalAlign.Center)
-            .bindMenu(
-              this.viewModel.workshops.map((w: WorkshopModel) =>
-                MenuItem({ content: w.name })
-                  .onClick(() => { this.viewModel.onWorkshopChange(w.id) })
-              )
-            )
+            .bindMenu(this.WorkshopMenu)
 
             Blank().height(12)
 
@@ -342,12 +367,7 @@ export struct WorkOrderFormView {
             .border({ width: 1, color: '#E8EBF0' })
             .padding({ left: 12, right: 12 })
             .alignItems(VerticalAlign.Center)
-            .bindMenu(
-              this.viewModel.lines.map((l: LineModel) =>
-                MenuItem({ content: l.name })
-                  .onClick(() => { this.viewModel.formLineId = l.id })
-              )
-            )
+            .bindMenu(this.LineMenu)
           }
           .padding(16)
           .borderRadius(16)
