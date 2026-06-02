@@ -58,8 +58,10 @@ export class WorkOrderViewModel {
     return this.workOrderList.filter(wo => wo.code.toLowerCase().includes(kw));
   }
 
-  async loadWorkOrders(): Promise<void> {
-    this.isLoading = true;
+  async loadWorkOrders(silent?: boolean): Promise<void> {
+    if (!silent) {
+      this.isLoading = true;
+    }
     this.errorMessage = '';
     try {
       const params: Record<string, string | number> = {};
@@ -69,9 +71,13 @@ export class WorkOrderViewModel {
       raw.sort((a, b) => a.code.localeCompare(b.code));
       this.workOrderList = raw;
     } catch (e) {
-      this.errorMessage = (e as Error).message;
+      if (!silent) {
+        this.errorMessage = (e as Error).message;
+      }
     } finally {
-      this.isLoading = false;
+      if (!silent) {
+        this.isLoading = false;
+      }
     }
   }
 

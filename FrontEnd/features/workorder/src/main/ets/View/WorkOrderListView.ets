@@ -27,6 +27,7 @@ export struct WorkOrderListView {
   @Param role: string = '';
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local searchText: string = '';
+  private hasAppeared: boolean = false;
 
   aboutToAppear(): void {
     this.viewModel.loadWorkOrders();
@@ -276,6 +277,12 @@ export struct WorkOrderListView {
       .backgroundColor('#F5F7FA');
 
     }
+    .onAppear(() => {
+      if (this.hasAppeared) {
+        this.viewModel.loadWorkOrders(true); // 静默刷新
+      }
+      this.hasAppeared = true;
+    })
     .width('100%').height('100%');
   }
 
