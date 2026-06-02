@@ -1,20 +1,21 @@
-# 构建阶段
-FROM eclipse-temurin:17-jdk-alpine AS builder
+# 构建阶段 — Maven 镜像内置 JDK+Maven，无需 apk add
+FROM maven:3.9-eclipse-temurin-17-alpine AS builder
 WORKDIR /app
 
-RUN apk add --no-cache maven
+# 先缓存依赖（源码变更时此层不变，跳过依赖下载）
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:go-offline -B
 
+# 编译（使用缓存 Maven repo + 跳过测试）
 COPY src ./src
-# 编译（测试应在 CI 流水线中先于镜像构建执行）
-RUN mvn clean package -DskipTests -B
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -DskipTests -B
 
 # 运行阶段
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# curl 用于健康检查
 RUN apk add --no-cache curl && \
     addgroup -S app && \
     adduser -S app -G app
