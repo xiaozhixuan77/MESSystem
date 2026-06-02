@@ -5,6 +5,7 @@ import org.example.dto.request.WorkOrderCreateRequest;
 import org.example.dto.request.WorkOrderUpdateRequest;
 import org.example.dto.request.WorkOrderPauseRequest;
 import org.example.dto.request.WorkOrderReportRequest;
+import org.example.dto.request.WorkOrderScrapRequest;
 import org.example.dto.response.R;
 import org.example.entity.Product;
 import org.example.entity.User;
@@ -160,8 +161,10 @@ public class WorkOrderController {
 
     @PostMapping("/workorders/{id}/scrap")
     @RequiresPermission("workorder.scrap")
-    public R<Void> scrap(@PathVariable Long id) {
-        workOrderService.scrap(id);
+    public R<Void> scrap(@PathVariable Long id,
+                         @RequestBody(required = false) WorkOrderScrapRequest request) {
+        String reason = request != null ? request.getReason() : null;
+        workOrderService.scrap(id, reason);
         return R.ok();
     }
 

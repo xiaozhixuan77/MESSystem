@@ -33,5 +33,5 @@ public interface WorkOrderService extends IService<WorkOrder> {
 
     void confirm(Long workOrderId);
 
-    void scrap(Long workOrderId);
+    void scrap(Long workOrderId, String reason);
 }

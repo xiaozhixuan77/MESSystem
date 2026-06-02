@@ -250,7 +250,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
 
         Long currentUserId = getCurrentUserId();
-        if (!wo.getOperatorId().equals(currentUserId)) {
+        if (currentUserId == null || !wo.getOperatorId().equals(currentUserId)) {
             throw new BusinessException(403, "只有被指派的操作员才能开工");
         }
 
@@ -289,7 +289,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
 
         if (reason != null && !reason.isEmpty()) {
-            wo.setExceptionNote(reason);
+            String existing = wo.getExceptionNote();
+            wo.setExceptionNote(existing != null ? existing + "; " + reason : reason);
         }
         wo.setStatus("暂停中");
         updateById(wo);
@@ -335,7 +336,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         wo.setReportedQtyNg(request.getNg());
         wo.setReportedHours(request.getHours());
         if (request.getNote() != null && !request.getNote().isEmpty()) {
-            wo.setExceptionNote(request.getNote());
+            String existing = wo.getExceptionNote();
+            wo.setExceptionNote(existing != null ? existing + "; " + request.getNote() : request.getNote());
         }
         updateById(wo);
     }
@@ -373,7 +375,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void scrap(Long workOrderId) {
+    public void scrap(Long workOrderId, String reason) {
         WorkOrder wo = lambdaQuery()
                 .eq(WorkOrder::getId, workOrderId)
                 .last("FOR UPDATE")
@@ -385,6 +387,10 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             throw new BusinessException(400, "只有\"暂停中\"或\"已报工\"状态才能报废");
         }
 
+        if (reason != null && !reason.isEmpty()) {
+            String existing = wo.getExceptionNote();
+            wo.setExceptionNote(existing != null ? existing + "; " + reason : reason);
+        }
         wo.setStatus("报废");
         wo.setActualEndTime(LocalDateTime.now());
         updateById(wo);
