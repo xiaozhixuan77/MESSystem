@@ -3,7 +3,7 @@ import { InspectionListView, InspectionDetailView, DashboardView } from '@ohos/q
 
 @ComponentV2
 export struct DataTabDestination {
-  @Local dataStack: NavPathStack = new NavPathStack();
+  @Provider('pageStack') dataStack: NavPathStack = new NavPathStack();
 
   @Builder
   PageMap(name: string) {

@@ -13,7 +13,7 @@ import {
 
 @ComponentV2
 export struct WorkOrderTabDestination {
-  @Local workOrderStack: NavPathStack = new NavPathStack();
+  @Provider('pageStack') workOrderStack: NavPathStack = new NavPathStack();
   @Consumer('currentRole') currentRole: string = '';
 
   @Builder
