@@ -3,6 +3,7 @@ package org.example.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -150,6 +151,7 @@ public class WorkOrder implements Serializable {
     /**
      * 乐观锁版本号
      */
+    @Version
     private Integer version;
 
     /**

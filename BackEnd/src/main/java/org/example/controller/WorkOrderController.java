@@ -184,6 +184,7 @@ public class WorkOrderController {
         vo.setPlanStartTime(wo.getPlanStartTime());
         vo.setPlanEndTime(wo.getPlanEndTime());
         vo.setCreatedAt(wo.getCreatedAt());
+        vo.setVersion(wo.getVersion());
 
         if (wo.getProductId() != null) {
             Product product = productMap.get(wo.getProductId());

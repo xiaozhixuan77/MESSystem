@@ -159,6 +159,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             throw new BusinessException(400, "仅待派工状态的工单可修改");
         }
 
+        wo.setVersion(request.getVersion());
+
         if (request.getType() != null) {
             if (!VALID_TYPES.contains(request.getType())) {
                 throw new BusinessException(400, "工单类型必须为: 试产/量产/返工");

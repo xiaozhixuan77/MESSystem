@@ -1,5 +1,6 @@
 package org.example.dto.request;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -13,4 +14,7 @@ public class WorkOrderUpdateRequest {
     private Integer planQty;
     private LocalDateTime planStartTime;
     private LocalDateTime planEndTime;
+
+    @NotNull(message = "版本号不能为空")
+    private Integer version;
 }

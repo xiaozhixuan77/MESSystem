@@ -21,4 +21,5 @@ public class WorkOrderVO {
     private LocalDateTime planStartTime;
     private LocalDateTime planEndTime;
     private LocalDateTime createdAt;
+    private Integer version;
 }
