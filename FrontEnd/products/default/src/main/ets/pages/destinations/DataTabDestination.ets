@@ -7,31 +7,32 @@ export struct DataTabDestination {
 
   @Builder
   PageMap(name: string) {
-    if (name === 'LineList') {
-      LineListView()
-    } else if (name === 'LineDetail') {
-      LineDetailView()
-    } else if (name === 'StationDetail') {
-      StationDetailView()
-    } else if (name === 'InspectionList') {
-      InspectionListView()
-    } else if (name === 'InspectionDetail') {
-      InspectionDetailView()
-    } else if (name === 'Dashboard') {
-      DashboardView()
+    NavDestination() {
+      if (name === 'LineList') {
+        LineListView()
+      } else if (name === 'LineDetail') {
+        LineDetailView()
+      } else if (name === 'StationDetail') {
+        StationDetailView()
+      } else if (name === 'InspectionList') {
+        InspectionListView()
+      } else if (name === 'InspectionDetail') {
+        InspectionDetailView()
+      } else if (name === 'Dashboard') {
+        DashboardView()
+      }
     }
+    .hideTitleBar(true)
   }
 
   build() {
     NavDestination() {
       Navigation(this.dataStack) {
-        Stack() {}
+        LineListView()
       }
       .navDestination(this.PageMap)
       .hideTitleBar(true)
-      .onAppear(() => {
-        this.dataStack.replacePath({ name: 'LineList' });
-      })
     }
+    .hideTitleBar(true)
   }
 }

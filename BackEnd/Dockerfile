@@ -7,6 +7,7 @@ COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
 COPY src ./src
+# 编译（测试应在 CI 流水线中先于镜像构建执行）
 RUN mvn clean package -DskipTests -B
 
 # 运行阶段

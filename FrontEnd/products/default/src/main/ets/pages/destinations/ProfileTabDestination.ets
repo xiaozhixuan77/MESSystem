@@ -6,23 +6,24 @@ export struct ProfileTabDestination {
 
   @Builder
   PageMap(name: string) {
-    if (name === 'Profile') {
-      ProfileView()
-    } else if (name === 'EmployeeList') {
-      EmployeeListView()
+    NavDestination() {
+      if (name === 'Profile') {
+        ProfileView()
+      } else if (name === 'EmployeeList') {
+        EmployeeListView()
+      }
     }
+    .hideTitleBar(true)
   }
 
   build() {
     NavDestination() {
       Navigation(this.profileStack) {
-        Stack() {}
+        ProfileView()
       }
       .navDestination(this.PageMap)
       .hideTitleBar(true)
-      .onAppear(() => {
-        this.profileStack.replacePath({ name: 'Profile' });
-      })
     }
+    .hideTitleBar(true)
   }
 }

@@ -20,7 +20,13 @@ struct Index {
   @Provider('currentRole') currentRole: string = '';
   @Local targetPage: string = '';
   @Local isReady: boolean = false;
+  @Local activeTab: string = 'HomeTab';
   private windowChangeCallback?: (size: window.Size) => void;
+
+  switchTab(tab: string): void {
+    this.activeTab = tab;
+    this.pageStack.replacePath({ name: tab });
+  }
 
   @Builder
   PageMap(name: string) {
@@ -62,6 +68,7 @@ struct Index {
     // 登录过期监听
     emitter.on(LOGIN_EXPIRED_EVENT, () => {
       this.showTabBar = false;
+      this.activeTab = 'HomeTab';
       this.pageStack.replacePath({ name: 'LoginPage' });
     });
 
@@ -192,59 +199,141 @@ struct Index {
   @Builder
   Sidebar() {
     Column() {
-      Button('工作台')
-        .width('100%')
-        .height(this.currentBreakpoint === 'md' ? 80 : 90)
-        .fontSize(this.currentBreakpoint === 'md' ? 14 : 16)
-        .onClick(() => this.pageStack.replacePath({ name: 'HomeTab' }))
+      // 工作台
+      Column() {
+        Image(this.activeTab === 'HomeTab' ? $r('app.media.tab_home_active') : $r('app.media.tab_home_inactive'))
+          .width(24)
+          .height(24);
+        Text('工作台')
+          .fontSize(this.currentBreakpoint === 'md' ? 12 : 14)
+          .fontColor(this.activeTab === 'HomeTab' ? '#1565C0' : 'rgba(255,255,255,0.7)')
+          .margin({ top: 4 });
+      }
+      .width('100%')
+      .height(this.currentBreakpoint === 'md' ? 80 : 90)
+      .justifyContent(FlexAlign.Center)
+      .onClick(() => this.switchTab('HomeTab'));
 
-      Button('数据')
-        .width('100%')
-        .height(this.currentBreakpoint === 'md' ? 80 : 90)
-        .fontSize(this.currentBreakpoint === 'md' ? 14 : 16)
-        .onClick(() => this.pageStack.replacePath({ name: 'DataTab' }))
+      // 数据
+      Column() {
+        Image(this.activeTab === 'DataTab' ? $r('app.media.tab_data_active') : $r('app.media.tab_data_inactive'))
+          .width(24)
+          .height(24);
+        Text('数据')
+          .fontSize(this.currentBreakpoint === 'md' ? 12 : 14)
+          .fontColor(this.activeTab === 'DataTab' ? '#1565C0' : 'rgba(255,255,255,0.7)')
+          .margin({ top: 4 });
+      }
+      .width('100%')
+      .height(this.currentBreakpoint === 'md' ? 80 : 90)
+      .justifyContent(FlexAlign.Center)
+      .onClick(() => this.switchTab('DataTab'));
 
-      Button('工单')
-        .width('100%')
-        .height(this.currentBreakpoint === 'md' ? 80 : 90)
-        .fontSize(this.currentBreakpoint === 'md' ? 14 : 16)
-        .onClick(() => this.pageStack.replacePath({ name: 'WorkOrderTab' }))
+      // 工单
+      Column() {
+        Image(this.activeTab === 'WorkOrderTab' ? $r('app.media.tab_workorder_active') : $r('app.media.tab_workorder_inactive'))
+          .width(24)
+          .height(24);
+        Text('工单')
+          .fontSize(this.currentBreakpoint === 'md' ? 12 : 14)
+          .fontColor(this.activeTab === 'WorkOrderTab' ? '#1565C0' : 'rgba(255,255,255,0.7)')
+          .margin({ top: 4 });
+      }
+      .width('100%')
+      .height(this.currentBreakpoint === 'md' ? 80 : 90)
+      .justifyContent(FlexAlign.Center)
+      .onClick(() => this.switchTab('WorkOrderTab'));
 
-      Button('我的')
-        .width('100%')
-        .height(this.currentBreakpoint === 'md' ? 80 : 90)
-        .fontSize(this.currentBreakpoint === 'md' ? 14 : 16)
-        .onClick(() => this.pageStack.replacePath({ name: 'ProfileTab' }))
+      // 我的
+      Column() {
+        Image(this.activeTab === 'ProfileTab' ? $r('app.media.tab_profile_active') : $r('app.media.tab_profile_inactive'))
+          .width(24)
+          .height(24);
+        Text('我的')
+          .fontSize(this.currentBreakpoint === 'md' ? 12 : 14)
+          .fontColor(this.activeTab === 'ProfileTab' ? '#1565C0' : 'rgba(255,255,255,0.7)')
+          .margin({ top: 4 });
+      }
+      .width('100%')
+      .height(this.currentBreakpoint === 'md' ? 80 : 90)
+      .justifyContent(FlexAlign.Center)
+      .onClick(() => this.switchTab('ProfileTab'));
     }
     .width(this.currentBreakpoint === 'md' ? 120 : 160)
     .height('100%')
-    .backgroundColor('rgba(0,0,0,0.6)')
+    .backgroundColor('rgba(0,0,0,0.6)');
   }
 
   @Builder
   BottomTabBar() {
     Row() {
-      Button('工作台')
-        .layoutWeight(1)
-        .height(56)
-        .onClick(() => this.pageStack.replacePath({ name: 'HomeTab' }))
+      // 工作台
+      Column() {
+        Image(this.activeTab === 'HomeTab' ? $r('app.media.tab_home_active') : $r('app.media.tab_home_inactive'))
+          .width(22)
+          .height(22);
+        Text('工作台')
+          .fontSize(10)
+          .fontWeight(500)
+          .fontColor(this.activeTab === 'HomeTab' ? '#1565C0' : '#9A9AA8')
+          .margin({ top: 3 });
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Center)
+      .justifyContent(FlexAlign.Center)
+      .onClick(() => this.switchTab('HomeTab'));
 
-      Button('数据')
-        .layoutWeight(1)
-        .height(56)
-        .onClick(() => this.pageStack.replacePath({ name: 'DataTab' }))
+      // 数据
+      Column() {
+        Image(this.activeTab === 'DataTab' ? $r('app.media.tab_data_active') : $r('app.media.tab_data_inactive'))
+          .width(22)
+          .height(22);
+        Text('数据')
+          .fontSize(10)
+          .fontWeight(500)
+          .fontColor(this.activeTab === 'DataTab' ? '#1565C0' : '#9A9AA8')
+          .margin({ top: 3 });
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Center)
+      .justifyContent(FlexAlign.Center)
+      .onClick(() => this.switchTab('DataTab'));
 
-      Button('工单')
-        .layoutWeight(1)
-        .height(56)
-        .onClick(() => this.pageStack.replacePath({ name: 'WorkOrderTab' }))
+      // 工单
+      Column() {
+        Image(this.activeTab === 'WorkOrderTab' ? $r('app.media.tab_workorder_active') : $r('app.media.tab_workorder_inactive'))
+          .width(22)
+          .height(22);
+        Text('工单')
+          .fontSize(10)
+          .fontWeight(500)
+          .fontColor(this.activeTab === 'WorkOrderTab' ? '#1565C0' : '#9A9AA8')
+          .margin({ top: 3 });
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Center)
+      .justifyContent(FlexAlign.Center)
+      .onClick(() => this.switchTab('WorkOrderTab'));
 
-      Button('我的')
-        .layoutWeight(1)
-        .height(56)
-        .onClick(() => this.pageStack.replacePath({ name: 'ProfileTab' }))
+      // 我的
+      Column() {
+        Image(this.activeTab === 'ProfileTab' ? $r('app.media.tab_profile_active') : $r('app.media.tab_profile_inactive'))
+          .width(22)
+          .height(22);
+        Text('我的')
+          .fontSize(10)
+          .fontWeight(500)
+          .fontColor(this.activeTab === 'ProfileTab' ? '#1565C0' : '#9A9AA8')
+          .margin({ top: 3 });
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Center)
+      .justifyContent(FlexAlign.Center)
+      .onClick(() => this.switchTab('ProfileTab'));
     }
     .width('100%')
-    .backgroundColor('rgba(0,0,0,0.4)')
+    .backgroundColor(Color.White)
+    .border({ width: { top: 1 }, color: '#E8EBF0' })
+    .padding({ top: 8, bottom: 28 });
   }
 }
