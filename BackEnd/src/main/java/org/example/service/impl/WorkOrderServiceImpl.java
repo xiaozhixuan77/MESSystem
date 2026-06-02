@@ -2,23 +2,29 @@ package org.example.service.impl;
 
 import org.example.dto.request.WorkOrderCreateRequest;
 import org.example.dto.request.WorkOrderUpdateRequest;
+import org.example.dto.request.WorkOrderReportRequest;
 import org.example.entity.ProcessStep;
 import org.example.entity.Product;
+import org.example.entity.ProductionLine;
 import org.example.entity.WorkOrder;
 import org.example.entity.WorkOrderRouteStep;
 import org.example.exception.BusinessException;
 import org.example.mapper.WorkOrderMapper;
 import org.example.service.ProcessStepService;
 import org.example.service.ProductService;
+import org.example.service.ProductionLineService;
 import org.example.service.WorkOrderRouteStepService;
 import org.example.service.WorkOrderService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,15 +37,18 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final ProductService productService;
     private final ProcessStepService processStepService;
     private final WorkOrderRouteStepService workOrderRouteStepService;
+    private final ProductionLineService productionLineService;
     private final TransactionTemplate transactionTemplate;
 
     public WorkOrderServiceImpl(ProductService productService,
                                 ProcessStepService processStepService,
                                 WorkOrderRouteStepService workOrderRouteStepService,
+                                ProductionLineService productionLineService,
                                 TransactionTemplate transactionTemplate) {
         this.productService = productService;
         this.processStepService = processStepService;
         this.workOrderRouteStepService = workOrderRouteStepService;
+        this.productionLineService = productionLineService;
         this.transactionTemplate = transactionTemplate;
     }
 
@@ -201,6 +210,215 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             throw new BusinessException(404, "工单不存在");
         }
         return wo;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void dispatch(Long workOrderId, Long operatorId) {
+        WorkOrder wo = lambdaQuery()
+                .eq(WorkOrder::getId, workOrderId)
+                .last("FOR UPDATE")
+                .one();
+        if (wo == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+        if (!"待派工".equals(wo.getStatus())) {
+            throw new BusinessException(400, "只允许在\"待派工\"状态进行派工");
+        }
+        if (hasActiveWorkOrder(operatorId)) {
+            throw new BusinessException(400, "该操作员已持有激活工单");
+        }
+
+        wo.setStatus("已派工");
+        wo.setOperatorId(operatorId);
+        wo.setDispatchTime(LocalDateTime.now());
+        updateById(wo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void start(Long workOrderId) {
+        WorkOrder wo = lambdaQuery()
+                .eq(WorkOrder::getId, workOrderId)
+                .last("FOR UPDATE")
+                .one();
+        if (wo == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+        if (!"已派工".equals(wo.getStatus())) {
+            throw new BusinessException(400, "工单未派工");
+        }
+
+        Long currentUserId = getCurrentUserId();
+        if (!wo.getOperatorId().equals(currentUserId)) {
+            throw new BusinessException(403, "只有被指派的操作员才能开工");
+        }
+
+        ProductionLine line = productionLineService.lambdaQuery()
+                .eq(ProductionLine::getId, wo.getLineId())
+                .last("FOR UPDATE")
+                .one();
+        if (line == null) {
+            throw new BusinessException(404, "产线不存在");
+        }
+        if (!"空闲".equals(line.getStatus())) {
+            throw new BusinessException(400, "产线不是空闲状态");
+        }
+
+        wo.setStatus("生产中");
+        wo.setActualStartTime(LocalDateTime.now());
+        updateById(wo);
+
+        line.setStatus("生产中");
+        line.setCurrentWorkorderId(workOrderId);
+        productionLineService.updateById(line);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void pause(Long workOrderId, String reason) {
+        WorkOrder wo = lambdaQuery()
+                .eq(WorkOrder::getId, workOrderId)
+                .last("FOR UPDATE")
+                .one();
+        if (wo == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+        if (!"生产中".equals(wo.getStatus())) {
+            throw new BusinessException(400, "只有\"生产中\"状态才能暂停");
+        }
+
+        if (reason != null && !reason.isEmpty()) {
+            wo.setExceptionNote(reason);
+        }
+        wo.setStatus("暂停中");
+        updateById(wo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resume(Long workOrderId) {
+        WorkOrder wo = lambdaQuery()
+                .eq(WorkOrder::getId, workOrderId)
+                .last("FOR UPDATE")
+                .one();
+        if (wo == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+        if (!"暂停中".equals(wo.getStatus())) {
+            throw new BusinessException(400, "只有\"暂停中\"状态才能恢复");
+        }
+
+        wo.setStatus("生产中");
+        updateById(wo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void report(Long workOrderId, WorkOrderReportRequest request) {
+        WorkOrder wo = lambdaQuery()
+                .eq(WorkOrder::getId, workOrderId)
+                .last("FOR UPDATE")
+                .one();
+        if (wo == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+        if (!"生产完成".equals(wo.getStatus())) {
+            throw new BusinessException(400, "只有\"生产完成\"状态才能报工");
+        }
+        if (request.getGood() + request.getNg() > wo.getPlanQty()) {
+            throw new BusinessException(400, "良品+NG不能超过计划数量");
+        }
+
+        wo.setStatus("已报工");
+        wo.setReportedQtyGood(request.getGood());
+        wo.setReportedQtyNg(request.getNg());
+        wo.setReportedHours(request.getHours());
+        if (request.getNote() != null && !request.getNote().isEmpty()) {
+            wo.setExceptionNote(request.getNote());
+        }
+        updateById(wo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void confirm(Long workOrderId) {
+        WorkOrder wo = lambdaQuery()
+                .eq(WorkOrder::getId, workOrderId)
+                .last("FOR UPDATE")
+                .one();
+        if (wo == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+        if (!"已报工".equals(wo.getStatus())) {
+            throw new BusinessException(400, "只有\"已报工\"状态才能确认完工");
+        }
+
+        wo.setStatus("完工");
+        wo.setActualEndTime(LocalDateTime.now());
+        updateById(wo);
+
+        if (wo.getLineId() != null) {
+            ProductionLine line = productionLineService.lambdaQuery()
+                    .eq(ProductionLine::getId, wo.getLineId())
+                    .last("FOR UPDATE")
+                    .one();
+            if (line != null && workOrderId.equals(line.getCurrentWorkorderId())) {
+                line.setStatus("空闲");
+                line.setCurrentWorkorderId(null);
+                productionLineService.updateById(line);
+            }
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void scrap(Long workOrderId) {
+        WorkOrder wo = lambdaQuery()
+                .eq(WorkOrder::getId, workOrderId)
+                .last("FOR UPDATE")
+                .one();
+        if (wo == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+        if (!"暂停中".equals(wo.getStatus()) && !"已报工".equals(wo.getStatus())) {
+            throw new BusinessException(400, "只有\"暂停中\"或\"已报工\"状态才能报废");
+        }
+
+        wo.setStatus("报废");
+        wo.setActualEndTime(LocalDateTime.now());
+        updateById(wo);
+
+        if (wo.getLineId() != null) {
+            ProductionLine line = productionLineService.lambdaQuery()
+                    .eq(ProductionLine::getId, wo.getLineId())
+                    .last("FOR UPDATE")
+                    .one();
+            if (line != null && workOrderId.equals(line.getCurrentWorkorderId())) {
+                line.setStatus("空闲");
+                line.setCurrentWorkorderId(null);
+                productionLineService.updateById(line);
+            }
+        }
+    }
+
+    private boolean hasActiveWorkOrder(Long operatorId) {
+        return lambdaQuery()
+                .eq(WorkOrder::getOperatorId, operatorId)
+                .in(WorkOrder::getStatus, "生产中", "暂停中")
+                .exists();
+    }
+
+    private Long getCurrentUserId() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UserDetails userDetails) {
+            return Long.valueOf(userDetails.getUsername());
+        }
+        return null;
     }
 
     private WorkOrder doCreateWorkOrder(WorkOrderCreateRequest request, Long createdBy) {

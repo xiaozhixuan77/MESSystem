@@ -1,7 +1,10 @@
 package org.example.controller;
 
+import org.example.dto.request.DispatchRequest;
 import org.example.dto.request.WorkOrderCreateRequest;
 import org.example.dto.request.WorkOrderUpdateRequest;
+import org.example.dto.request.WorkOrderPauseRequest;
+import org.example.dto.request.WorkOrderReportRequest;
 import org.example.dto.response.R;
 import org.example.entity.Product;
 import org.example.entity.User;
@@ -107,6 +110,59 @@ public class WorkOrderController {
     public R<WorkOrderDetailVO> detail(@PathVariable Long id) {
         WorkOrder wo = workOrderService.getWorkOrderDetail(id);
         return R.ok(toWorkOrderDetailVO(wo));
+    }
+
+    @PostMapping("/workorders/{id}/dispatch")
+    @RequiresPermission("workorder.dispatch")
+    public R<Void> dispatch(@PathVariable Long id,
+                            @Valid @RequestBody DispatchRequest request) {
+        workOrderService.dispatch(id, request.getOperatorId());
+        return R.ok();
+    }
+
+    @PostMapping("/workorders/{id}/start")
+    @RequiresPermission("workorder.start")
+    public R<Void> start(@PathVariable Long id) {
+        workOrderService.start(id);
+        return R.ok();
+    }
+
+    @PostMapping("/workorders/{id}/pause")
+    @RequiresPermission("workorder.pause")
+    public R<Void> pause(@PathVariable Long id,
+                         @RequestBody(required = false) WorkOrderPauseRequest request) {
+        String reason = request != null ? request.getReason() : null;
+        workOrderService.pause(id, reason);
+        return R.ok();
+    }
+
+    @PostMapping("/workorders/{id}/resume")
+    @RequiresPermission("workorder.resume")
+    public R<Void> resume(@PathVariable Long id) {
+        workOrderService.resume(id);
+        return R.ok();
+    }
+
+    @PostMapping("/workorders/{id}/report")
+    @RequiresPermission("workorder.report")
+    public R<Void> report(@PathVariable Long id,
+                          @Valid @RequestBody WorkOrderReportRequest request) {
+        workOrderService.report(id, request);
+        return R.ok();
+    }
+
+    @PostMapping("/workorders/{id}/confirm")
+    @RequiresPermission("workorder.confirm")
+    public R<Void> confirm(@PathVariable Long id) {
+        workOrderService.confirm(id);
+        return R.ok();
+    }
+
+    @PostMapping("/workorders/{id}/scrap")
+    @RequiresPermission("workorder.scrap")
+    public R<Void> scrap(@PathVariable Long id) {
+        workOrderService.scrap(id);
+        return R.ok();
     }
 
     private WorkOrderVO toWorkOrderVO(WorkOrder wo, Map<Long, Product> productMap,

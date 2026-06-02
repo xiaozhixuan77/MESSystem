@@ -2,6 +2,7 @@ package org.example.service;
 
 import org.example.dto.request.WorkOrderCreateRequest;
 import org.example.dto.request.WorkOrderUpdateRequest;
+import org.example.dto.request.WorkOrderReportRequest;
 import org.example.entity.WorkOrder;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -19,4 +20,18 @@ public interface WorkOrderService extends IService<WorkOrder> {
     WorkOrder updateWorkOrder(Long id, WorkOrderUpdateRequest request);
 
     WorkOrder getWorkOrderDetail(Long id);
+
+    void dispatch(Long workOrderId, Long operatorId);
+
+    void start(Long workOrderId);
+
+    void pause(Long workOrderId, String reason);
+
+    void resume(Long workOrderId);
+
+    void report(Long workOrderId, WorkOrderReportRequest request);
+
+    void confirm(Long workOrderId);
+
+    void scrap(Long workOrderId);
 }
