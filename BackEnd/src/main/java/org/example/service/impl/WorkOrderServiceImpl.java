@@ -14,8 +14,10 @@ import org.example.service.WorkOrderRouteStepService;
 import org.example.service.WorkOrderService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,17 +26,21 @@ import java.util.stream.Collectors;
 public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder> implements WorkOrderService {
 
     private static final List<String> VALID_TYPES = List.of("试产", "量产", "返工");
+    private static final int MAX_RETRY = 3;
 
     private final ProductService productService;
     private final ProcessStepService processStepService;
     private final WorkOrderRouteStepService workOrderRouteStepService;
+    private final TransactionTemplate transactionTemplate;
 
     public WorkOrderServiceImpl(ProductService productService,
                                 ProcessStepService processStepService,
-                                WorkOrderRouteStepService workOrderRouteStepService) {
+                                WorkOrderRouteStepService workOrderRouteStepService,
+                                TransactionTemplate transactionTemplate) {
         this.productService = productService;
         this.processStepService = processStepService;
         this.workOrderRouteStepService = workOrderRouteStepService;
+        this.transactionTemplate = transactionTemplate;
     }
 
     @Override
@@ -63,39 +69,17 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     }
 
     @Override
-    @Transactional
     public WorkOrder createWorkOrder(WorkOrderCreateRequest request, Long createdBy) {
-        if (!VALID_TYPES.contains(request.getType())) {
-            throw new BusinessException(400, "工单类型必须为: 试产/量产/返工");
+        for (int attempt = 0; ; attempt++) {
+            try {
+                return transactionTemplate.execute(status ->
+                        doCreateWorkOrder(request, createdBy));
+            } catch (DuplicateKeyException e) {
+                if (attempt >= MAX_RETRY - 1) {
+                    throw new BusinessException(409, "工单号冲突，请重试");
+                }
+            }
         }
-
-        Product product = productService.getById(request.getProductId());
-        if (product == null) {
-            throw new BusinessException(400, "产品不存在");
-        }
-        if (product.getDefaultProcessId() == null) {
-            throw new BusinessException(400, "该产品未配置默认工艺");
-        }
-
-        WorkOrder wo = new WorkOrder();
-        wo.setCode(generateWorkOrderCode());
-        wo.setType(request.getType());
-        wo.setWorkshopId(request.getWorkshopId());
-        wo.setLineId(request.getLineId());
-        wo.setProductId(request.getProductId());
-        wo.setProcessId(product.getDefaultProcessId());
-        wo.setPlanQty(request.getPlanQty());
-        wo.setPlanStartTime(request.getPlanStartTime());
-        wo.setPlanEndTime(request.getPlanEndTime());
-        wo.setStatus("待派工");
-        wo.setSource("APP创建");
-        wo.setCreatedBy(createdBy);
-
-        save(wo);
-
-        copyProcessStepsToRoute(wo.getId(), product.getDefaultProcessId());
-
-        return wo;
     }
 
     @Override
@@ -113,8 +97,16 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         wo.setLineId(source.getLineId());
         wo.setProductId(source.getProductId());
         wo.setProcessId(source.getProcessId());
-        wo.setPlanQty(override != null && override.getPlanQty() != null
-                ? override.getPlanQty() : source.getPlanQty());
+
+        if (override != null && override.getPlanQty() != null) {
+            if (override.getPlanQty() <= 0) {
+                throw new BusinessException(400, "计划数量必须大于0");
+            }
+            wo.setPlanQty(override.getPlanQty());
+        } else {
+            wo.setPlanQty(source.getPlanQty());
+        }
+
         wo.setPlanStartTime(override != null && override.getPlanStartTime() != null
                 ? override.getPlanStartTime() : source.getPlanStartTime());
         wo.setPlanEndTime(override != null && override.getPlanEndTime() != null
@@ -208,6 +200,40 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         if (wo == null) {
             throw new BusinessException(404, "工单不存在");
         }
+        return wo;
+    }
+
+    private WorkOrder doCreateWorkOrder(WorkOrderCreateRequest request, Long createdBy) {
+        if (!VALID_TYPES.contains(request.getType())) {
+            throw new BusinessException(400, "工单类型必须为: 试产/量产/返工");
+        }
+
+        Product product = productService.getById(request.getProductId());
+        if (product == null) {
+            throw new BusinessException(400, "产品不存在");
+        }
+        if (product.getDefaultProcessId() == null) {
+            throw new BusinessException(400, "该产品未配置默认工艺");
+        }
+
+        WorkOrder wo = new WorkOrder();
+        wo.setCode(generateWorkOrderCode());
+        wo.setType(request.getType());
+        wo.setWorkshopId(request.getWorkshopId());
+        wo.setLineId(request.getLineId());
+        wo.setProductId(request.getProductId());
+        wo.setProcessId(product.getDefaultProcessId());
+        wo.setPlanQty(request.getPlanQty());
+        wo.setPlanStartTime(request.getPlanStartTime());
+        wo.setPlanEndTime(request.getPlanEndTime());
+        wo.setStatus("待派工");
+        wo.setSource("APP创建");
+        wo.setCreatedBy(createdBy);
+
+        save(wo);
+
+        copyProcessStepsToRoute(wo.getId(), product.getDefaultProcessId());
+
         return wo;
     }
 

@@ -21,6 +21,8 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -54,8 +56,24 @@ public class WorkOrderController {
                 currentUser.getRole(), currentUser.getId(), currentUser.getWorkshopId(),
                 status, type, lineId);
 
+        Set<Long> productIds = orders.stream()
+                .map(WorkOrder::getProductId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Set<Long> operatorIds = orders.stream()
+                .map(WorkOrder::getOperatorId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+
+        Map<Long, Product> productMap = productIds.isEmpty() ? Map.of()
+                : productService.listByIds(productIds).stream()
+                        .collect(Collectors.toMap(Product::getId, p -> p));
+        Map<Long, User> userMap = operatorIds.isEmpty() ? Map.of()
+                : userService.listByIds(operatorIds).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u));
+
         List<WorkOrderVO> vos = orders.stream()
-                .map(this::toWorkOrderVO)
+                .map(wo -> toWorkOrderVO(wo, productMap, userMap))
                 .collect(Collectors.toList());
         return R.ok(vos);
     }
@@ -91,7 +109,8 @@ public class WorkOrderController {
         return R.ok(toWorkOrderDetailVO(wo));
     }
 
-    private WorkOrderVO toWorkOrderVO(WorkOrder wo) {
+    private WorkOrderVO toWorkOrderVO(WorkOrder wo, Map<Long, Product> productMap,
+                                       Map<Long, User> userMap) {
         WorkOrderVO vo = new WorkOrderVO();
         vo.setId(wo.getId());
         vo.setCode(wo.getCode());
@@ -108,13 +127,13 @@ public class WorkOrderController {
         vo.setCreatedAt(wo.getCreatedAt());
 
         if (wo.getProductId() != null) {
-            Product product = productService.getById(wo.getProductId());
+            Product product = productMap.get(wo.getProductId());
             if (product != null) {
                 vo.setProductName(product.getName());
             }
         }
         if (wo.getOperatorId() != null) {
-            User operator = userService.getById(wo.getOperatorId());
+            User operator = userMap.get(wo.getOperatorId());
             if (operator != null) {
                 vo.setOperatorName(operator.getName());
             }
