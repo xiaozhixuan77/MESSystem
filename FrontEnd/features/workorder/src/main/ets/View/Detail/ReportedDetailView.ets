@@ -39,22 +39,22 @@ export struct ReportedDetailView {
 
   build() {
     Stack({ alignContent: Alignment.Bottom }) {
-      Scroll() {
-        Column() {
-          this.PageHeader();
-          this.StatusCard();
+      Column() {
+        this.PageHeader();
+        this.StatusCard();
+        Scroll() {
           Column() {
             this.ReportDetailSection();
             this.TimelineSection();
+            Blank().height(this.isEndState ? 16 : 100);
           }
           .padding(16).width('100%');
         }
-        .width('100%');
+        .layoutWeight(1)
+        .scrollBar(BarState.Off).edgeEffect(EdgeEffect.None)
+        .backgroundColor('#F5F7FA');
       }
-      .width('100%').height('100%')
-      .backgroundColor('#F5F7FA')
-      .scrollBar(BarState.Off).edgeEffect(EdgeEffect.None)
-      .padding({ bottom: this.isEndState ? 16 : 100 });
+      .width('100%').height('100%');
 
       if (!this.isEndState) {
         this.BottomActions();
@@ -74,7 +74,7 @@ export struct ReportedDetailView {
       Row().width(36).height(36);
     }
     .width('100%')
-    .padding({ left: 16, right: 16, top: 48, bottom: 12 })
+    .padding({ left: 16, right: 16, top: 16, bottom: 12 })
     .backgroundColor(Color.White)
     .border({ width: { bottom: 1 }, color: '#E8EBF0' });
   }

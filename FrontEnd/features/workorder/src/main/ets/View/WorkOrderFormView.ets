@@ -138,7 +138,7 @@ export struct WorkOrderFormView {
         .justifyContent(FlexAlign.Center);
       }
       .width('100%')
-      .padding({ left: 16, right: 16, top: 48, bottom: 12 })
+      .padding({ left: 16, right: 16, top: 16, bottom: 12 })
       .backgroundColor('#FFFFFF')
       .border({ width: { bottom: 1 }, color: '#E8EBF0' })
 
