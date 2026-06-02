@@ -3,6 +3,7 @@ import { UserModel } from '@ohos/user';
 @ComponentV2
 export struct AdminHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
 
   @Builder
@@ -100,7 +101,28 @@ export struct AdminHomeView {
 
           // 快捷入口
           Row({ space: 8 }) {
-            this.QuickItem($r('app.media.tab_workorder_active'), '全部工单');
+            Column() {
+              Column() {
+                Image($r('app.media.tab_workorder_active')).width(16).height(16);
+              }
+              .width(32).height(32)
+              .backgroundColor('rgba(255,255,255,0.95)')
+              .borderRadius(8)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center);
+              Text('全部工单')
+                .fontSize(10).fontColor(Color.White).fontWeight(500).margin({ top: 6 });
+            }
+            .alignItems(HorizontalAlign.Center)
+            .padding({ top: 10, bottom: 10, left: 4, right: 4 })
+            .backgroundColor('rgba(255,255,255,0.1)')
+            .borderRadius(12)
+            .layoutWeight(1)
+            .onClick(() => {
+              this.activeTab = 'WorkOrderTab';
+              this.pageStack.replacePath({ name: 'WorkOrderTab' });
+            })
+
             this.QuickItem($r('app.media.tab_profile_active'), '人员管理');
             this.QuickItem($r('app.media.tab_data_active'), '产线工艺');
             this.QuickItem($r('app.media.icon_image_blue'), '质检看板');

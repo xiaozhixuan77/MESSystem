@@ -20,7 +20,7 @@ struct Index {
   @Provider('currentRole') currentRole: string = '';
   @Local targetPage: string = '';
   @Local isReady: boolean = false;
-  @Local activeTab: string = 'HomeTab';
+  @Provider('activeTab') activeTab: string = 'HomeTab';
   private windowChangeCallback?: (size: window.Size) => void;
 
   switchTab(tab: string): void {

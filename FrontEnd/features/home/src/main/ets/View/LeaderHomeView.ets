@@ -23,6 +23,7 @@ class LineStatusItem {
 @ComponentV2
 export struct LeaderHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
   @Local todos: TodoItem[] = [];
   @Local lines: LineStatusItem[] = [];
@@ -151,7 +152,29 @@ export struct LeaderHomeView {
           // 快捷入口
           Row({ space: 8 }) {
             this.QuickItem($r('app.media.tab_data_active'), '基础数据');
-            this.QuickItem($r('app.media.tab_workorder_active'), '工单');
+
+            Column() {
+              Column() {
+                Image($r('app.media.tab_workorder_active')).width(16).height(16);
+              }
+              .width(32).height(32)
+              .backgroundColor('rgba(255,255,255,0.95)')
+              .borderRadius(8)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center);
+              Text('工单')
+                .fontSize(11).fontColor(Color.White).fontWeight(500).margin({ top: 6 });
+            }
+            .alignItems(HorizontalAlign.Center)
+            .padding({ top: 12, bottom: 12, left: 4, right: 4 })
+            .backgroundColor('rgba(255,255,255,0.12)')
+            .borderRadius(12)
+            .layoutWeight(1)
+            .onClick(() => {
+              this.activeTab = 'WorkOrderTab';
+              this.pageStack.replacePath({ name: 'WorkOrderTab' });
+            })
+
             this.QuickItem($r('app.media.icon_image_blue'), '质检看板');
             this.QuickItem($r('app.media.icon_clock_blue'), '历史记录');
           }
