@@ -17,4 +17,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class WorkstationServiceImpl extends ServiceImpl<WorkstationMapper, Workstation> implements WorkstationService {
 
+    @Override
+    public void resetCounters(Long lineId) {
+        lambdaUpdate()
+                .eq(Workstation::getProductionLineId, lineId)
+                .set(Workstation::getProcessedCount, 0)
+                .set(Workstation::getRawCount, 0)
+                .set(Workstation::getFinishedCount, 0)
+                .set(Workstation::getNgCount, 0)
+                .update();
+    }
 }

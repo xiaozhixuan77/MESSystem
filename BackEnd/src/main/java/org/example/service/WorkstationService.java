@@ -13,4 +13,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface WorkstationService extends IService<Workstation> {
 
+    /**
+     * 清零指定产线下所有工作站的计数器（已加工/原料/完工/NG）
+     */
+    void resetCounters(Long lineId);
 }
