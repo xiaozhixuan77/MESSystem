@@ -14,6 +14,11 @@ export class ProductionViewModel {
   @Trace isSubmitting: boolean = false;
   @Trace showExceptionDialog: boolean = false;
   @Trace exceptionDescription: string = '';
+  @Trace showStartConfirm: boolean = false;
+  @Trace showStopConfirm: boolean = false;
+  @Trace showResetConfirm: boolean = false;
+  @Trace showErrorDialog: boolean = false;
+  @Trace errorDialogMessage: string = '';
   @Trace isDataStale: boolean = false;
 
   private activeLineId: number = 0;
@@ -123,6 +128,20 @@ export class ProductionViewModel {
     this.errorMessage = '';
     try {
       await LineApi.resetLine(id);
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async reportException(lineId: number, description: string): Promise<boolean> {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    try {
+      await LineApi.reportException(lineId, description);
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;

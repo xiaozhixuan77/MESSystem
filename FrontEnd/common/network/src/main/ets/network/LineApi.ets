@@ -18,4 +18,8 @@ export class LineApi {
   }
   static async stopLine(id: number): Promise<Object> { return httpClient.post(`/lines/${id}/stop`); }
   static async resetLine(id: number): Promise<Object> { return httpClient.post(`/lines/${id}/reset`); }
+  static async reportException(id: number, description: string): Promise<Object> {
+    const body: Record<string, string> = { 'description': description };
+    return httpClient.post(`/lines/${id}/stop`, body);
+  }
 }
