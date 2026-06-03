@@ -4,6 +4,7 @@ import org.example.entity.ProcessStep;
 import org.example.entity.Workstation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -44,7 +45,7 @@ public class LineSimulator {
             if (!"运行中".equals(ws.getDeviceStatus())) {
                 states.add(new StationState()
                         .setStationId(ws.getId())
-                        .setCode(ws.getCode())
+                        .setOpCode(ws.getCode())
                         .setName(ws.getName())
                         .setDeviceStatus(ws.getDeviceStatus())
                         .setProcessedCount(ws.getProcessedCount() == null ? 0 : ws.getProcessedCount())
@@ -68,7 +69,7 @@ public class LineSimulator {
 
             states.add(new StationState()
                     .setStationId(ws.getId())
-                    .setCode(ws.getCode())
+                    .setOpCode(ws.getCode())
                     .setName(ws.getName())
                     .setDeviceStatus(ws.getDeviceStatus())
                     .setProcessedCount(newProcessed)
@@ -89,7 +90,12 @@ public class LineSimulator {
     }
 
     public List<Workstation> getStations() {
-        return stations;
+        return Collections.unmodifiableList(stations);
+    }
+
+    public void replaceStations(List<Workstation> freshStations) {
+        this.stations.clear();
+        this.stations.addAll(freshStations);
     }
 
     public List<ProcessStep> getProcessSteps() {

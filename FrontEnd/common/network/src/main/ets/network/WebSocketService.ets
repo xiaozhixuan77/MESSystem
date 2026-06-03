@@ -324,6 +324,7 @@ export class WebSocketService {
       }
 
       case 'ERROR':
+        console.error('[WebSocket] STOMP ERROR frame:', JSON.stringify(frame));
         break;
 
       case 'RECEIPT':

@@ -12,7 +12,7 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class StationState {
     private Long stationId;
-    private String code;
+    private String opCode;
     private String name;
     private String deviceStatus;
     private int processedCount;
