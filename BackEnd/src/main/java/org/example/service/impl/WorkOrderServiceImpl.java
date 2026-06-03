@@ -336,6 +336,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             wo.setExceptionNote(existing != null ? existing + "; " + reason : reason);
         }
         wo.setStatus("暂停中");
+        wo.setPauseTime(LocalDateTime.now());
         updateById(wo);
     }
 

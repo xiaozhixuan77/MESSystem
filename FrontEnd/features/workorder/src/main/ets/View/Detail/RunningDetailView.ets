@@ -230,7 +230,7 @@ export struct RunningDetailView {
 
   @Builder BottomActions() {
     Row({ space: 12 }) {
-      Button('查看产线')
+      Button('返回列表')
         .layoutWeight(1).height(46)
         .fontSize(15).fontWeight(600)
         .fontColor('#1A1A2E').backgroundColor('#F5F7FA').borderRadius(12)
@@ -238,12 +238,24 @@ export struct RunningDetailView {
 
       if (PermissionUtil.hasPermission('workorder.pause', this.currentRole)) {
         Button('暂停生产')
-          .layoutWeight(2).height(46)
+          .layoutWeight(1).height(46)
           .fontSize(15).fontWeight(600).fontColor(Color.White)
           .backgroundColor(this.viewModel.isSubmitting ? '#FFB74D' : '#FF9800').borderRadius(12)
           .enabled(!this.viewModel.isSubmitting)
           .onClick(async () => {
             const ok = await this.viewModel.pauseWorkOrder(this.workOrderId);
+            if (ok) { this.pageStack.pop(); }
+          });
+      }
+
+      if (PermissionUtil.hasPermission('workorder.complete', this.currentRole)) {
+        Button('生产完成')
+          .layoutWeight(1).height(46)
+          .fontSize(15).fontWeight(600).fontColor(Color.White)
+          .backgroundColor(this.viewModel.isSubmitting ? '#81C784' : '#4CAF50').borderRadius(12)
+          .enabled(!this.viewModel.isSubmitting)
+          .onClick(async () => {
+            const ok = await this.viewModel.completeWorkOrder(this.workOrderId);
             if (ok) { this.pageStack.pop(); }
           });
       }

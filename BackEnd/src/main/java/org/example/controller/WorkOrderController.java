@@ -235,6 +235,7 @@ public class WorkOrderController {
         vo.setDispatchTime(wo.getDispatchTime());
         vo.setActualStartTime(wo.getActualStartTime());
         vo.setActualEndTime(wo.getActualEndTime());
+        vo.setPauseTime(wo.getPauseTime());
         vo.setReportedQtyGood(wo.getReportedQtyGood());
         vo.setReportedQtyNg(wo.getReportedQtyNg());
         vo.setReportedHours(wo.getReportedHours());

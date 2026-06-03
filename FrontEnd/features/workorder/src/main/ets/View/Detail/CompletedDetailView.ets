@@ -18,7 +18,6 @@ export struct CompletedDetailView {
     this.workOrderId = (param?.['workOrderId'] as number) ?? 0;
     if (this.workOrderId > 0) {
       this.viewModel.loadDetail(this.workOrderId);
-      this.viewModel.reportFormGood = this.viewModel.currentWorkOrder?.planQty || 0;
     }
   }
 

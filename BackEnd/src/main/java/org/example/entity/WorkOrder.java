@@ -109,6 +109,11 @@ public class WorkOrder implements Serializable {
     private LocalDateTime actualEndTime;
 
     /**
+     * 暂停时间
+     */
+    private LocalDateTime pauseTime;
+
+    /**
      * 申报良品数
      */
     private Integer reportedQtyGood;

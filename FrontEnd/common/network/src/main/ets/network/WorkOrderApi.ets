@@ -25,6 +25,7 @@ export class WorkOrderApi {
   static async reportWorkOrder(id: number, data: object): Promise<Object> { return httpClient.post(`/workorders/${id}/report`, data); }
   static async confirmWorkOrder(id: number): Promise<Object> { return httpClient.post(`/workorders/${id}/confirm`); }
   static async scrapWorkOrder(id: number): Promise<Object> { return httpClient.post(`/workorders/${id}/scrap`); }
+  static async completeWorkOrder(id: number): Promise<Object> { return httpClient.post(`/workorders/${id}/complete`); }
   static async copyWorkOrder(sourceId: number, data?: object): Promise<Object> {
     return httpClient.post(`/workorders?copyFrom=${sourceId}`, data);
   }

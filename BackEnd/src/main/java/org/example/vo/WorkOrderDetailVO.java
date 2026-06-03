@@ -14,6 +14,7 @@ public class WorkOrderDetailVO extends WorkOrderVO {
     private LocalDateTime dispatchTime;
     private LocalDateTime actualStartTime;
     private LocalDateTime actualEndTime;
+    private LocalDateTime pauseTime;
     private Integer reportedQtyGood;
     private Integer reportedQtyNg;
     private BigDecimal reportedHours;

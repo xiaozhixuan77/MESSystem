@@ -21,6 +21,7 @@ export class WorkOrderModel {
   dispatchTime: string = '';
   actualStartTime: string = '';
   actualEndTime: string = '';
+  pauseTime: string = '';
   reportedQtyGood: number = 0;
   reportedQtyNg: number = 0;
   reportedHours: number = 0;

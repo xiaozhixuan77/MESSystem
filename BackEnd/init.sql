@@ -195,6 +195,7 @@ CREATE TABLE IF NOT EXISTS work_order (
     dispatch_time       DATETIME NULL COMMENT '派工时间',
     actual_start_time   DATETIME NULL COMMENT '实际开始时间',
     actual_end_time     DATETIME NULL COMMENT '实际结束时间',
+    pause_time          DATETIME NULL COMMENT '暂停时间',
     reported_qty_good   INT NULL COMMENT '申报良品数',
     reported_qty_ng     INT NULL COMMENT '申报NG数',
     reported_hours      DECIMAL(10,2) NULL COMMENT '申报工时',

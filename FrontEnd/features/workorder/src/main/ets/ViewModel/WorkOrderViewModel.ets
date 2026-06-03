@@ -116,6 +116,7 @@ export class WorkOrderViewModel {
       wo.createdByName = (raw['createdByName'] as string) ?? '';
       wo.sourceWorkorderId = (raw['sourceWorkorderId'] as number) ?? 0;
       wo.processName = (raw['processName'] as string) ?? '';
+      wo.pauseTime = (raw['pauseTime'] as string) ?? '';
       const stepsRaw = raw['routeSteps'] as Object[];
       wo.routeSteps = (stepsRaw || []).map((s: Object) => {
         const step = new WorkOrderRouteModel();
@@ -127,6 +128,8 @@ export class WorkOrderViewModel {
         step.stationId = (r['stationId'] as number) ?? null;
         return step;
       });
+      // 详情加载后预设报工默认值
+      this.reportFormGood = wo.planQty;
       this.currentWorkOrder = wo;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -157,6 +160,10 @@ export class WorkOrderViewModel {
 
   get canConfirm(): boolean {
     return this.currentWorkOrder?.status === '已报工';
+  }
+
+  get canComplete(): boolean {
+    return this.currentWorkOrder?.status === '生产中';
   }
 
   // ========== 详情页动作方法 ==========
@@ -273,6 +280,21 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.confirmWorkOrder(workOrderId);
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async completeWorkOrder(workOrderId: number): Promise<boolean> {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    try {
+      await WorkOrderApi.completeWorkOrder(workOrderId);
       try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {

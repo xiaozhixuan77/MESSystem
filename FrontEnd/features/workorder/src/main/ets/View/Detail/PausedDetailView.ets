@@ -98,7 +98,7 @@ export struct PausedDetailView {
             .margin({ bottom: 6 });
           Text(this.viewModel.currentWorkOrder?.exceptionNote || '')
             .fontSize(14).fontWeight(600).fontColor(Color.White);
-          Text('暂停时间：' + (this.viewModel.currentWorkOrder?.dispatchTime || '—'))
+          Text('暂停时间：' + (this.viewModel.currentWorkOrder?.pauseTime || '—'))
             .fontSize(12).fontColor('rgba(255,255,255,0.8)')
             .margin({ top: 4 });
         }
@@ -189,7 +189,7 @@ export struct PausedDetailView {
       Column() {
         this.LeftTimelineItem('工单创建', this.viewModel.currentWorkOrder?.createdAt || '—', true);
         this.LeftTimelineItem('开始生产', this.viewModel.currentWorkOrder?.actualStartTime || '—', true);
-        this.LeftTimelineItem('工单暂停', this.viewModel.currentWorkOrder?.dispatchTime || '—', true);
+        this.LeftTimelineItem('工单暂停', this.viewModel.currentWorkOrder?.pauseTime || '—', true);
         this.LeftTimelineItem('等待恢复', '等待故障修复后恢复生产', false);
       }
       .width('100%')
