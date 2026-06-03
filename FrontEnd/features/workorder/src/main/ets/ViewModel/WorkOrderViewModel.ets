@@ -192,7 +192,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.dispatchWorkOrder(workOrderId, this.selectedOperatorId);
-      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -207,7 +207,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.startWorkOrder(workOrderId);
-      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -222,7 +222,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.pauseWorkOrder(workOrderId);
-      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -237,7 +237,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.resumeWorkOrder(workOrderId);
-      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -258,7 +258,7 @@ export class WorkOrderViewModel {
         'note': this.reportFormNote
       };
       await WorkOrderApi.reportWorkOrder(workOrderId, data);
-      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -273,7 +273,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.confirmWorkOrder(workOrderId);
-      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -288,7 +288,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.scrapWorkOrder(workOrderId);
-      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -494,7 +494,7 @@ export class WorkOrderViewModel {
         body['planEndTime'] = this.formPlanEndTime + ':00';
       }
       await WorkOrderApi.createWorkOrder(body);
-      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -528,7 +528,7 @@ export class WorkOrderViewModel {
         body['planEndTime'] = this.formPlanEndTime + ':00';
       }
       await WorkOrderApi.updateWorkOrder(id, body);
-      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -553,7 +553,7 @@ export class WorkOrderViewModel {
         body['planEndTime'] = this.formPlanEndTime + ':00';
       }
       await WorkOrderApi.copyWorkOrder(sourceId, body);
-      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;

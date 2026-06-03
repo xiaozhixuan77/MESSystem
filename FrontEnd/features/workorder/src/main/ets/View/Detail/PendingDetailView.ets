@@ -29,6 +29,12 @@ export struct PendingDetailView {
     Stack({ alignContent: Alignment.Bottom }) {
       Column() {
         this.PageHeader();
+        if (this.viewModel.errorMessage) {
+          Text(this.viewModel.errorMessage)
+            .fontSize(13).fontColor('#B71C1C')
+            .padding({ left: 16, right: 16, top: 10, bottom: 10 })
+            .width('100%').backgroundColor('#FFEBEE');
+        }
         this.StatusCard();
         Scroll() {
           Column() {

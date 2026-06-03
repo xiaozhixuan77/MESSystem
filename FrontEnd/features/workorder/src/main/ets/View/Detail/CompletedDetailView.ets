@@ -9,8 +9,7 @@ export struct CompletedDetailView {
   @Local workOrderId: number = 0;
 
   private get hasBottomActions(): boolean {
-    return PermissionUtil.hasPermission('workorder.create', this.currentRole) ||
-      PermissionUtil.hasPermission('workorder.report', this.currentRole);
+    return PermissionUtil.hasPermission('workorder.report', this.currentRole);
   }
 
   aboutToAppear(): void {
@@ -33,6 +32,12 @@ export struct CompletedDetailView {
     Stack({ alignContent: Alignment.Bottom }) {
       Column() {
         this.PageHeader();
+        if (this.viewModel.errorMessage) {
+          Text(this.viewModel.errorMessage)
+            .fontSize(13).fontColor('#B71C1C')
+            .padding({ left: 16, right: 16, top: 10, bottom: 10 })
+            .width('100%').backgroundColor('#FFEBEE');
+        }
         this.StatusCard();
         Scroll() {
           Column() {
@@ -255,19 +260,9 @@ export struct CompletedDetailView {
 
   @Builder BottomActions() {
     Row({ space: 12 }) {
-      if (PermissionUtil.hasPermission('workorder.create', this.currentRole)) {
-        Button('修改')
-          .layoutWeight(1).height(46)
-          .fontSize(15).fontWeight(600)
-          .fontColor('#1A1A2E').backgroundColor('#F5F7FA').borderRadius(12)
-          .onClick(() => {
-            const p: Record<string, number> = { 'workOrderId': this.workOrderId };
-            this.pageStack.pushPathByName('WorkOrderEdit', p);
-          });
-      }
       if (PermissionUtil.hasPermission('workorder.report', this.currentRole)) {
         Button('提交报工')
-          .layoutWeight(2).height(46)
+          .layoutWeight(1).height(46)
           .fontSize(15).fontWeight(600).fontColor(Color.White)
           .backgroundColor(this.viewModel.isSubmitting ? '#FFB74D' : '#FF9800').borderRadius(12)
           .enabled(!this.viewModel.isSubmitting)

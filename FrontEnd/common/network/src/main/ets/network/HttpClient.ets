@@ -35,7 +35,7 @@ class HttpClient {
           'Content-Type': 'application/json',
           'Authorization': this.token ? `Bearer ${this.token}` : ''
         },
-        extraData: data ? JSON.stringify(data) : '',
+        extraData: data !== undefined ? JSON.stringify(data) : undefined,
         expectDataType: http.HttpDataType.STRING,
         connectTimeout: 10000,
         readTimeout: 30000
