@@ -8,6 +8,11 @@ export struct ReportedDetailView {
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local workOrderId: number = 0;
 
+  private get hasBottomActions(): boolean {
+    return PermissionUtil.hasPermission('workorder.scrap', this.currentRole) ||
+      PermissionUtil.hasPermission('workorder.confirm', this.currentRole);
+  }
+
   aboutToAppear(): void {
     const navInfo = this.queryNavDestinationInfo();
     const param = navInfo?.param as Record<string, Object>;
@@ -58,7 +63,7 @@ export struct ReportedDetailView {
       }
       .width('100%').height('100%');
 
-      if (!this.isEndState) {
+      if (!this.isEndState && this.hasBottomActions) {
         this.BottomActions();
       }
     }

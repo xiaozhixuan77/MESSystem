@@ -1,4 +1,4 @@
-import { PermissionUtil, RoleConstants } from '@ohos/utils';
+import { PermissionUtil } from '@ohos/utils';
 import { WorkOrderModel } from '../Model/WorkOrderModel';
 import { WorkOrderViewModel } from '../ViewModel/WorkOrderViewModel';
 
@@ -55,10 +55,6 @@ export struct WorkOrderListView {
       case '报废': return 'ReportedDetail';
       default: return 'PendingDetail';
     }
-  }
-
-  private canCreate(): boolean {
-    return this.currentRole === RoleConstants.ADMIN || this.currentRole === RoleConstants.LEADER;
   }
 
   @Builder

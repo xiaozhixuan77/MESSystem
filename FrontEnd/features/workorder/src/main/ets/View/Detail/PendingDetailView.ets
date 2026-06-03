@@ -10,6 +10,11 @@ export struct PendingDetailView {
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local workOrderId: number = 0;
 
+  private get hasBottomActions(): boolean {
+    return PermissionUtil.hasPermission('workorder.create', this.currentRole) ||
+      PermissionUtil.hasPermission('workorder.dispatch', this.currentRole);
+  }
+
   aboutToAppear(): void {
     const navInfo = this.queryNavDestinationInfo();
     const param = navInfo?.param as Record<string, Object>;
@@ -40,7 +45,9 @@ export struct PendingDetailView {
       }
       .width('100%').height('100%');
 
-      this.BottomActions();
+      if (this.hasBottomActions) {
+        this.BottomActions();
+      }
     }
     .width('100%').height('100%');
   }
