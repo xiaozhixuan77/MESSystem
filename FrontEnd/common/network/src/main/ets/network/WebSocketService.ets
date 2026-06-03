@@ -7,6 +7,12 @@ interface StompFrame {
   body: string;
 }
 
+const MAX_BUFFER_SIZE = 256 * 1024;
+const MAX_RETRY = 10;
+const BASE_RECONNECT_MS = 2000;
+const MAX_RECONNECT_MS = 30000;
+const MESSAGE_TIMEOUT_MS = 60000;
+
 @ObservedV2
 export class WebSocketService {
   private static instance: WebSocketService;
@@ -14,12 +20,15 @@ export class WebSocketService {
   private reconnectTimer: number = -1;
   private heartbeatTimer: number = -1;
   @Trace isConnected: boolean = false;
+  @Trace isReconnectFailed: boolean = false;
   private static listeners: Map<string, Function[]> = new Map();
   private currentUrl: string = '';
   private currentToken: string = '';
   private subscriptionCounter: number = 0;
   private pendingSubscriptions: Map<string, string> = new Map();
   private receiveBuffer: string = '';
+  private reconnectAttempts: number = 0;
+  private lastMessageTime: number = 0;
 
   static getInstance(): WebSocketService {
     if (!WebSocketService.instance) {
@@ -34,10 +43,13 @@ export class WebSocketService {
     this.ws?.close();
     this.ws = null;
     this.isConnected = false;
+    this.reconnectAttempts = 0;
+    this.isReconnectFailed = false;
 
     this.currentUrl = url;
     this.currentToken = token;
     this.receiveBuffer = '';
+    this.lastMessageTime = Date.now();
 
     this.ws = webSocket.createWebSocket();
     this.ws.on('open', (_err: BusinessError, _value: Object): void => {
@@ -112,6 +124,8 @@ export class WebSocketService {
     this.ws?.close();
     this.ws = null;
     this.isConnected = false;
+    this.isReconnectFailed = false;
+    this.reconnectAttempts = 0;
     this.pendingSubscriptions.clear();
     this.receiveBuffer = '';
   }
@@ -144,6 +158,7 @@ export class WebSocketService {
   private sendStompConnect(): void {
     const headers: Record<string, string> = {
       'accept-version': '1.1,1.2',
+      'heart-beat': '30000,10000',
       'host': 'localhost'
     };
     if (this.currentToken.length > 0) {
@@ -170,7 +185,21 @@ export class WebSocketService {
       frame += body;
     }
     frame += '\0';
-    this.ws.send(frame);
+    try {
+      this.ws.send(frame);
+    } catch (_e) {
+      // 发送失败，底层 close/error 事件会触发 onDisconnect
+    }
+  }
+
+  private sendHeartbeat(): void {
+    if (this.ws && this.isConnected) {
+      try {
+        this.ws.send('\n');
+      } catch (_e) {
+        // 心跳发送失败，底层事件会触发 onDisconnect
+      }
+    }
   }
 
   private utf8ByteLength(str: string): number {
@@ -193,10 +222,18 @@ export class WebSocketService {
   // ─── STOMP frame deserialization ───
 
   private onData(data: string): void {
+    this.lastMessageTime = Date.now();
+
     if (data === '\n') {
       return;
     }
     this.receiveBuffer += data;
+
+    if (this.receiveBuffer.length > MAX_BUFFER_SIZE) {
+      this.receiveBuffer = '';
+      this.ws?.close();
+      return;
+    }
 
     while (true) {
       const nullIndex = this.receiveBuffer.indexOf('\0');
@@ -252,16 +289,23 @@ export class WebSocketService {
 
   private processFrame(frame: StompFrame): void {
     switch (frame.command) {
-      case 'CONNECTED':
+      case 'CONNECTED': {
         this.isConnected = true;
-        this.startHeartbeat();
+        this.reconnectAttempts = 0;
+        this.isReconnectFailed = false;
+        this.lastMessageTime = Date.now();
+
+        this.startHeartbeat(frame.headers['heart-beat']);
+
         this.pendingSubscriptions.forEach((destination: string, subId: string) => {
           const replayHeaders: Record<string, string> = { "id": subId, "destination": destination };
           this.sendStompFrame('SUBSCRIBE', replayHeaders);
         });
         break;
+      }
 
       case 'MESSAGE': {
+        this.lastMessageTime = Date.now();
         const destination = frame.headers['destination'];
         if (destination && frame.body.length > 0) {
           const list = WebSocketService.listeners.get(destination);
@@ -292,14 +336,31 @@ export class WebSocketService {
 
   // ─── Heartbeat ───
 
-  private startHeartbeat(): void {
+  private startHeartbeat(serverHeartbeat?: string): void {
     this.stopHeartbeat();
-    this.heartbeatTimer = setInterval((): void => {
-      if (!this.isConnected && this.currentUrl.length > 0) {
-        this.stopHeartbeat();
-        this.scheduleReconnect();
+
+    let clientInterval = 30000;
+    if (serverHeartbeat && serverHeartbeat.length > 0) {
+      const parts = serverHeartbeat.split(',');
+      if (parts.length >= 2) {
+        const serverWantsReceive = parseInt(parts[1]);
+        if (!isNaN(serverWantsReceive) && serverWantsReceive > 0) {
+          clientInterval = Math.max(30000, serverWantsReceive);
+        }
       }
-    }, 30000);
+    }
+
+    this.heartbeatTimer = setInterval((): void => {
+      if (!this.isConnected) {
+        return;
+      }
+
+      this.sendHeartbeat();
+
+      if (Date.now() - this.lastMessageTime > MESSAGE_TIMEOUT_MS) {
+        this.ws?.close();
+      }
+    }, clientInterval);
   }
 
   private stopHeartbeat(): void {
@@ -322,12 +383,24 @@ export class WebSocketService {
     if (this.reconnectTimer !== -1) {
       return;
     }
+
+    if (this.reconnectAttempts >= MAX_RETRY) {
+      this.isReconnectFailed = true;
+      return;
+    }
+
+    const delay = Math.min(
+      BASE_RECONNECT_MS * Math.pow(2, this.reconnectAttempts),
+      MAX_RECONNECT_MS
+    );
+    this.reconnectAttempts++;
+
     this.reconnectTimer = setTimeout((): void => {
       this.reconnectTimer = -1;
       if (this.currentUrl.length > 0 && this.currentToken.length > 0) {
         this.connect(this.currentUrl, this.currentToken);
       }
-    }, 5000);
+    }, delay);
   }
 
   private clearReconnect(): void {

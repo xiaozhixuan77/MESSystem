@@ -45,7 +45,10 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             Long userId = jwtTokenProvider.getUserId(token);
             accessor.setUser(new StompUserPrincipal(userId));
 
-            log.info("WebSocket 认证成功：userId={}", userId);
+            List<String> heartbeatHeaders = accessor.getNativeHeader("heart-beat");
+            String heartbeat = (heartbeatHeaders != null && !heartbeatHeaders.isEmpty())
+                    ? heartbeatHeaders.get(0) : "未声明";
+            log.info("WebSocket 认证成功：userId={}, heart-beat={}", userId, heartbeat);
         }
 
         return message;
