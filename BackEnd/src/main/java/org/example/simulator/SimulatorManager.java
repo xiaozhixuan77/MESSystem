@@ -10,6 +10,7 @@ import org.example.exception.BusinessException;
 import org.example.service.ProductionLineService;
 import org.example.service.ProductionLogService;
 import org.example.service.WorkstationService;
+import org.example.websocket.LineBroadcaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,7 @@ public class SimulatorManager {
     private final ProductionLogService productionLogService;
     private final SimulatorConfig config;
     private final ObjectMapper objectMapper;
+    private final LineBroadcaster lineBroadcaster;
 
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
@@ -52,12 +54,14 @@ public class SimulatorManager {
                             ProductionLineService productionLineService,
                             ProductionLogService productionLogService,
                             SimulatorConfig config,
-                            ObjectMapper objectMapper) {
+                            ObjectMapper objectMapper,
+                            LineBroadcaster lineBroadcaster) {
         this.workstationService = workstationService;
         this.productionLineService = productionLineService;
         this.productionLogService = productionLogService;
         this.config = config;
         this.objectMapper = objectMapper;
+        this.lineBroadcaster = lineBroadcaster;
     }
 
     /**
@@ -92,12 +96,14 @@ public class SimulatorManager {
 
         LineSimulator simulator = new LineSimulator(lineId, workOrderId, stations,
                 Collections.emptyList(), config.getGoodRate());
+        simulators.put(lineId, simulator);
+
+        lineBroadcaster.broadcastLineStatus(lineId, "生产中", workOrderId);
 
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(
                 () -> tick(lineId), 0, config.getTickInterval(), TimeUnit.MILLISECONDS);
 
         runningSimulators.put(lineId, future);
-        simulators.put(lineId, simulator);
 
         log.info("产线 {} 仿真已启动，工单: {}, Tick 间隔: {}ms", lineId, workOrderId, config.getTickInterval());
     }
@@ -129,6 +135,8 @@ public class SimulatorManager {
             line.setStatus("暂停");
             productionLineService.updateById(line);
         }
+
+        lineBroadcaster.broadcastLineStatus(lineId, "暂停", null);
 
         log.info("产线 {} 仿真已停止", lineId);
     }
@@ -162,6 +170,8 @@ public class SimulatorManager {
             line.setStatus("空闲");
             productionLineService.updateById(line);
         }
+
+        lineBroadcaster.broadcastLineStatus(lineId, "空闲", null);
 
         log.info("产线 {} 已复位", lineId);
     }
@@ -206,6 +216,8 @@ public class SimulatorManager {
                     .setEventTime(LocalDateTime.now())
                     .setPayload(objectMapper.writeValueAsString(states));
             productionLogService.save(logEntry);
+
+            lineBroadcaster.broadcastStationUpdate(lineId, states);
         } catch (Exception e) {
             log.error("产线 {} Tick 异常", lineId, e);
         } finally {
