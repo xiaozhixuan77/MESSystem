@@ -29,7 +29,12 @@ export class WebSocketService {
   }
 
   connect(url: string, token: string): void {
-    this.disconnect();
+    this.stopHeartbeat();
+    this.clearReconnect();
+    this.ws?.close();
+    this.ws = null;
+    this.isConnected = false;
+
     this.currentUrl = url;
     this.currentToken = token;
     this.receiveBuffer = '';
@@ -290,6 +295,7 @@ export class WebSocketService {
 
   private onDisconnect(): void {
     this.isConnected = false;
+    this.receiveBuffer = '';
     this.stopHeartbeat();
     this.scheduleReconnect();
   }
