@@ -83,7 +83,7 @@ public class SimulatorManager {
                 .eq(Workstation::getProductionLineId, lineId)
                 .list();
         if (stations == null || stations.isEmpty()) {
-            throw new BusinessException(400, "产线 " + lineId + " 下没有工作站，无法启动仿真");
+            throw new BusinessException(422, "产线 " + lineId + " 下没有工作站，无法启动仿真");
         }
 
         for (Workstation ws : stations) {
@@ -109,12 +109,19 @@ public class SimulatorManager {
     }
 
     /**
-     * 停止产线仿真。
+     * 停止产线仿真，产线置为"暂停"。
      */
     public void stop(Long lineId) {
+        stop(lineId, "暂停");
+    }
+
+    /**
+     * 停止产线仿真并指定最终产线状态。
+     */
+    public void stop(Long lineId, String finalStatus) {
         ScheduledFuture<?> future = runningSimulators.remove(lineId);
         if (future == null) {
-            throw new BusinessException(400, "产线 " + lineId + " 未在仿真运行中");
+            throw new BusinessException(409, "产线 " + lineId + " 未在仿真运行中");
         }
         future.cancel(false);
         simulators.remove(lineId);
@@ -132,13 +139,13 @@ public class SimulatorManager {
                 .eq(ProductionLine::getId, lineId)
                 .one();
         if (line != null) {
-            line.setStatus("暂停");
+            line.setStatus(finalStatus);
             productionLineService.updateById(line);
         }
 
-        lineBroadcaster.broadcastLineStatus(lineId, "暂停", null);
+        lineBroadcaster.broadcastLineStatus(lineId, finalStatus, null);
 
-        log.info("产线 {} 仿真已停止", lineId);
+        log.info("产线 {} 仿真已停止，最终状态: {}", lineId, finalStatus);
     }
 
     /**
