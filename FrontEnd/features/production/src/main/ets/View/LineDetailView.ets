@@ -810,7 +810,7 @@ export struct LineDetailView {
                   .border({ width: { bottom: index < this.viewModel.lineDetail.stations.length - 1 ? 1 : 0 },
                     color: '#E8EBF0' })
                   .onClick(() => {
-                    const params: Record<string, number> = { 'stationId': station.id };
+                    const params: Record<string, number> = { 'stationId': station.id, 'lineId': this.lineId };
                     this.pageStack.pushPathByName('StationDetail', params);
                   });
                 }, (station: StationModel) => `${station.id}`);

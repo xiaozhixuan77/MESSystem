@@ -8,6 +8,7 @@ import org.example.entity.ProductionLine;
 import org.example.entity.WorkOrder;
 import org.example.entity.Workstation;
 import org.example.entity.Workshop;
+import org.example.exception.BusinessException;
 import org.example.security.RequiresPermission;
 import org.example.service.ProcessService;
 import org.example.service.ProductService;
@@ -254,19 +255,21 @@ public class ProductionLineController {
                 .one();
 
         if (activeWo != null) {
-            simulatorManager.stop(id, "空闲");
+            try {
+                simulatorManager.stop(id);
+            } catch (BusinessException ignored) {
+                // 仿真器可能已停止（崩溃/重启），继续更新工单状态
+            }
 
-            activeWo.setStatus("生产完成");
+            activeWo.setStatus("暂停中");
             activeWo.setActualEndTime(LocalDateTime.now());
             workOrderService.updateById(activeWo);
-
-            ProductionLine line = productionLineService.getById(id);
-            if (line != null) {
-                line.setCurrentWorkorderId(null);
-                productionLineService.updateById(line);
-            }
         } else {
-            simulatorManager.stop(id);
+            try {
+                simulatorManager.stop(id);
+            } catch (BusinessException ignored) {
+                // 仿真器可能已停止
+            }
         }
 
         return R.ok();

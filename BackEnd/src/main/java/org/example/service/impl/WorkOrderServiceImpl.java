@@ -15,6 +15,7 @@ import org.example.service.ProductService;
 import org.example.service.ProductionLineService;
 import org.example.service.WorkOrderRouteStepService;
 import org.example.service.WorkOrderService;
+import org.example.simulator.SimulatorManager;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.dao.DuplicateKeyException;
@@ -39,17 +40,20 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final WorkOrderRouteStepService workOrderRouteStepService;
     private final ProductionLineService productionLineService;
     private final TransactionTemplate transactionTemplate;
+    private final SimulatorManager simulatorManager;
 
     public WorkOrderServiceImpl(ProductService productService,
                                 ProcessStepService processStepService,
                                 WorkOrderRouteStepService workOrderRouteStepService,
                                 ProductionLineService productionLineService,
-                                TransactionTemplate transactionTemplate) {
+                                TransactionTemplate transactionTemplate,
+                                SimulatorManager simulatorManager) {
         this.productService = productService;
         this.processStepService = processStepService;
         this.workOrderRouteStepService = workOrderRouteStepService;
         this.productionLineService = productionLineService;
         this.transactionTemplate = transactionTemplate;
+        this.simulatorManager = simulatorManager;
     }
 
     @Override
@@ -304,6 +308,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 .last("FOR UPDATE")
                 .one();
         if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
+            if (simulatorManager.isRunning(line.getId())) {
+                simulatorManager.stop(line.getId());
+            }
             line.setStatus("空闲");
             line.setCurrentWorkorderId(null);
             productionLineService.updateById(line);
