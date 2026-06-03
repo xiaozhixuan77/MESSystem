@@ -68,14 +68,19 @@ public class ProductionLineController {
     }
 
     @GetMapping("/lines")
-    public R<List<ProductionLineVO>> list(@RequestParam(required = false) Long workshopId) {
+    public R<List<ProductionLineVO>> list(@RequestParam(required = false) Long workshopId,
+                                          @RequestParam(required = false) String status) {
         var query = productionLineService.lambdaQuery()
                 .eq(ProductionLine::getIsDeleted, 0);
         if (workshopId != null) {
             query.eq(ProductionLine::getWorkshopId, workshopId);
         }
+        if (status != null && !status.isEmpty()) {
+            query.eq(ProductionLine::getStatus, status);
+        }
         List<ProductionLine> lines = query.list();
 
+        // Workshop names
         Map<Long, String> workshopNames = Collections.emptyMap();
         if (!lines.isEmpty()) {
             List<Long> workshopIds = lines.stream()
@@ -92,8 +97,34 @@ public class ProductionLineController {
             }
         }
 
+        // Station aggregation per line
+        List<Long> lineIds = lines.stream().map(ProductionLine::getId).collect(Collectors.toList());
+        Map<Long, List<Workstation>> stationsByLine = Collections.emptyMap();
+        if (!lineIds.isEmpty()) {
+            stationsByLine = workstationService.lambdaQuery()
+                    .in(Workstation::getProductionLineId, lineIds)
+                    .eq(Workstation::getIsDeleted, 0)
+                    .list()
+                    .stream()
+                    .collect(Collectors.groupingBy(Workstation::getProductionLineId));
+        }
+
+        // Active work orders per line
+        Map<Long, WorkOrder> activeOrders = Collections.emptyMap();
+        if (!lineIds.isEmpty()) {
+            activeOrders = workOrderService.lambdaQuery()
+                    .in(WorkOrder::getLineId, lineIds)
+                    .in(WorkOrder::getStatus, java.util.Arrays.asList("生产中", "暂停中"))
+                    .list()
+                    .stream()
+                    .collect(Collectors.toMap(WorkOrder::getLineId, wo -> wo, (a, b) -> a));
+        }
+
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         Map<Long, String> finalWorkshopNames = workshopNames;
+        Map<Long, List<Workstation>> finalStationsByLine = stationsByLine;
+        Map<Long, WorkOrder> finalActiveOrders = activeOrders;
+
         List<ProductionLineVO> vos = lines.stream().map(line -> {
             ProductionLineVO vo = new ProductionLineVO();
             vo.setId(line.getId());
@@ -104,6 +135,22 @@ public class ProductionLineController {
             if (line.getCreatedAt() != null) {
                 vo.setCreatedAt(line.getCreatedAt().format(fmt));
             }
+
+            List<Workstation> lineStations = finalStationsByLine.getOrDefault(line.getId(), Collections.emptyList());
+            vo.setStationCount(lineStations.size());
+            int finished = lineStations.stream()
+                    .mapToInt(ws -> ws.getFinishedCount() != null ? ws.getFinishedCount() : 0).sum();
+            int ng = lineStations.stream()
+                    .mapToInt(ws -> ws.getNgCount() != null ? ws.getNgCount() : 0).sum();
+            vo.setFinishedCount(finished);
+            vo.setNgCount(ng);
+
+            WorkOrder activeWo = finalActiveOrders.get(line.getId());
+            if (activeWo != null) {
+                vo.setWorkOrderCode(activeWo.getCode());
+                vo.setPlanQty(activeWo.getPlanQty());
+            }
+
             return vo;
         }).collect(Collectors.toList());
         return R.ok(vos);

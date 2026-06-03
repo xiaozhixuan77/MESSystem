@@ -10,4 +10,9 @@ public class ProductionLineVO {
     private String status;
     private String workshopName;
     private String createdAt;
+    private Integer stationCount;
+    private String workOrderCode;
+    private Integer planQty;
+    private Integer finishedCount;
+    private Integer ngCount;
 }

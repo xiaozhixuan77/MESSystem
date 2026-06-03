@@ -119,13 +119,6 @@ export struct LineDetailView {
     return '#f5222d';
   }
 
-  private getActionIcon(action: string): string {
-    if (action === 'start') return '▶';
-    if (action === 'stop') return '⏹';
-    if (action === 'reset') return '↺';
-    return '!';
-  }
-
   private isActionDisabled(action: string): boolean {
     const status = this.viewModel.lineDetail.status;
     if (action === 'start') return status === '生产中' || this.viewModel.isSubmitting;
@@ -229,9 +222,8 @@ export struct LineDetailView {
             Column() {
               Row() {
                 Button() {
-                  Text('〈')
-                    .fontSize(18)
-                    .fontColor('#FFFFFF');
+                  Image($r('app.media.icon_arrow_left_white'))
+                    .width(20).height(20);
                 }
                 .width(36).height(36)
                 .backgroundColor('rgba(255,255,255,0.15)')
@@ -325,8 +317,8 @@ export struct LineDetailView {
                   if (this.canOperate()) {
                     Button() {
                       Column() {
-                        Text(this.getActionIcon('start'))
-                          .fontSize(20);
+                        Image($r('app.media.icon_play_white'))
+                          .width(20).height(20);
                         Text('启动')
                           .fontSize(11)
                           .fontColor(this.getActionTextColor('start'))
@@ -344,8 +336,8 @@ export struct LineDetailView {
 
                     Button() {
                       Column() {
-                        Text(this.getActionIcon('stop'))
-                          .fontSize(20);
+                        Image($r('app.media.icon_stop_white'))
+                          .width(20).height(20);
                         Text('停止')
                           .fontSize(11)
                           .fontColor(this.getActionTextColor('stop'))
@@ -363,8 +355,8 @@ export struct LineDetailView {
 
                     Button() {
                       Column() {
-                        Text(this.getActionIcon('reset'))
-                          .fontSize(20);
+                        Image($r('app.media.icon_reset_white'))
+                          .width(20).height(20);
                         Text('复位')
                           .fontSize(11)
                           .fontColor(this.getActionTextColor('reset'))
@@ -384,8 +376,8 @@ export struct LineDetailView {
                   if (this.canReportException()) {
                     Button() {
                       Column() {
-                        Text(this.getActionIcon('exception'))
-                          .fontSize(20);
+                        Image($r('app.media.icon_alert_white'))
+                          .width(20).height(20);
                         Text('异常')
                           .fontSize(11)
                           .fontColor(this.getActionTextColor('exception'))
@@ -451,7 +443,7 @@ export struct LineDetailView {
               .columnsGap(10)
               .width('100%');
 
-              // Station Cards
+              // Station List
               Text('工作站状态')
                 .fontSize(14)
                 .fontWeight(FontWeight.Bold)
@@ -459,28 +451,66 @@ export struct LineDetailView {
                 .width('100%')
                 .margin({ top: 16, bottom: 10 });
 
-              Grid() {
-                ForEach(this.viewModel.lineDetail.stations, (station: StationModel) => {
-                  GridItem() {
-                    StationCard({
-                      opCode: station.opCode,
-                      name: station.name,
-                      deviceStatus: station.deviceStatus,
-                      rawCount: station.rawCount,
-                      finishedCount: station.finishedCount,
-                      ngCount: station.ngCount,
-                      onCardClick: () => {
-                        const params: Record<string, number> = { 'stationId': station.id };
-                        this.pageStack.pushPathByName('StationDetail', params);
-                      }
-                    });
+              List() {
+                ForEach(this.viewModel.lineDetail.stations, (station: StationModel, index: number) => {
+                  ListItem() {
+                    Row() {
+                      // Numbered circle
+                      Text(`${index + 1}`)
+                        .fontSize(12)
+                        .fontWeight(FontWeight.Bold)
+                        .fontColor('#FFFFFF');
+                    }
+                    .width(28).height(28)
+                    .borderRadius(14)
+                    .linearGradient({
+                      direction: GradientDirection.Bottom,
+                      colors: [['#1565C0', 0], ['#0D47A1', 1]]
+                    })
+                    .justifyContent(FlexAlign.Center)
+                    .alignItems(HorizontalAlign.Center);
+
+                    // Station info
+                    Column() {
+                      Text(station.name)
+                        .fontSize(14)
+                        .fontWeight(FontWeight.Bold)
+                        .fontColor('#1A1A2E');
+                      Text(station.deviceStatus === '运行中' ? '运行正常' : station.deviceStatus)
+                        .fontSize(11)
+                        .fontColor(station.deviceStatus === '运行中' ? '#4CAF50' : '#5A5A6E')
+                        .margin({ top: 2 });
+                    }
+                    .alignItems(HorizontalAlign.Start)
+                    .layoutWeight(1)
+                    .margin({ left: 12 });
+
+                    // Processed count
+                    Column() {
+                      Text(`${station.processedCount}`)
+                        .fontSize(14)
+                        .fontWeight(FontWeight.Bold)
+                        .fontColor('#1A1A2E');
+                      Text('已处理')
+                        .fontSize(10)
+                        .fontColor('#5A5A6E');
+                    }
+                    .alignItems(HorizontalAlign.End);
                   }
+                  .width('100%')
+                  .padding({ left: 12, right: 12, top: 12, bottom: 12 })
+                  .border({ width: { bottom: index < this.viewModel.lineDetail.stations.length - 1 ? 1 : 0 },
+                    color: '#E8EBF0' })
+                  .onClick(() => {
+                    const params: Record<string, number> = { 'stationId': station.id };
+                    this.pageStack.pushPathByName('StationDetail', params);
+                  });
                 }, (station: StationModel) => `${station.id}`);
               }
-              .columnsTemplate('1fr 1fr')
-              .rowsGap(10)
-              .columnsGap(10)
               .width('100%')
+              .backgroundColor('#FFFFFF')
+              .borderRadius(16)
+              .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)', offsetY: 2 })
               .margin({ bottom: 16 });
             }
             .padding({ left: 16, right: 16 });

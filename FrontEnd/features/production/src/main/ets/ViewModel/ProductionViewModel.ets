@@ -20,11 +20,15 @@ export class ProductionViewModel {
 
   private activeLineId: number = 0;
 
-  async loadLines(): Promise<void> {
+  async loadLines(status?: string): Promise<void> {
     this.isLoading = true;
     this.errorMessage = '';
     try {
-      this.lines = await LineApi.getLines() as LineModel[];
+      const params: Record<string, string> = {};
+      if (status) {
+        params['status'] = status;
+      }
+      this.lines = await LineApi.getLines(params) as LineModel[];
     } catch (e) {
       this.errorMessage = (e as Error).message;
     } finally {
