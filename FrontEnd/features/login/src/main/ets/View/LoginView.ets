@@ -7,8 +7,8 @@ import { emitter } from '@kit.BasicServicesKit';
 
 const ROLE_ACCOUNTS: Record<string, string> = {
   '班组长': 'LEADER001',
-  '操作员': 'OPERATOR001',
-  '质检员': 'INSPECTOR001',
+  '操作员': 'OP001',
+  '质检员': 'INS001',
   '管理员': 'ADMIN001',
 };
 
