@@ -1,5 +1,5 @@
 import { preferencesUtil, LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT } from '@ohos/datastore';
-import { httpClient } from '@ohos/network';
+import { httpClient, WebSocketService } from '@ohos/network';
 import { ApiConstants, BreakpointUtil, NetworkConfig } from '@ohos/utils';
 import { UserModel } from '@ohos/user';
 import { emitter } from '@kit.BasicServicesKit';
@@ -67,6 +67,7 @@ struct Index {
 
     // 登录过期监听
     emitter.on(LOGIN_EXPIRED_EVENT, () => {
+      WebSocketService.getInstance().disconnect();
       this.showTabBar = false;
       this.activeTab = 'HomeTab';
       this.pageStack.replacePath({ name: 'LoginPage' });
@@ -88,6 +89,11 @@ struct Index {
           this.currentUser.avatarUrl = (user['avatarUrl'] as string) ?? '';
         }
         this.currentRole = (payload['role'] as string) ?? '';
+
+        const loginToken = (payload['token'] as string) ?? '';
+        if (loginToken) {
+          WebSocketService.getInstance().connect(ApiConstants.autoWsUrl, loginToken);
+        }
       }
     });
 
@@ -116,6 +122,7 @@ struct Index {
         }
 
         httpClient.configure(ApiConstants.autoBaseUrl, token as string);
+        WebSocketService.getInstance().connect(ApiConstants.autoWsUrl, token as string);
         this.showTabBar = true;
         this.targetPage = 'HomeTab';
       } else {
@@ -128,6 +135,7 @@ struct Index {
   }
 
   aboutToDisappear(): void {
+    WebSocketService.getInstance().disconnect();
     if (this.windowChangeCallback) {
       try {
         const ctx = getContext(this);

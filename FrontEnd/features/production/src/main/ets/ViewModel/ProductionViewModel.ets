@@ -152,12 +152,15 @@ export class ProductionViewModel {
   }
 
   onLineStatusUpdate = (payload: Object): void => {
-    const data = payload as Record<string, Object>;
-    if (data['status'] !== undefined) {
-      this.lineDetail.status = data['status'] as string;
-    }
-    if (data['workOrderId'] !== undefined) {
-      this.lineDetail.currentWorkorderId = data['workOrderId'] as number ?? null;
+    const envelope = payload as Record<string, Object>;
+    const data = envelope['data'] as Record<string, Object> | undefined;
+    if (data) {
+      if (data['status'] !== undefined) {
+        this.lineDetail.status = data['status'] as string;
+      }
+      if (data['workOrderId'] !== undefined) {
+        this.lineDetail.currentWorkorderId = data['workOrderId'] as number ?? null;
+      }
     }
   };
 
