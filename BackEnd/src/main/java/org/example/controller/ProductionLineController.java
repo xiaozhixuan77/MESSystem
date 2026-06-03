@@ -16,6 +16,7 @@ import org.example.service.ProductionLineService;
 import org.example.service.WorkOrderService;
 import org.example.service.WorkshopService;
 import org.example.service.WorkstationService;
+import org.example.simulator.LineSimulator;
 import org.example.simulator.SimulatorManager;
 import org.example.vo.LineDetailVO;
 import org.example.vo.ProductionLineVO;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -242,6 +244,7 @@ public class ProductionLineController {
     @RequiresPermission("line.operate")
     public R<Void> start(@PathVariable Long id,
                          @Valid @RequestBody LineStartRequest request) {
+        workOrderService.start(request.getWorkOrderId());
         simulatorManager.start(id, request.getWorkOrderId());
         return R.ok();
     }
@@ -254,22 +257,14 @@ public class ProductionLineController {
                 .in(WorkOrder::getStatus, "生产中", "暂停中")
                 .one();
 
-        if (activeWo != null) {
-            try {
-                simulatorManager.stop(id);
-            } catch (BusinessException ignored) {
-                // 仿真器可能已停止（崩溃/重启），继续更新工单状态
-            }
+        try {
+            simulatorManager.stop(id);
+        } catch (BusinessException e) {
+            if (e.getCode() != 409) throw e;
+        }
 
-            activeWo.setStatus("暂停中");
-            activeWo.setActualEndTime(LocalDateTime.now());
-            workOrderService.updateById(activeWo);
-        } else {
-            try {
-                simulatorManager.stop(id);
-            } catch (BusinessException ignored) {
-                // 仿真器可能已停止
-            }
+        if (activeWo != null && "生产中".equals(activeWo.getStatus())) {
+            workOrderService.pause(activeWo.getId(), null);
         }
 
         return R.ok();
@@ -278,7 +273,43 @@ public class ProductionLineController {
     @PostMapping("/lines/{id}/reset")
     @RequiresPermission("line.operate")
     public R<Void> reset(@PathVariable Long id) {
+        Long workOrderId = simulatorManager.getSimulator(id)
+                .map(LineSimulator::getWorkOrderId).orElse(null);
+
         simulatorManager.reset(id);
+
+        if (workOrderId != null) {
+            WorkOrder wo = workOrderService.getById(workOrderId);
+            if (wo != null && ("生产中".equals(wo.getStatus()) || "暂停中".equals(wo.getStatus()))) {
+                wo.setStatus("已派工");
+                workOrderService.updateById(wo);
+            }
+        }
+
+        return R.ok();
+    }
+
+    @PostMapping("/lines/{id}/exception")
+    @RequiresPermission("line.operate")
+    public R<Void> reportException(@PathVariable Long id,
+                                   @RequestBody Map<String, String> body) {
+        String description = body != null ? body.get("description") : null;
+
+        WorkOrder activeWo = workOrderService.lambdaQuery()
+                .eq(WorkOrder::getLineId, id)
+                .eq(WorkOrder::getStatus, "生产中")
+                .one();
+
+        try {
+            simulatorManager.stop(id);
+        } catch (BusinessException e) {
+            if (e.getCode() != 409) throw e;
+        }
+
+        if (activeWo != null) {
+            workOrderService.pause(activeWo.getId(), description);
+        }
+
         return R.ok();
     }
 }

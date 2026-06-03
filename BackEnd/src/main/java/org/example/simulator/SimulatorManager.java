@@ -84,6 +84,7 @@ public class SimulatorManager {
 
             List<Workstation> stations = workstationService.lambdaQuery()
                     .eq(Workstation::getProductionLineId, lineId)
+                    .eq(Workstation::getIsDeleted, 0)
                     .list();
             if (stations == null || stations.isEmpty()) {
                 throw new BusinessException(422, "产线 " + lineId + " 下没有工作站，无法启动仿真");
@@ -226,6 +227,7 @@ public class SimulatorManager {
             // 从 DB 重新加载实体，刷新乐观锁版本号
             List<Workstation> fresh = workstationService.lambdaQuery()
                     .eq(Workstation::getProductionLineId, lineId)
+                    .eq(Workstation::getIsDeleted, 0)
                     .list();
             simulator.replaceStations(fresh);
 
@@ -249,8 +251,6 @@ public class SimulatorManager {
             future.cancel(false);
             log.info("已取消产线 {} 的仿真任务", lineId);
         });
-        runningSimulators.clear();
-        simulators.clear();
 
         scheduler.shutdown();
         try {
@@ -261,5 +261,8 @@ public class SimulatorManager {
             scheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
+
+        runningSimulators.clear();
+        simulators.clear();
     }
 }

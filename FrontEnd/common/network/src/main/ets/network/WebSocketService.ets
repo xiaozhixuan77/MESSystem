@@ -387,6 +387,7 @@ export class WebSocketService {
 
     if (this.reconnectAttempts >= MAX_RETRY) {
       this.isReconnectFailed = true;
+      console.error('[WebSocket] 重连失败，已达到最大重试次数');
       return;
     }
 

@@ -51,9 +51,9 @@ class LineSimulatorTest {
             List<StationState> states = simulator.tick();
 
             for (StationState s : states) {
-                assertEquals(1, s.getProcessedCount(), s.getCode() + " processedCount");
-                assertEquals(1, s.getRawCount(), s.getCode() + " rawCount");
-                assertEquals(1, s.getFinishedCount(), s.getCode() + " finishedCount");
+                assertEquals(1, s.getProcessedCount(), s.getOpCode() + " processedCount");
+                assertEquals(1, s.getRawCount(), s.getOpCode() + " rawCount");
+                assertEquals(1, s.getFinishedCount(), s.getOpCode() + " finishedCount");
             }
         }
 
@@ -64,8 +64,8 @@ class LineSimulatorTest {
             List<StationState> states = simulator.tick(); // second
 
             for (StationState s : states) {
-                assertEquals(2, s.getProcessedCount(), s.getCode() + " processedCount");
-                assertEquals(2, s.getRawCount(), s.getCode() + " rawCount");
+                assertEquals(2, s.getProcessedCount(), s.getOpCode() + " processedCount");
+                assertEquals(2, s.getRawCount(), s.getOpCode() + " rawCount");
             }
         }
 
@@ -151,8 +151,8 @@ class LineSimulatorTest {
             List<StationState> states = perfectSim.tick();
 
             for (StationState s : states) {
-                assertEquals(1, s.getFinishedCount(), s.getCode() + " finishedCount");
-                assertEquals(0, s.getNgCount(), s.getCode() + " ngCount");
+                assertEquals(1, s.getFinishedCount(), s.getOpCode() + " finishedCount");
+                assertEquals(0, s.getNgCount(), s.getOpCode() + " ngCount");
             }
         }
 
@@ -167,8 +167,8 @@ class LineSimulatorTest {
             List<StationState> states = zeroSim.tick();
 
             for (StationState s : states) {
-                assertEquals(0, s.getFinishedCount(), s.getCode() + " finishedCount");
-                assertEquals(1, s.getNgCount(), s.getCode() + " ngCount");
+                assertEquals(0, s.getFinishedCount(), s.getOpCode() + " finishedCount");
+                assertEquals(1, s.getNgCount(), s.getOpCode() + " ngCount");
             }
         }
 
@@ -266,7 +266,7 @@ class LineSimulatorTest {
         void stationStateChainSetters() {
             StationState state = new StationState()
                     .setStationId(1L)
-                    .setCode("WS-OP10")
+                    .setOpCode("WS-OP10")
                     .setName("上料")
                     .setDeviceStatus("运行中")
                     .setProcessedCount(5)
@@ -275,7 +275,7 @@ class LineSimulatorTest {
                     .setNgCount(1);
 
             assertEquals(1L, state.getStationId());
-            assertEquals("WS-OP10", state.getCode());
+            assertEquals("WS-OP10", state.getOpCode());
             assertEquals("上料", state.getName());
             assertEquals("运行中", state.getDeviceStatus());
             assertEquals(5, state.getProcessedCount());

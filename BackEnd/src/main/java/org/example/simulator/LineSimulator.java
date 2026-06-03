@@ -34,37 +34,36 @@ public class LineSimulator {
     }
 
     /**
-     * 每次 Tick 推进各工作站计数器，按良品率随机决定良品/NG。
+     * 每个 Tick 推进一个新产品进入流水线（OP10 → OP20 → … → OP70）。
+     * 工作站 i 的处理量 = max(0, productSnCounter - i)。
+     * 良品率独立判定每个工作站每产品。
      *
      * @return 本次 Tick 后所有工作站的状态快照
      */
     public List<StationState> tick() {
+        int sn = incrementProductSn();
         List<StationState> states = new ArrayList<>(stations.size());
 
-        for (Workstation ws : stations) {
-            if (!"运行中".equals(ws.getDeviceStatus())) {
-                states.add(new StationState()
-                        .setStationId(ws.getId())
-                        .setOpCode(ws.getCode())
-                        .setName(ws.getName())
-                        .setDeviceStatus(ws.getDeviceStatus())
-                        .setProcessedCount(ws.getProcessedCount() == null ? 0 : ws.getProcessedCount())
-                        .setRawCount(ws.getRawCount() == null ? 0 : ws.getRawCount())
-                        .setFinishedCount(ws.getFinishedCount() == null ? 0 : ws.getFinishedCount())
-                        .setNgCount(ws.getNgCount() == null ? 0 : ws.getNgCount()));
-                continue;
-            }
+        for (int i = 0; i < stations.size(); i++) {
+            Workstation ws = stations.get(i);
+            int processed = ws.getProcessedCount() == null ? 0 : ws.getProcessedCount();
+            int raw = ws.getRawCount() == null ? 0 : ws.getRawCount();
+            int finished = ws.getFinishedCount() == null ? 0 : ws.getFinishedCount();
+            int ng = ws.getNgCount() == null ? 0 : ws.getNgCount();
 
-            int newProcessed = ws.getProcessedCount() == null ? 1 : ws.getProcessedCount() + 1;
-            int newRaw = ws.getRawCount() == null ? 1 : ws.getRawCount() + 1;
-            boolean isGood = ThreadLocalRandom.current().nextDouble() <= goodRate;
-
-            ws.setProcessedCount(newProcessed);
-            ws.setRawCount(newRaw);
-            if (isGood) {
-                ws.setFinishedCount(ws.getFinishedCount() == null ? 1 : ws.getFinishedCount() + 1);
-            } else {
-                ws.setNgCount(ws.getNgCount() == null ? 1 : ws.getNgCount() + 1);
+            if ("运行中".equals(ws.getDeviceStatus()) && sn > i) {
+                processed++;
+                raw++;
+                boolean isGood = ThreadLocalRandom.current().nextDouble() <= goodRate;
+                if (isGood) {
+                    finished++;
+                } else {
+                    ng++;
+                }
+                ws.setProcessedCount(processed);
+                ws.setRawCount(raw);
+                ws.setFinishedCount(finished);
+                ws.setNgCount(ng);
             }
 
             states.add(new StationState()
@@ -72,10 +71,10 @@ public class LineSimulator {
                     .setOpCode(ws.getCode())
                     .setName(ws.getName())
                     .setDeviceStatus(ws.getDeviceStatus())
-                    .setProcessedCount(newProcessed)
-                    .setRawCount(newRaw)
-                    .setFinishedCount(ws.getFinishedCount() == null ? 0 : ws.getFinishedCount())
-                    .setNgCount(ws.getNgCount() == null ? 0 : ws.getNgCount()));
+                    .setProcessedCount(processed)
+                    .setRawCount(raw)
+                    .setFinishedCount(finished)
+                    .setNgCount(ng));
         }
 
         return states;

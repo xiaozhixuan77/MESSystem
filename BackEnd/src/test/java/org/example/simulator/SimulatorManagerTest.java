@@ -1,13 +1,11 @@
 package org.example.simulator;
 
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.config.SimulatorConfig;
 import org.example.entity.ProductionLine;
 import org.example.entity.Workstation;
 import org.example.exception.BusinessException;
 import org.example.service.ProductionLineService;
-import org.example.service.ProductionLogService;
 import org.example.service.WorkstationService;
 import org.example.websocket.LineBroadcaster;
 import org.junit.jupiter.api.AfterEach;
@@ -50,13 +48,11 @@ class SimulatorManagerTest {
     @Mock
     private ProductionLineService productionLineService;
     @Mock
-    private ProductionLogService productionLogService;
-    @Mock
     private SimulatorConfig config;
     @Mock
-    private ObjectMapper objectMapper;
-    @Mock
     private LineBroadcaster lineBroadcaster;
+    @Mock
+    private SimulatorTickService tickService;
 
     @Mock
     private LambdaQueryChainWrapper<Workstation> workstationQuery;
@@ -87,7 +83,7 @@ class SimulatorManagerTest {
         when(config.getGoodRate()).thenReturn(0.95);
 
         manager = new SimulatorManager(workstationService, productionLineService,
-                productionLogService, config, objectMapper, lineBroadcaster);
+                config, lineBroadcaster, tickService);
     }
 
     @AfterEach

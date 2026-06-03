@@ -1,7 +1,6 @@
 @ObservedV2
 export class StationModel {
   @Trace id: number = 0;
-  @Trace code: string = '';
   @Trace name: string = '';
   @Trace opCode: string = '';
   @Trace productionLineId: number = 0;
