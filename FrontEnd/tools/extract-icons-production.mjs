@@ -9,9 +9,12 @@ import { join } from 'path';
 const OUT_DIR = 'features/production/src/main/resources/base/media';
 const SIZE = 200;
 
-const BLUE = '#1565C0';
+const BLUE = '#1890ff';
 const GRAY = '#9A9AA8';
 const WHITE = '#FFFFFF';
+const GREEN = '#52c41a';
+const ORANGE = '#fa8c16';
+const RED = '#f5222d';
 
 const paths = {
   'chevron-left': 'M19 12H5m7 7l-7-7 7-7',
@@ -27,9 +30,13 @@ const icons = [
   { file: 'icon_arrow_left_white', path: 'chevron-left', color: WHITE },
   { file: 'icon_arrow_left_gray', path: 'chevron-left', color: GRAY },
   { file: 'icon_play_white', path: 'play', color: WHITE },
+  { file: 'icon_play_green', path: 'play', color: GREEN },
   { file: 'icon_stop_white', path: 'pause', color: WHITE },
+  { file: 'icon_stop_orange', path: 'pause', color: ORANGE },
   { file: 'icon_reset_white', path: 'reset', color: WHITE },
+  { file: 'icon_reset_blue', path: 'reset', color: BLUE },
   { file: 'icon_alert_white', path: 'alert-circle', color: WHITE },
+  { file: 'icon_alert_red', path: 'alert-circle', color: RED },
   { file: 'icon_line_white', path: 'line-icon', color: WHITE },
   { file: 'icon_filter_gray', path: 'filter', color: GRAY },
 ];

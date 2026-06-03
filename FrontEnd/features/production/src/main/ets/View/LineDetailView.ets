@@ -1,4 +1,4 @@
-import { StationCard, KpiCard, StatusTag } from '@ohos/uicomponents';
+import { KpiCard } from '@ohos/uicomponents';
 import { PermissionUtil } from '@ohos/utils';
 import { preferencesUtil } from '@ohos/datastore';
 import { ProductionViewModel } from '../ViewModel/ProductionViewModel';
@@ -45,6 +45,27 @@ export struct LineDetailView {
     } catch (_e) {
       // HAR module may not have UIContext
     }
+  }
+
+  private getStatusDotColor(status: string): ResourceColor {
+    if (status === '生产中') return '#4CAF50';
+    if (status === '异常' || status === '故障' || status === '停机') return '#F44336';
+    if (status === '暂停') return '#FF9800';
+    return '#9A9AA8';
+  }
+
+  private getStatusTextColor(status: string): ResourceColor {
+    if (status === '生产中') return '#4CAF50';
+    if (status === '异常' || status === '故障' || status === '停机') return '#F44336';
+    if (status === '暂停') return '#FF9800';
+    return '#9A9AA8';
+  }
+
+  private getStatusBgColor(status: string): ResourceColor {
+    if (status === '生产中') return '#E8F5E9';
+    if (status === '异常' || status === '故障' || status === '停机') return '#FFEBEE';
+    if (status === '暂停') return '#FFF8E1';
+    return '#F5F5F5';
   }
 
   private canOperate(): boolean {
@@ -237,12 +258,23 @@ export struct LineDetailView {
                   .layoutWeight(1)
                   .margin({ left: 12 });
 
-                StatusTag({ status: this.viewModel.lineDetail.status });
+                Row() {
+                  Circle({ width: 8, height: 8 })
+                    .fill(this.getStatusDotColor(this.viewModel.lineDetail.status));
+                  Text(this.viewModel.lineDetail.status)
+                    .fontSize(11)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor(this.getStatusTextColor(this.viewModel.lineDetail.status))
+                    .margin({ left: 4 });
+                }
+                .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+                .backgroundColor(this.getStatusBgColor(this.viewModel.lineDetail.status))
+                .borderRadius(12);
               }
               .width('100%');
             }
             .width('100%')
-            .padding({ left: 16, right: 16, top: 48, bottom: 16 })
+            .padding({ left: 16, right: 16, top: 16, bottom: 16 })
             .linearGradient({
               direction: GradientDirection.Bottom,
               colors: [['#1565C0', 0], ['#0D47A1', 1]]
@@ -317,7 +349,7 @@ export struct LineDetailView {
                   if (this.canOperate()) {
                     Button() {
                       Column() {
-                        Image($r('app.media.icon_play_white'))
+                        Image($r('app.media.icon_play_green'))
                           .width(20).height(20);
                         Text('启动')
                           .fontSize(11)
@@ -336,7 +368,7 @@ export struct LineDetailView {
 
                     Button() {
                       Column() {
-                        Image($r('app.media.icon_stop_white'))
+                        Image($r('app.media.icon_stop_orange'))
                           .width(20).height(20);
                         Text('停止')
                           .fontSize(11)
@@ -355,7 +387,7 @@ export struct LineDetailView {
 
                     Button() {
                       Column() {
-                        Image($r('app.media.icon_reset_white'))
+                        Image($r('app.media.icon_reset_blue'))
                           .width(20).height(20);
                         Text('复位')
                           .fontSize(11)
@@ -376,7 +408,7 @@ export struct LineDetailView {
                   if (this.canReportException()) {
                     Button() {
                       Column() {
-                        Image($r('app.media.icon_alert_white'))
+                        Image($r('app.media.icon_alert_red'))
                           .width(20).height(20);
                         Text('异常')
                           .fontSize(11)
