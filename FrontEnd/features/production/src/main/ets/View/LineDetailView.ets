@@ -459,43 +459,44 @@ export struct LineDetailView {
                       Text(`${index + 1}`)
                         .fontSize(12)
                         .fontWeight(FontWeight.Bold)
-                        .fontColor('#FFFFFF');
-                    }
-                    .width(28).height(28)
-                    .borderRadius(14)
-                    .linearGradient({
-                      direction: GradientDirection.Bottom,
-                      colors: [['#1565C0', 0], ['#0D47A1', 1]]
-                    })
-                    .justifyContent(FlexAlign.Center)
-                    .alignItems(HorizontalAlign.Center);
+                        .fontColor('#FFFFFF')
+                        .width(28).height(28)
+                        .textAlign(TextAlign.Center)
+                        .borderRadius(14)
+                        .linearGradient({
+                          direction: GradientDirection.Bottom,
+                          colors: [['#1565C0', 0], ['#0D47A1', 1]]
+                        });
 
-                    // Station info
-                    Column() {
-                      Text(station.name)
-                        .fontSize(14)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor('#1A1A2E');
-                      Text(station.deviceStatus === '运行中' ? '运行正常' : station.deviceStatus)
-                        .fontSize(11)
-                        .fontColor(station.deviceStatus === '运行中' ? '#4CAF50' : '#5A5A6E')
-                        .margin({ top: 2 });
-                    }
-                    .alignItems(HorizontalAlign.Start)
-                    .layoutWeight(1)
-                    .margin({ left: 12 });
+                      // Station info
+                      Column() {
+                        Text(station.name)
+                          .fontSize(14)
+                          .fontWeight(FontWeight.Bold)
+                          .fontColor('#1A1A2E');
+                        Text(station.deviceStatus === '运行中' ? '运行正常' : station.deviceStatus)
+                          .fontSize(11)
+                          .fontColor(station.deviceStatus === '运行中' ? '#4CAF50' : '#5A5A6E')
+                          .margin({ top: 2 });
+                      }
+                      .alignItems(HorizontalAlign.Start)
+                      .layoutWeight(1)
+                      .margin({ left: 12 });
 
-                    // Processed count
-                    Column() {
-                      Text(`${station.processedCount}`)
-                        .fontSize(14)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor('#1A1A2E');
-                      Text('已处理')
-                        .fontSize(10)
-                        .fontColor('#5A5A6E');
+                      // Processed count
+                      Column() {
+                        Text(`${station.processedCount}`)
+                          .fontSize(14)
+                          .fontWeight(FontWeight.Bold)
+                          .fontColor('#1A1A2E');
+                        Text('已处理')
+                          .fontSize(10)
+                          .fontColor('#5A5A6E');
+                      }
+                      .alignItems(HorizontalAlign.End);
                     }
-                    .alignItems(HorizontalAlign.End);
+                    .width('100%')
+                    .alignItems(VerticalAlign.Center);
                   }
                   .width('100%')
                   .padding({ left: 12, right: 12, top: 12, bottom: 12 })
