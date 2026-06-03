@@ -9,6 +9,7 @@ import org.example.exception.BusinessException;
 import org.example.service.ProductionLineService;
 import org.example.service.ProductionLogService;
 import org.example.service.WorkstationService;
+import org.example.websocket.LineBroadcaster;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -54,6 +55,8 @@ class SimulatorManagerTest {
     private SimulatorConfig config;
     @Mock
     private ObjectMapper objectMapper;
+    @Mock
+    private LineBroadcaster lineBroadcaster;
 
     @Mock
     private LambdaQueryChainWrapper<Workstation> workstationQuery;
@@ -84,7 +87,7 @@ class SimulatorManagerTest {
         when(config.getGoodRate()).thenReturn(0.95);
 
         manager = new SimulatorManager(workstationService, productionLineService,
-                productionLogService, config, objectMapper);
+                productionLogService, config, objectMapper, lineBroadcaster);
     }
 
     @AfterEach
@@ -131,24 +134,24 @@ class SimulatorManagerTest {
         }
 
         @Test
-        @DisplayName("产线下无工作站 → BusinessException 400")
+        @DisplayName("产线下无工作站 → BusinessException 422")
         void noWorkstationsThrowsException() {
             when(workstationQuery.list()).thenReturn(new ArrayList<>());
 
             BusinessException ex = assertThrows(BusinessException.class,
                     () -> manager.start(LINE_ID, WORK_ORDER_ID));
-            assertEquals(400, ex.getCode());
+            assertEquals(422, ex.getCode());
             assertTrue(ex.getMessage().contains("没有工作站"));
         }
 
         @Test
-        @DisplayName("工作站为 null → BusinessException 400")
+        @DisplayName("工作站为 null → BusinessException 422")
         void nullWorkstationsThrowsException() {
             when(workstationQuery.list()).thenReturn(null);
 
             BusinessException ex = assertThrows(BusinessException.class,
                     () -> manager.start(LINE_ID, WORK_ORDER_ID));
-            assertEquals(400, ex.getCode());
+            assertEquals(422, ex.getCode());
         }
 
         @Test
@@ -209,13 +212,13 @@ class SimulatorManagerTest {
         }
 
         @Test
-        @DisplayName("停止未运行的产线 → BusinessException 400")
+        @DisplayName("停止未运行的产线 → BusinessException 409")
         void stopNonRunningThrowsException() {
             manager.stop(LINE_ID); // first stop ok
 
             BusinessException ex = assertThrows(BusinessException.class,
                     () -> manager.stop(LINE_ID));
-            assertEquals(400, ex.getCode());
+            assertEquals(409, ex.getCode());
             assertTrue(ex.getMessage().contains("未在仿真运行中"));
         }
 

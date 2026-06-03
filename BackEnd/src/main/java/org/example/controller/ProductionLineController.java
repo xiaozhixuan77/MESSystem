@@ -2,13 +2,23 @@ package org.example.controller;
 
 import org.example.dto.request.LineStartRequest;
 import org.example.dto.response.R;
+import org.example.entity.Process;
+import org.example.entity.Product;
 import org.example.entity.ProductionLine;
 import org.example.entity.WorkOrder;
+import org.example.entity.Workstation;
+import org.example.entity.Workshop;
 import org.example.security.RequiresPermission;
+import org.example.service.ProcessService;
+import org.example.service.ProductService;
 import org.example.service.ProductionLineService;
 import org.example.service.WorkOrderService;
+import org.example.service.WorkshopService;
+import org.example.service.WorkstationService;
 import org.example.simulator.SimulatorManager;
+import org.example.vo.LineDetailVO;
 import org.example.vo.ProductionLineVO;
+import org.example.vo.StationVO;
 import org.example.websocket.LineBroadcaster;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,7 +30,11 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -30,15 +44,27 @@ public class ProductionLineController {
     private final SimulatorManager simulatorManager;
     private final WorkOrderService workOrderService;
     private final LineBroadcaster lineBroadcaster;
+    private final WorkshopService workshopService;
+    private final WorkstationService workstationService;
+    private final ProductService productService;
+    private final ProcessService processService;
 
     public ProductionLineController(ProductionLineService productionLineService,
                                      SimulatorManager simulatorManager,
                                      WorkOrderService workOrderService,
-                                     LineBroadcaster lineBroadcaster) {
+                                     LineBroadcaster lineBroadcaster,
+                                     WorkshopService workshopService,
+                                     WorkstationService workstationService,
+                                     ProductService productService,
+                                     ProcessService processService) {
         this.productionLineService = productionLineService;
         this.simulatorManager = simulatorManager;
         this.workOrderService = workOrderService;
         this.lineBroadcaster = lineBroadcaster;
+        this.workshopService = workshopService;
+        this.workstationService = workstationService;
+        this.productService = productService;
+        this.processService = processService;
     }
 
     @GetMapping("/lines")
@@ -49,14 +75,119 @@ public class ProductionLineController {
             query.eq(ProductionLine::getWorkshopId, workshopId);
         }
         List<ProductionLine> lines = query.list();
+
+        Map<Long, String> workshopNames = Collections.emptyMap();
+        if (!lines.isEmpty()) {
+            List<Long> workshopIds = lines.stream()
+                    .map(ProductionLine::getWorkshopId)
+                    .filter(id -> id != null && id > 0)
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (!workshopIds.isEmpty()) {
+                workshopNames = workshopService.lambdaQuery()
+                        .in(Workshop::getId, workshopIds)
+                        .list()
+                        .stream()
+                        .collect(Collectors.toMap(Workshop::getId, Workshop::getName));
+            }
+        }
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        Map<Long, String> finalWorkshopNames = workshopNames;
         List<ProductionLineVO> vos = lines.stream().map(line -> {
             ProductionLineVO vo = new ProductionLineVO();
             vo.setId(line.getId());
             vo.setName(line.getName());
             vo.setWorkshopId(line.getWorkshopId());
+            vo.setStatus(line.getStatus());
+            vo.setWorkshopName(finalWorkshopNames.getOrDefault(line.getWorkshopId(), ""));
+            if (line.getCreatedAt() != null) {
+                vo.setCreatedAt(line.getCreatedAt().format(fmt));
+            }
             return vo;
         }).collect(Collectors.toList());
         return R.ok(vos);
+    }
+
+    @GetMapping("/lines/{id}")
+    public R<LineDetailVO> detail(@PathVariable Long id) {
+        ProductionLine line = productionLineService.lambdaQuery()
+                .eq(ProductionLine::getId, id)
+                .eq(ProductionLine::getIsDeleted, 0)
+                .one();
+        if (line == null) {
+            return R.error(404, "产线 " + id + " 不存在");
+        }
+
+        LineDetailVO vo = new LineDetailVO();
+        vo.setId(line.getId());
+        vo.setName(line.getName());
+        vo.setWorkshopId(line.getWorkshopId());
+        vo.setStatus(line.getStatus());
+        vo.setCurrentProcessId(line.getCurrentProcessId());
+        vo.setCurrentWorkorderId(line.getCurrentWorkorderId());
+        if (line.getCreatedAt() != null) {
+            vo.setCreatedAt(line.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        }
+
+        if (line.getWorkshopId() != null) {
+            Workshop workshop = workshopService.getById(line.getWorkshopId());
+            if (workshop != null) {
+                vo.setWorkshopName(workshop.getName());
+            }
+        }
+
+        List<Workstation> stations = workstationService.lambdaQuery()
+                .eq(Workstation::getProductionLineId, id)
+                .eq(Workstation::getIsDeleted, 0)
+                .list();
+        List<StationVO> stationVOs = new ArrayList<>();
+        if (stations != null) {
+            for (Workstation ws : stations) {
+                StationVO sv = new StationVO();
+                sv.setId(ws.getId());
+                sv.setOpCode(ws.getCode());
+                sv.setName(ws.getName());
+                sv.setEquipmentCode(ws.getEquipmentCode());
+                sv.setDeviceStatus(ws.getDeviceStatus());
+                sv.setWorkStatus(ws.getWorkStatus());
+                sv.setConveyorStatus(ws.getConveyorStatus());
+                sv.setProcessedCount(ws.getProcessedCount() != null ? ws.getProcessedCount() : 0);
+                sv.setRawCount(ws.getRawCount() != null ? ws.getRawCount() : 0);
+                sv.setFinishedCount(ws.getFinishedCount() != null ? ws.getFinishedCount() : 0);
+                sv.setNgCount(ws.getNgCount() != null ? ws.getNgCount() : 0);
+                stationVOs.add(sv);
+            }
+        }
+        vo.setStations(stationVOs);
+
+        if (line.getCurrentWorkorderId() != null) {
+            WorkOrder wo = workOrderService.getById(line.getCurrentWorkorderId());
+            if (wo != null && wo.getIsDeleted() == 0) {
+                LineDetailVO.WorkOrderSummary summary = new LineDetailVO.WorkOrderSummary();
+                summary.setId(wo.getId());
+                summary.setCode(wo.getCode());
+                summary.setPlanQty(wo.getPlanQty());
+                summary.setStatus(wo.getStatus());
+
+                if (wo.getProductId() != null) {
+                    Product product = productService.getById(wo.getProductId());
+                    if (product != null) {
+                        summary.setProductName(product.getName());
+                    }
+                }
+                if (wo.getProcessId() != null) {
+                    Process process = processService.getById(wo.getProcessId());
+                    if (process != null) {
+                        summary.setProcessName(process.getName());
+                    }
+                }
+
+                vo.setActiveWorkOrder(summary);
+            }
+        }
+
+        return R.ok(vo);
     }
 
     @PostMapping("/lines/{id}/start")

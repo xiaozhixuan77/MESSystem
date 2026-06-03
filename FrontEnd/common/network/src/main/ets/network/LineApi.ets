@@ -12,7 +12,10 @@ export class LineApi {
     return httpClient.get(path);
   }
   static async getLineDetail(id: number): Promise<Object> { return httpClient.get(`/lines/${id}`); }
-  static async startLine(id: number): Promise<Object> { return httpClient.post(`/lines/${id}/start`); }
+  static async startLine(id: number, workOrderId: number): Promise<Object> {
+    const body: Record<string, number> = { 'workOrderId': workOrderId };
+    return httpClient.post(`/lines/${id}/start`, body);
+  }
   static async stopLine(id: number): Promise<Object> { return httpClient.post(`/lines/${id}/stop`); }
   static async resetLine(id: number): Promise<Object> { return httpClient.post(`/lines/${id}/reset`); }
 }
