@@ -1,8 +1,10 @@
+import { PermissionUtil } from '@ohos/utils';
 import { WorkOrderViewModel } from '../../ViewModel/WorkOrderViewModel';
 
 @ComponentV2
 export struct PausedDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('currentRole') currentRole: string = '';
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local workOrderId: number = 0;
 
@@ -204,26 +206,30 @@ export struct PausedDetailView {
 
   @Builder BottomActions() {
     Row({ space: 12 }) {
-      Button('报废')
-        .layoutWeight(1).height(46)
-        .fontSize(15).fontWeight(600)
-        .fontColor(Color.White)
-        .backgroundColor(this.viewModel.isSubmitting ? '#EF9A9A' : '#F44336').borderRadius(12)
-        .enabled(!this.viewModel.isSubmitting)
-        .onClick(async () => {
-          const ok = await this.viewModel.scrapWorkOrder(this.workOrderId);
-          if (ok) { this.pageStack.pop(); }
-        });
+      if (PermissionUtil.hasPermission('workorder.scrap', this.currentRole)) {
+        Button('报废')
+          .layoutWeight(1).height(46)
+          .fontSize(15).fontWeight(600)
+          .fontColor(Color.White)
+          .backgroundColor(this.viewModel.isSubmitting ? '#EF9A9A' : '#F44336').borderRadius(12)
+          .enabled(!this.viewModel.isSubmitting)
+          .onClick(async () => {
+            const ok = await this.viewModel.scrapWorkOrder(this.workOrderId);
+            if (ok) { this.pageStack.pop(); }
+          });
+      }
 
-      Button('恢复生产')
-        .layoutWeight(2).height(46)
-        .fontSize(15).fontWeight(600).fontColor(Color.White)
-        .backgroundColor(this.viewModel.isSubmitting ? '#81C784' : '#4CAF50').borderRadius(12)
-        .enabled(!this.viewModel.isSubmitting)
-        .onClick(async () => {
-          const ok = await this.viewModel.resumeWorkOrder(this.workOrderId);
-          if (ok) { this.pageStack.pop(); }
-        });
+      if (PermissionUtil.hasPermission('workorder.resume', this.currentRole)) {
+        Button('恢复生产')
+          .layoutWeight(2).height(46)
+          .fontSize(15).fontWeight(600).fontColor(Color.White)
+          .backgroundColor(this.viewModel.isSubmitting ? '#81C784' : '#4CAF50').borderRadius(12)
+          .enabled(!this.viewModel.isSubmitting)
+          .onClick(async () => {
+            const ok = await this.viewModel.resumeWorkOrder(this.workOrderId);
+            if (ok) { this.pageStack.pop(); }
+          });
+      }
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 12, bottom: 28 })

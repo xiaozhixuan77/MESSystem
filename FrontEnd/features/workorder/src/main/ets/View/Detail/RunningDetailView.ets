@@ -1,8 +1,10 @@
+import { PermissionUtil } from '@ohos/utils';
 import { WorkOrderViewModel } from '../../ViewModel/WorkOrderViewModel';
 
 @ComponentV2
 export struct RunningDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('currentRole') currentRole: string = '';
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local workOrderId: number = 0;
 
@@ -228,15 +230,17 @@ export struct RunningDetailView {
         .fontColor('#1A1A2E').backgroundColor('#F5F7FA').borderRadius(12)
         .onClick(() => this.pageStack.pop());
 
-      Button('暂停生产')
-        .layoutWeight(2).height(46)
-        .fontSize(15).fontWeight(600).fontColor(Color.White)
-        .backgroundColor(this.viewModel.isSubmitting ? '#FFB74D' : '#FF9800').borderRadius(12)
-        .enabled(!this.viewModel.isSubmitting)
-        .onClick(async () => {
-          const ok = await this.viewModel.pauseWorkOrder(this.workOrderId);
-          if (ok) { this.pageStack.pop(); }
-        });
+      if (PermissionUtil.hasPermission('workorder.pause', this.currentRole)) {
+        Button('暂停生产')
+          .layoutWeight(2).height(46)
+          .fontSize(15).fontWeight(600).fontColor(Color.White)
+          .backgroundColor(this.viewModel.isSubmitting ? '#FFB74D' : '#FF9800').borderRadius(12)
+          .enabled(!this.viewModel.isSubmitting)
+          .onClick(async () => {
+            const ok = await this.viewModel.pauseWorkOrder(this.workOrderId);
+            if (ok) { this.pageStack.pop(); }
+          });
+      }
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 12, bottom: 28 })

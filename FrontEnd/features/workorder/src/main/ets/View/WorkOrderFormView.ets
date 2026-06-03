@@ -1,3 +1,4 @@
+import { PermissionUtil } from '@ohos/utils';
 import { WorkOrderViewModel } from '../ViewModel/WorkOrderViewModel';
 import { ProductModel } from '../Model/ProductModel';
 import { WorkshopModel } from '../Model/WorkshopModel';
@@ -7,6 +8,7 @@ import { ProcessStepModel } from '../Model/ProcessStepModel';
 @ComponentV2
 export struct WorkOrderFormView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('currentRole') currentRole: string = '';
   @Param mode: string = 'add';
   @Param workOrderId: number = 0;
   @Param sourceWorkOrderId: number = 0;
@@ -560,28 +562,30 @@ export struct WorkOrderFormView {
             .borderRadius(12)
             .onClick(() => this.pageStack.pop())
 
-          Button('保存工单')
-            .fontSize(15)
-            .fontWeight(600)
-            .fontColor('#FFFFFF')
-            .backgroundColor(this.viewModel.isSubmitting ? '#90CAF9' : '#1565C0')
-            .layoutWeight(2)
-            .height(46)
-            .borderRadius(12)
-            .enabled(!this.viewModel.isSubmitting)
-            .onClick(async () => {
-              let success = false;
-              if (this.mode === 'edit') {
-                success = await this.viewModel.submitUpdate(this.workOrderId);
-              } else if (this.mode === 'copy') {
-                success = await this.viewModel.submitCopy(this.sourceWorkOrderId);
-              } else {
-                success = await this.viewModel.submitCreate();
-              }
-              if (success) {
-                this.pageStack.pop();
-              }
-            })
+          if (PermissionUtil.hasPermission('workorder.create', this.currentRole)) {
+            Button('保存工单')
+              .fontSize(15)
+              .fontWeight(600)
+              .fontColor('#FFFFFF')
+              .backgroundColor(this.viewModel.isSubmitting ? '#90CAF9' : '#1565C0')
+              .layoutWeight(2)
+              .height(46)
+              .borderRadius(12)
+              .enabled(!this.viewModel.isSubmitting)
+              .onClick(async () => {
+                let success = false;
+                if (this.mode === 'edit') {
+                  success = await this.viewModel.submitUpdate(this.workOrderId);
+                } else if (this.mode === 'copy') {
+                  success = await this.viewModel.submitCopy(this.sourceWorkOrderId);
+                } else {
+                  success = await this.viewModel.submitCreate();
+                }
+                if (success) {
+                  this.pageStack.pop();
+                }
+              })
+          }
         }
         .width('100%')
         .padding({

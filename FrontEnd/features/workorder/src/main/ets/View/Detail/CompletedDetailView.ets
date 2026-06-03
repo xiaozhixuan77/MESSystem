@@ -1,8 +1,10 @@
+import { PermissionUtil } from '@ohos/utils';
 import { WorkOrderViewModel } from '../../ViewModel/WorkOrderViewModel';
 
 @ComponentV2
 export struct CompletedDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('currentRole') currentRole: string = '';
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local workOrderId: number = 0;
 
@@ -246,23 +248,27 @@ export struct CompletedDetailView {
 
   @Builder BottomActions() {
     Row({ space: 12 }) {
-      Button('修改')
-        .layoutWeight(1).height(46)
-        .fontSize(15).fontWeight(600)
-        .fontColor('#1A1A2E').backgroundColor('#F5F7FA').borderRadius(12)
-        .onClick(() => {
-          const p: Record<string, number> = { 'workOrderId': this.workOrderId };
-          this.pageStack.pushPathByName('WorkOrderEdit', p);
-        });
-      Button('提交报工')
-        .layoutWeight(2).height(46)
-        .fontSize(15).fontWeight(600).fontColor(Color.White)
-        .backgroundColor(this.viewModel.isSubmitting ? '#FFB74D' : '#FF9800').borderRadius(12)
-        .enabled(!this.viewModel.isSubmitting)
-        .onClick(async () => {
-          const ok = await this.viewModel.reportWorkOrder(this.workOrderId);
-          if (ok) { this.pageStack.pop(); }
-        });
+      if (PermissionUtil.hasPermission('workorder.create', this.currentRole)) {
+        Button('修改')
+          .layoutWeight(1).height(46)
+          .fontSize(15).fontWeight(600)
+          .fontColor('#1A1A2E').backgroundColor('#F5F7FA').borderRadius(12)
+          .onClick(() => {
+            const p: Record<string, number> = { 'workOrderId': this.workOrderId };
+            this.pageStack.pushPathByName('WorkOrderEdit', p);
+          });
+      }
+      if (PermissionUtil.hasPermission('workorder.report', this.currentRole)) {
+        Button('提交报工')
+          .layoutWeight(2).height(46)
+          .fontSize(15).fontWeight(600).fontColor(Color.White)
+          .backgroundColor(this.viewModel.isSubmitting ? '#FFB74D' : '#FF9800').borderRadius(12)
+          .enabled(!this.viewModel.isSubmitting)
+          .onClick(async () => {
+            const ok = await this.viewModel.reportWorkOrder(this.workOrderId);
+            if (ok) { this.pageStack.pop(); }
+          });
+      }
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 12, bottom: 28 })

@@ -1,4 +1,4 @@
-import { RoleConstants } from '@ohos/utils';
+import { PermissionUtil, RoleConstants } from '@ohos/utils';
 import { WorkOrderModel } from '../Model/WorkOrderModel';
 import { WorkOrderViewModel } from '../ViewModel/WorkOrderViewModel';
 
@@ -74,22 +74,26 @@ export struct WorkOrderListView {
   WoButtons(wo: WorkOrderModel) {
     if (wo.status === '待派工') {
       Row({ space: 8 }) {
-        Button('复制')
-          .fontSize(12).fontWeight(600).fontColor('#5A5A6E')
-          .backgroundColor('#F5F7FA').borderRadius(8)
-          .padding({ left: 14, right: 14, top: 6, bottom: 6 })
-          .onClick(() => {
-            const p: Record<string, number> = { 'sourceWorkOrderId': wo.id };
-            this.pageStack.pushPathByName('WorkOrderCopy', p);
-          });
-        Button('派工')
-          .fontSize(12).fontWeight(600).fontColor(Color.White)
-          .backgroundColor('#1565C0').borderRadius(8)
-          .padding({ left: 14, right: 14, top: 6, bottom: 6 })
-          .onClick(() => {
-            const p: Record<string, number> = { 'workOrderId': wo.id };
-            this.pageStack.pushPathByName('PendingDetail', p);
-          });
+        if (PermissionUtil.hasPermission('workorder.create', this.currentRole)) {
+          Button('复制')
+            .fontSize(12).fontWeight(600).fontColor('#5A5A6E')
+            .backgroundColor('#F5F7FA').borderRadius(8)
+            .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+            .onClick(() => {
+              const p: Record<string, number> = { 'sourceWorkOrderId': wo.id };
+              this.pageStack.pushPathByName('WorkOrderCopy', p);
+            });
+        }
+        if (PermissionUtil.hasPermission('workorder.dispatch', this.currentRole)) {
+          Button('派工')
+            .fontSize(12).fontWeight(600).fontColor(Color.White)
+            .backgroundColor('#1565C0').borderRadius(8)
+            .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+            .onClick(() => {
+              const p: Record<string, number> = { 'workOrderId': wo.id };
+              this.pageStack.pushPathByName('PendingDetail', p);
+            });
+        }
       }
     } else if (wo.status === '生产中') {
       Button('查看')
@@ -101,14 +105,16 @@ export struct WorkOrderListView {
           this.pageStack.pushPathByName('RunningDetail', p);
         });
     } else if (wo.status === '暂停中') {
-      Button('恢复')
-        .fontSize(12).fontWeight(600).fontColor(Color.White)
-        .backgroundColor('#1565C0').borderRadius(8)
-        .padding({ left: 14, right: 14, top: 6, bottom: 6 })
-        .onClick(() => {
-          const p: Record<string, number> = { 'workOrderId': wo.id };
-          this.pageStack.pushPathByName('PausedDetail', p);
-        });
+      if (PermissionUtil.hasPermission('workorder.resume', this.currentRole)) {
+        Button('恢复')
+          .fontSize(12).fontWeight(600).fontColor(Color.White)
+          .backgroundColor('#1565C0').borderRadius(8)
+          .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+          .onClick(() => {
+            const p: Record<string, number> = { 'workOrderId': wo.id };
+            this.pageStack.pushPathByName('PausedDetail', p);
+          });
+      }
     } else {
       Button('详情')
         .fontSize(12).fontWeight(600).fontColor('#5A5A6E')
@@ -143,14 +149,16 @@ export struct WorkOrderListView {
           }
           .layoutWeight(1);
 
-          Button() {
-            Image($r('app.media.icon_plus_white'))
-              .width(18).height(18);
+          if (PermissionUtil.hasPermission('workorder.create', this.currentRole)) {
+            Button() {
+              Image($r('app.media.icon_plus_white'))
+                .width(18).height(18);
+            }
+            .width(40).height(40)
+            .backgroundColor('#1565C0')
+            .borderRadius(12)
+            .onClick(() => { this.pageStack.pushPathByName('WorkOrderAdd', undefined); });
           }
-          .width(40).height(40)
-          .backgroundColor('#1565C0')
-          .borderRadius(12)
-          .onClick(() => { this.pageStack.pushPathByName('WorkOrderAdd', undefined); });
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 12, bottom: 12 })

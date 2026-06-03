@@ -1,3 +1,4 @@
+import { PermissionUtil } from '@ohos/utils';
 import { UserModel } from '@ohos/user';
 import { WorkOrderViewModel } from '../../ViewModel/WorkOrderViewModel';
 import { WorkOrderRouteModel } from '../../Model/WorkOrderRouteModel';
@@ -5,6 +6,7 @@ import { WorkOrderRouteModel } from '../../Model/WorkOrderRouteModel';
 @ComponentV2
 export struct PendingDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('currentRole') currentRole: string = '';
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local workOrderId: number = 0;
 
@@ -225,25 +227,29 @@ export struct PendingDetailView {
   @Builder
   BottomActions() {
     Row({ space: 12 }) {
-      Button('修改')
-        .layoutWeight(1).height(46)
-        .fontSize(15).fontWeight(600)
-        .fontColor('#1A1A2E').backgroundColor('#F5F7FA').borderRadius(12)
-        .onClick(() => {
-          const p: Record<string, number> = { 'workOrderId': this.workOrderId };
-          this.pageStack.pushPathByName('WorkOrderEdit', p);
-        });
+      if (PermissionUtil.hasPermission('workorder.create', this.currentRole)) {
+        Button('修改')
+          .layoutWeight(1).height(46)
+          .fontSize(15).fontWeight(600)
+          .fontColor('#1A1A2E').backgroundColor('#F5F7FA').borderRadius(12)
+          .onClick(() => {
+            const p: Record<string, number> = { 'workOrderId': this.workOrderId };
+            this.pageStack.pushPathByName('WorkOrderEdit', p);
+          });
+      }
 
-      Button('确认派工')
-        .layoutWeight(2).height(46)
-        .fontSize(15).fontWeight(600)
-        .fontColor(Color.White)
-        .backgroundColor(this.viewModel.isSubmitting ? '#90CAF9' : '#1565C0').borderRadius(12)
-        .enabled(!this.viewModel.isSubmitting)
-        .onClick(async () => {
-          const ok = await this.viewModel.dispatchWorkOrder(this.workOrderId);
-          if (ok) { this.pageStack.pop(); }
-        });
+      if (PermissionUtil.hasPermission('workorder.dispatch', this.currentRole)) {
+        Button('确认派工')
+          .layoutWeight(2).height(46)
+          .fontSize(15).fontWeight(600)
+          .fontColor(Color.White)
+          .backgroundColor(this.viewModel.isSubmitting ? '#90CAF9' : '#1565C0').borderRadius(12)
+          .enabled(!this.viewModel.isSubmitting)
+          .onClick(async () => {
+            const ok = await this.viewModel.dispatchWorkOrder(this.workOrderId);
+            if (ok) { this.pageStack.pop(); }
+          });
+      }
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 12, bottom: 28 })
