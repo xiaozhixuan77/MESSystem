@@ -3,10 +3,13 @@ import { StationModel } from '../Model/StationModel';
 @ComponentV2
 export struct StationDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
-  @Param stationId: number = 0;
+  @Local stationId: number = 0;
   @Local station: StationModel = new StationModel();
 
   aboutToAppear(): void {
+    const navInfo = this.queryNavDestinationInfo();
+    const param = navInfo?.param as Record<string, Object>;
+    this.stationId = (param?.['stationId'] as number) ?? 0;
     // 加载工作站详情（后续 Phase 实现）
   }
 

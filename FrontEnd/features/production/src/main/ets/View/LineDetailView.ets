@@ -8,10 +8,16 @@ import { promptAction } from '@kit.ArkUI';
 @ComponentV2
 export struct LineDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
-  @Param lineId: number = 0;
+  @Local lineId: number = 0;
   @Local viewModel: ProductionViewModel = new ProductionViewModel();
 
   aboutToAppear(): void {
+    const navInfo = this.queryNavDestinationInfo();
+    const param = navInfo?.param as Record<string, Object>;
+    this.lineId = (param?.['lineId'] as number) ?? 0;
+    if (this.lineId <= 0) {
+      return;
+    }
     this.loadData();
   }
 
