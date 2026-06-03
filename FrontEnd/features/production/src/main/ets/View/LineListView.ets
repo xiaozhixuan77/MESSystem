@@ -1,6 +1,5 @@
 import { ProductionViewModel } from '../ViewModel/ProductionViewModel';
 import { LineModel } from '../Model/LineModel';
-import { StatusTag } from '@ohos/uicomponents';
 
 @ComponentV2
 export struct LineListView {

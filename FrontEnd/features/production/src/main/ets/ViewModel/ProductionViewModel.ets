@@ -7,8 +7,6 @@ import { LineDetailModel, WorkOrderSummary } from '../Model/LineDetailModel';
 @ObservedV2
 export class ProductionViewModel {
   @Trace lines: LineModel[] = [];
-  @Trace currentLine: LineModel = new LineModel();
-  @Trace stations: StationModel[] = [];
   @Trace lineDetail: LineDetailModel = new LineDetailModel();
   @Trace isLoading: boolean = false;
   @Trace errorMessage: string = '';

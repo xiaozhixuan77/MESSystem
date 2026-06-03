@@ -426,9 +426,9 @@ export struct LineDetailView {
               colors: [['#1565C0', 0], ['#0D47A1', 1]]
             });
 
-              // Scrollable: KPI + Stations
-              Scroll() {
-              Column() {
+            // Scrollable: KPI + Stations
+            Scroll() {
+            Column() {
               // KPI Section
               Text('实时数据')
                 .fontSize(14)
@@ -493,6 +493,7 @@ export struct LineDetailView {
                         .fontWeight(FontWeight.Bold)
                         .fontColor('#FFFFFF')
                         .width(28).height(28)
+                        .lineHeight(28)
                         .textAlign(TextAlign.Center)
                         .borderRadius(14)
                         .linearGradient({
