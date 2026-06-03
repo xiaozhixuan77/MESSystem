@@ -1,3 +1,5 @@
+import { emitter } from '@kit.BasicServicesKit';
+import { WORKORDER_CHANGED_EVENT } from '@ohos/datastore';
 import { PermissionUtil } from '@ohos/utils';
 import { WorkOrderModel } from '../Model/WorkOrderModel';
 import { WorkOrderViewModel } from '../ViewModel/WorkOrderViewModel';
@@ -31,6 +33,9 @@ export struct WorkOrderListView {
 
   aboutToAppear(): void {
     this.viewModel.loadWorkOrders();
+    emitter.on(WORKORDER_CHANGED_EVENT, () => {
+      this.viewModel.loadWorkOrders(true);
+    });
   }
 
   private statusLabelToFilter(label: string): string {

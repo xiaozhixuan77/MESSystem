@@ -1,3 +1,5 @@
+import { emitter } from '@kit.BasicServicesKit';
+import { WORKORDER_CHANGED_EVENT } from '@ohos/datastore';
 import { WorkOrderApi, WorkshopApi, ProductApi, LineApi, UserApi } from '@ohos/network';
 import { UserModel } from '@ohos/user';
 import { WorkOrderModel } from '../Model/WorkOrderModel';
@@ -190,6 +192,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.dispatchWorkOrder(workOrderId, this.selectedOperatorId);
+      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -204,6 +207,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.startWorkOrder(workOrderId);
+      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -218,6 +222,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.pauseWorkOrder(workOrderId);
+      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -232,6 +237,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.resumeWorkOrder(workOrderId);
+      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -252,6 +258,7 @@ export class WorkOrderViewModel {
         'note': this.reportFormNote
       };
       await WorkOrderApi.reportWorkOrder(workOrderId, data);
+      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -266,6 +273,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.confirmWorkOrder(workOrderId);
+      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -280,6 +288,7 @@ export class WorkOrderViewModel {
     this.errorMessage = '';
     try {
       await WorkOrderApi.scrapWorkOrder(workOrderId);
+      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -485,6 +494,7 @@ export class WorkOrderViewModel {
         body['planEndTime'] = this.formPlanEndTime + ':00';
       }
       await WorkOrderApi.createWorkOrder(body);
+      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -518,6 +528,7 @@ export class WorkOrderViewModel {
         body['planEndTime'] = this.formPlanEndTime + ':00';
       }
       await WorkOrderApi.updateWorkOrder(id, body);
+      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -542,6 +553,7 @@ export class WorkOrderViewModel {
         body['planEndTime'] = this.formPlanEndTime + ':00';
       }
       await WorkOrderApi.copyWorkOrder(sourceId, body);
+      emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} });
       return true;
     } catch (e) {
       this.errorMessage = (e as Error).message;
