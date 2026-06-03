@@ -546,6 +546,7 @@ INSERT IGNORE INTO role_permission (role, permission) VALUES
 ('leader', 'dashboard.view'),
 ('operator', 'workorder.view_own'),
 ('operator', 'workorder.start'),
+('operator', 'workorder.complete'),
 ('operator', 'workorder.pause'),
 ('operator', 'workorder.resume'),
 ('operator', 'workorder.report'),

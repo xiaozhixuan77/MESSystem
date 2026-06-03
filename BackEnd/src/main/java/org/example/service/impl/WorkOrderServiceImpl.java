@@ -278,6 +278,40 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void complete(Long workOrderId) {
+        WorkOrder wo = lambdaQuery()
+                .eq(WorkOrder::getId, workOrderId)
+                .last("FOR UPDATE")
+                .one();
+        if (wo == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+        if (!"生产中".equals(wo.getStatus())) {
+            throw new BusinessException(400, "只有\"生产中\"状态才能完成生产");
+        }
+
+        Long currentUserId = getCurrentUserId();
+        if (currentUserId == null || !wo.getOperatorId().equals(currentUserId)) {
+            throw new BusinessException(403, "只有被指派的操作员才能完成生产");
+        }
+
+        wo.setStatus("生产完成");
+        wo.setActualEndTime(LocalDateTime.now());
+        updateById(wo);
+
+        ProductionLine line = productionLineService.lambdaQuery()
+                .eq(ProductionLine::getId, wo.getLineId())
+                .last("FOR UPDATE")
+                .one();
+        if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
+            line.setStatus("空闲");
+            line.setCurrentWorkorderId(null);
+            productionLineService.updateById(line);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void pause(Long workOrderId, String reason) {
         WorkOrder wo = lambdaQuery()
                 .eq(WorkOrder::getId, workOrderId)

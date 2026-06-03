@@ -7,6 +7,7 @@ export class PermissionUtil {
       'workorder.create': ['admin', 'leader'],
       'workorder.dispatch': ['admin', 'leader'],
       'workorder.start': ['admin', 'operator'],
+      'workorder.complete': ['admin', 'operator'],
       'workorder.pause': ['admin', 'operator', 'leader'],
       'workorder.resume': ['admin', 'operator', 'leader'],
       'workorder.report': ['admin', 'operator'],

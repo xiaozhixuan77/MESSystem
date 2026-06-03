@@ -133,6 +133,13 @@ public class WorkOrderController {
         return R.ok();
     }
 
+    @PostMapping("/workorders/{id}/complete")
+    @RequiresPermission("workorder.complete")
+    public R<Void> complete(@PathVariable Long id) {
+        workOrderService.complete(id);
+        return R.ok();
+    }
+
     @PostMapping("/workorders/{id}/pause")
     @RequiresPermission("workorder.pause")
     public R<Void> pause(@PathVariable Long id,
