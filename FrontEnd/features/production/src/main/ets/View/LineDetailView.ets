@@ -274,77 +274,69 @@ export struct LineDetailView {
               .width('100%');
             }
             .width('100%')
-            .padding({ left: 16, right: 16, top: 16, bottom: 16 })
-            .linearGradient({
-              direction: GradientDirection.Bottom,
-              colors: [['#1565C0', 0], ['#0D47A1', 1]]
-            });
+            .padding({ left: 16, right: 16, top: 16, bottom: 0 });
 
             // Stale data warning
             if (this.viewModel.isDataStale && this.viewModel.lineDetail.id > 0) {
               Row() {
                 Text('⚠ 数据刷新失败，当前显示可能已过期')
                   .fontSize(12)
-                  .fontColor('#fa8c16');
+                  .fontColor('#FFE082');
               }
               .width('100%')
-              .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-              .backgroundColor('#FFF7E6');
+              .padding({ left: 0, right: 0, top: 4, bottom: 8 });
             }
 
-            // Scrollable content
-            Scroll() {
-            Column() {
-              // Active Work Order Card
-              if (this.viewModel.lineDetail.activeWorkOrder) {
-                Column() {
-                  Row() {
-                    Text(this.viewModel.lineDetail.activeWorkOrder.code)
-                      .fontSize(14)
-                      .fontWeight(FontWeight.Bold)
-                      .fontColor('#1A1A2E');
+            // Fixed: Work Order Card
+            if (this.viewModel.lineDetail.activeWorkOrder) {
+              Column() {
+                Row() {
+                  Text(this.viewModel.lineDetail.activeWorkOrder.code)
+                    .fontSize(14)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#1A1A2E');
 
-                    Blank();
+                  Blank();
 
-                    Text(this.viewModel.lineDetail.activeWorkOrder.status)
-                      .fontSize(12)
-                      .fontColor('#1565C0')
-                      .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-                      .backgroundColor('#E3F2FD')
-                      .borderRadius(4);
-                  }
-                  .width('100%')
-                  .margin({ bottom: 6 });
-
-                  Text(this.viewModel.lineDetail.activeWorkOrder.productName +
-                    (this.viewModel.lineDetail.activeWorkOrder.processName ?
-                    ' - ' + this.viewModel.lineDetail.activeWorkOrder.processName : ''))
-                    .fontSize(13)
-                    .fontColor('#5A5A6E')
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    .margin({ bottom: 10 });
-
-                  Progress({
-                    value: this.viewModel.todayOutput,
-                    total: this.viewModel.lineDetail.activeWorkOrder.planQty,
-                    type: ProgressType.Linear
-                  })
-                    .width('100%')
-                    .height(6)
-                    .color('#52c41a')
-                    .backgroundColor('rgba(0,0,0,0.06)');
+                  Text(this.viewModel.lineDetail.activeWorkOrder.status)
+                    .fontSize(12)
+                    .fontColor('#1565C0')
+                    .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+                    .backgroundColor('#E3F2FD')
+                    .borderRadius(4);
                 }
                 .width('100%')
-                .padding(14)
-                .backgroundColor('#FFFFFF')
-                .borderRadius(12)
-                .shadow({ radius: 6, color: 'rgba(0,0,0,0.04)', offsetY: 2 })
-                .margin({ top: 16, bottom: 4 });
-              }
+                .margin({ bottom: 6 });
 
-              // Action Buttons
-              if (this.canOperate() || this.canReportException()) {
+                Text(this.viewModel.lineDetail.activeWorkOrder.productName +
+                  (this.viewModel.lineDetail.activeWorkOrder.processName ?
+                  ' - ' + this.viewModel.lineDetail.activeWorkOrder.processName : ''))
+                  .fontSize(13)
+                  .fontColor('#5A5A6E')
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  .margin({ bottom: 10 });
+
+                Progress({
+                  value: this.viewModel.todayOutput,
+                  total: this.viewModel.lineDetail.activeWorkOrder.planQty,
+                  type: ProgressType.Linear
+                })
+                  .width('100%')
+                  .height(6)
+                  .color('#52c41a')
+                  .backgroundColor('rgba(0,0,0,0.06)');
+              }
+              .width('100%')
+              .padding(14)
+              .backgroundColor('#E3F2FD')
+              .borderRadius(12)
+              .shadow({ radius: 6, color: 'rgba(0,0,0,0.04)', offsetY: 2 })
+              .margin({ top: 12, bottom: 4 });
+            }
+
+            // Fixed: Action Buttons
+            if (this.canOperate() || this.canReportException()) {
                 Row({ space: 10 }) {
                   if (this.canOperate()) {
                     Button() {
@@ -426,9 +418,17 @@ export struct LineDetailView {
                   }
                 }
                 .width('100%')
-                .margin({ top: 14, bottom: 6 });
+                .margin({ top: 14, bottom: 10 });
               }
+            }
+            .linearGradient({
+              direction: GradientDirection.Bottom,
+              colors: [['#1565C0', 0], ['#0D47A1', 1]]
+            });
 
+              // Scrollable: KPI + Stations
+              Scroll() {
+              Column() {
               // KPI Section
               Text('实时数据')
                 .fontSize(14)
@@ -551,10 +551,8 @@ export struct LineDetailView {
             .scrollBar(BarState.Off)
             .edgeEffect(EdgeEffect.Spring)
             .layoutWeight(1)
-            .width('100%');
-          }
-          .width('100%')
-          .height('100%');
+            .width('100%')
+            .height('100%')
         }
       }
       .width('100%')
