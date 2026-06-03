@@ -1,15 +1,16 @@
+@ObservedV2
 export class LineModel {
-  id: number = 0;
-  name: string = '';
-  workshopId: number = 0;
-  currentProcessId: number | null = null;
-  currentWorkorderId: number | null = null;
-  status: string = '空闲';
-  workshopName: string = '';
-  createdAt: string = '';
-  stationCount: number = 0;
-  workOrderCode: string = '';
-  planQty: number = 0;
-  finishedCount: number = 0;
-  ngCount: number = 0;
+  @Trace id: number = 0;
+  @Trace name: string = '';
+  @Trace workshopId: number = 0;
+  @Trace currentProcessId: number | null = null;
+  @Trace currentWorkorderId: number | null = null;
+  @Trace status: string = '空闲';
+  @Trace workshopName: string = '';
+  @Trace createdAt: string = '';
+  @Trace stationCount: number = 0;
+  @Trace workOrderCode: string = '';
+  @Trace planQty: number = 0;
+  @Trace finishedCount: number = 0;
+  @Trace ngCount: number = 0;
 }

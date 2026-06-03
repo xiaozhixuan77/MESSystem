@@ -1,4 +1,5 @@
 import { KpiCard } from '@ohos/uicomponents';
+import { WebSocketService } from '@ohos/network';
 import { PermissionUtil } from '@ohos/utils';
 import { preferencesUtil } from '@ohos/datastore';
 import { ProductionViewModel } from '../ViewModel/ProductionViewModel';
@@ -257,6 +258,10 @@ export struct LineDetailView {
                   .fontColor('#FFFFFF')
                   .layoutWeight(1)
                   .margin({ left: 12 });
+
+                Circle({ width: 6, height: 6 })
+                  .fill(WebSocketService.getInstance().isConnected ? '#69F0AE' : '#9A9AA8')
+                  .margin({ right: 10 });
 
                 Row() {
                   Circle({ width: 8, height: 8 })

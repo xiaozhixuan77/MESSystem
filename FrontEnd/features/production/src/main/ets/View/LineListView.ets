@@ -11,6 +11,10 @@ export struct LineListView {
     this.viewModel.loadLines();
   }
 
+  aboutToDisappear(): void {
+    this.viewModel.unsubscribeLineList();
+  }
+
   private getIconBgColor(status: string): [string, string] {
     if (status === '生产中') return ['#42A5F5', '#1565C0'];
     if (status === '异常' || status === '故障' || status === '停机') return ['#FF8A80', '#F44336'];

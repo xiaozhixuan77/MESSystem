@@ -14,7 +14,7 @@ export class WebSocketService {
   private reconnectTimer: number = -1;
   private heartbeatTimer: number = -1;
   @Trace isConnected: boolean = false;
-  private static listeners: Map<string, Function> = new Map();
+  private static listeners: Map<string, Function[]> = new Map();
   private currentUrl: string = '';
   private currentToken: string = '';
   private subscriptionCounter: number = 0;
@@ -117,11 +117,26 @@ export class WebSocketService {
   }
 
   static addListener(topic: string, handler: Function): void {
-    WebSocketService.listeners.set(topic, handler);
+    const list = WebSocketService.listeners.get(topic);
+    if (list) {
+      list.push(handler);
+    } else {
+      WebSocketService.listeners.set(topic, [handler]);
+    }
   }
 
-  static removeListener(topic: string): void {
-    WebSocketService.listeners.delete(topic);
+  static removeListener(topic: string, handler: Function): void {
+    const list = WebSocketService.listeners.get(topic);
+    if (!list) {
+      return;
+    }
+    const idx = list.indexOf(handler);
+    if (idx !== -1) {
+      list.splice(idx, 1);
+    }
+    if (list.length === 0) {
+      WebSocketService.listeners.delete(topic);
+    }
   }
 
   // ─── STOMP frame serialization ───
@@ -249,12 +264,15 @@ export class WebSocketService {
       case 'MESSAGE': {
         const destination = frame.headers['destination'];
         if (destination && frame.body.length > 0) {
-          const listener = WebSocketService.listeners.get(destination);
-          if (listener) {
-            try {
-              listener(JSON.parse(frame.body) as Object);
-            } catch (_e) {
-              // body is not JSON, skip
+          const list = WebSocketService.listeners.get(destination);
+          if (list) {
+            const parsed = JSON.parse(frame.body) as Object;
+            for (let i = 0; i < list.length; i++) {
+              try {
+                list[i](parsed);
+              } catch (_e) {
+                // handler error, skip
+              }
             }
           }
         }

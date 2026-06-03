@@ -26,7 +26,9 @@ export class ProductionViewModel {
       if (status) {
         params['status'] = status;
       }
+      this.unsubscribeLineList();
       this.lines = await LineApi.getLines(params) as LineModel[];
+      this.subscribeLineList();
     } catch (e) {
       this.errorMessage = (e as Error).message;
     } finally {
@@ -146,10 +148,51 @@ export class ProductionViewModel {
     const ws = WebSocketService.getInstance();
     ws.unsubscribe(`/topic/lines/${this.activeLineId}`);
     ws.unsubscribe(`/topic/lines/${this.activeLineId}/stations`);
-    WebSocketService.removeListener(`/topic/lines/${this.activeLineId}`);
-    WebSocketService.removeListener(`/topic/lines/${this.activeLineId}/stations`);
+    WebSocketService.removeListener(`/topic/lines/${this.activeLineId}`, this.onLineStatusUpdate);
+    WebSocketService.removeListener(`/topic/lines/${this.activeLineId}/stations`, this.onStationUpdate);
     this.activeLineId = 0;
   }
+
+  subscribeLineList(): void {
+    const ws = WebSocketService.getInstance();
+    for (let i = 0; i < this.lines.length; i++) {
+      const line = this.lines[i];
+      const topic = `/topic/lines/${line.id}`;
+      ws.subscribe(topic);
+      WebSocketService.addListener(topic, this.onLineListStatusUpdate);
+    }
+  }
+
+  unsubscribeLineList(): void {
+    const ws = WebSocketService.getInstance();
+    for (let i = 0; i < this.lines.length; i++) {
+      const line = this.lines[i];
+      const topic = `/topic/lines/${line.id}`;
+      ws.unsubscribe(topic);
+      WebSocketService.removeListener(topic, this.onLineListStatusUpdate);
+    }
+  }
+
+  onLineListStatusUpdate = (payload: Object): void => {
+    const envelope = payload as Record<string, Object>;
+    const lineId = envelope['lineId'] as number | undefined;
+    if (!lineId) {
+      return;
+    }
+    const data = envelope['data'] as Record<string, Object> | undefined;
+    if (!data) {
+      return;
+    }
+    const line = this.lines.find(l => l.id === lineId);
+    if (line) {
+      if (data['status'] !== undefined) {
+        line.status = data['status'] as string;
+      }
+      if (data['workOrderId'] !== undefined) {
+        line.currentWorkorderId = data['workOrderId'] as number ?? null;
+      }
+    }
+  };
 
   onLineStatusUpdate = (payload: Object): void => {
     const envelope = payload as Record<string, Object>;

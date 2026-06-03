@@ -43,6 +43,6 @@ export class LineDetailModel {
   }
 
   get exceptionCount(): number {
-    return 0;
+    return this.stations.filter(s => s.deviceStatus === '异常' || s.deviceStatus === '故障').length;
   }
 }
