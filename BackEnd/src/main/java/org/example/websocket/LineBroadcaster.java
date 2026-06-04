@@ -43,10 +43,14 @@ public class LineBroadcaster {
     /**
      * 产线状态变更（启动/停止/复位）推送到 /topic/lines/{lineId}。
      */
-    public void broadcastLineStatus(Long lineId, String status, Long workOrderId) {
+    public void broadcastLineStatus(Long lineId, String status, Long workOrderId,
+                                     int finishedCount, int ngCount, String woStatus) {
         Map<String, Object> statusData = new HashMap<>();
         statusData.put("status", status);
         statusData.put("workOrderId", workOrderId);
+        statusData.put("finishedCount", finishedCount);
+        statusData.put("ngCount", ngCount);
+        statusData.put("woStatus", woStatus);
 
         Map<String, Object> message = new HashMap<>();
         message.put("type", "LINE_STATUS");

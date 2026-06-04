@@ -13,4 +13,5 @@ export class LineModel {
   @Trace planQty: number = 0;
   @Trace finishedCount: number = 0;
   @Trace ngCount: number = 0;
+  @Trace workOrderStatus: string = '';
 }

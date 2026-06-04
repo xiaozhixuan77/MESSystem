@@ -18,6 +18,7 @@ import org.example.service.ProductService;
 import org.example.service.UserService;
 import org.example.service.WorkOrderRouteStepService;
 import org.example.service.WorkOrderService;
+import org.example.simulator.SimulatorManager;
 import org.example.vo.WorkOrderDetailVO;
 import org.example.vo.WorkOrderRouteStepVO;
 import org.example.vo.WorkOrderVO;
@@ -39,17 +40,20 @@ public class WorkOrderController {
     private final ProductService productService;
     private final ProcessService processService;
     private final WorkOrderRouteStepService workOrderRouteStepService;
+    private final SimulatorManager simulatorManager;
 
     public WorkOrderController(WorkOrderService workOrderService,
                                UserService userService,
                                ProductService productService,
                                ProcessService processService,
-                               WorkOrderRouteStepService workOrderRouteStepService) {
+                               WorkOrderRouteStepService workOrderRouteStepService,
+                               SimulatorManager simulatorManager) {
         this.workOrderService = workOrderService;
         this.userService = userService;
         this.productService = productService;
         this.processService = processService;
         this.workOrderRouteStepService = workOrderRouteStepService;
+        this.simulatorManager = simulatorManager;
     }
 
     @GetMapping("/workorders")
@@ -130,6 +134,12 @@ public class WorkOrderController {
     @RequiresPermission("workorder.start")
     public R<Void> start(@PathVariable Long id) {
         workOrderService.start(id);
+
+        WorkOrder wo = workOrderService.getById(id);
+        if (wo != null && wo.getLineId() != null) {
+            simulatorManager.start(wo.getLineId(), id);
+        }
+
         return R.ok();
     }
 

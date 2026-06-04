@@ -251,8 +251,11 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         if (wo == null) {
             throw new BusinessException(404, "工单不存在");
         }
-        if (!"已派工".equals(wo.getStatus())) {
-            throw new BusinessException(400, "工单未派工");
+
+        boolean isDispatch = "已派工".equals(wo.getStatus());
+        boolean isPaused = "暂停中".equals(wo.getStatus());
+        if (!isDispatch && !isPaused) {
+            throw new BusinessException(400, "工单状态不支持启动，当前: " + wo.getStatus());
         }
 
         Long currentUserId = getCurrentUserId();
@@ -267,12 +270,19 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         if (line == null) {
             throw new BusinessException(404, "产线不存在");
         }
-        if (!"空闲".equals(line.getStatus())) {
-            throw new BusinessException(400, "产线不是空闲状态");
+        if (isDispatch && !"空闲".equals(line.getStatus())) {
+            throw new BusinessException(400, "产线不是空闲状态，当前: " + line.getStatus());
+        }
+        if (isPaused && !"暂停".equals(line.getStatus())) {
+            throw new BusinessException(400, "产线不是暂停状态，当前: " + line.getStatus());
         }
 
         wo.setStatus("生产中");
-        wo.setActualStartTime(LocalDateTime.now());
+        if (isPaused) {
+            wo.setPauseTime(null);
+        } else {
+            wo.setActualStartTime(LocalDateTime.now());
+        }
         updateById(wo);
 
         line.setStatus("生产中");
@@ -317,6 +327,39 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
     }
 
+    /**
+     * 系统自动完工 — 产量达标时由 Tick 线程调用。
+     * 跳过用户校验，不调 simulatorManager.stop()（Tick 内不能 waitForTickCompletion）。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void autoComplete(Long workOrderId) {
+        WorkOrder wo = lambdaQuery()
+                .eq(WorkOrder::getId, workOrderId)
+                .last("FOR UPDATE")
+                .one();
+        if (wo == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+        if (!"生产中".equals(wo.getStatus())) {
+            throw new BusinessException(400, "只有\"生产中\"状态才能完成生产");
+        }
+
+        wo.setStatus("生产完成");
+        wo.setActualEndTime(LocalDateTime.now());
+        updateById(wo);
+
+        ProductionLine line = productionLineService.lambdaQuery()
+                .eq(ProductionLine::getId, wo.getLineId())
+                .last("FOR UPDATE")
+                .one();
+        if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
+            line.setStatus("空闲");
+            line.setCurrentWorkorderId(null);
+            productionLineService.updateById(line);
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void pause(Long workOrderId, String reason) {
@@ -338,6 +381,18 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         wo.setStatus("暂停中");
         wo.setPauseTime(LocalDateTime.now());
         updateById(wo);
+
+        ProductionLine line = productionLineService.lambdaQuery()
+                .eq(ProductionLine::getId, wo.getLineId())
+                .last("FOR UPDATE")
+                .one();
+        if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
+            if (simulatorManager.isRunning(line.getId())) {
+                simulatorManager.stop(line.getId());
+            }
+            line.setStatus("暂停");
+            productionLineService.updateById(line);
+        }
     }
 
     @Override

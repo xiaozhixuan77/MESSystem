@@ -141,10 +141,18 @@ public class ProductionLineController {
 
             List<Workstation> lineStations = finalStationsByLine.getOrDefault(line.getId(), Collections.emptyList());
             vo.setStationCount(lineStations.size());
-            int finished = lineStations.stream()
-                    .mapToInt(ws -> ws.getFinishedCount() != null ? ws.getFinishedCount() : 0).sum();
-            int ng = lineStations.stream()
-                    .mapToInt(ws -> ws.getNgCount() != null ? ws.getNgCount() : 0).sum();
+            // 流水线产出 = 最后工位(OP70)的良品/不良数
+            Workstation lastStation = lineStations.stream()
+                    .max((a, b) -> {
+                        String ca = a.getCode() != null ? a.getCode() : "";
+                        String cb = b.getCode() != null ? b.getCode() : "";
+                        return ca.compareTo(cb);
+                    })
+                    .orElse(null);
+            int finished = lastStation != null && lastStation.getFinishedCount() != null
+                    ? lastStation.getFinishedCount() : 0;
+            int ng = lastStation != null && lastStation.getNgCount() != null
+                    ? lastStation.getNgCount() : 0;
             vo.setFinishedCount(finished);
             vo.setNgCount(ng);
 
@@ -254,14 +262,10 @@ public class ProductionLineController {
     public R<Void> stop(@PathVariable Long id) {
         WorkOrder activeWo = workOrderService.lambdaQuery()
                 .eq(WorkOrder::getLineId, id)
-                .in(WorkOrder::getStatus, "生产中", "暂停中")
+                .eq(WorkOrder::getStatus, "生产中")
                 .one();
 
-        try {
-            simulatorManager.stop(id);
-        } catch (BusinessException e) {
-            if (e.getCode() != 409) throw e;
-        }
+        simulatorManager.stop(id);
 
         if (activeWo != null && "生产中".equals(activeWo.getStatus())) {
             workOrderService.pause(activeWo.getId(), null);
@@ -273,18 +277,15 @@ public class ProductionLineController {
     @PostMapping("/lines/{id}/reset")
     @RequiresPermission("line.operate")
     public R<Void> reset(@PathVariable Long id) {
-        Long workOrderId = simulatorManager.getSimulator(id)
-                .map(LineSimulator::getWorkOrderId).orElse(null);
+        List<WorkOrder> activeWos = workOrderService.lambdaQuery()
+                .eq(WorkOrder::getLineId, id)
+                .in(WorkOrder::getStatus, "生产中", "暂停中")
+                .list();
+        if (!activeWos.isEmpty()) {
+            throw new BusinessException(400, "产线有活跃工单，无法复位。请先停止生产或等待工单完成");
+        }
 
         simulatorManager.reset(id);
-
-        if (workOrderId != null) {
-            WorkOrder wo = workOrderService.getById(workOrderId);
-            if (wo != null && ("生产中".equals(wo.getStatus()) || "暂停中".equals(wo.getStatus()))) {
-                wo.setStatus("已派工");
-                workOrderService.updateById(wo);
-            }
-        }
 
         return R.ok();
     }
@@ -300,11 +301,7 @@ public class ProductionLineController {
                 .eq(WorkOrder::getStatus, "生产中")
                 .one();
 
-        try {
-            simulatorManager.stop(id);
-        } catch (BusinessException e) {
-            if (e.getCode() != 409) throw e;
-        }
+        simulatorManager.stop(id);
 
         if (activeWo != null) {
             workOrderService.pause(activeWo.getId(), description);

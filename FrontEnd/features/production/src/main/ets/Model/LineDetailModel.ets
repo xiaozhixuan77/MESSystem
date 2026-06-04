@@ -21,7 +21,8 @@ export class LineDetailModel {
   @Trace activeWorkOrder: WorkOrderSummary | null = null;
 
   get todayOutput(): number {
-    return this.stations.reduce((sum, s) => sum + s.finishedCount, 0);
+    if (this.stations.length === 0) return 0;
+    return this.stations[this.stations.length - 1].finishedCount;
   }
 
   get yieldRate(): string {

@@ -178,11 +178,26 @@ export struct LineDetailView {
   }
 
   private isActionDisabled(action: string): boolean {
-    const status = this.viewModel.lineDetail.status;
-    if (action === 'start') return status === '生产中' || this.viewModel.isSubmitting;
-    if (action === 'stop') return status !== '生产中' || this.viewModel.isSubmitting;
-    if (action === 'reset') return this.viewModel.isSubmitting;
-    return this.viewModel.isSubmitting;
+    const lineStatus = this.viewModel.lineDetail.status;
+    const woStatus = this.viewModel.lineDetail.activeWorkOrder?.status;
+    if (this.viewModel.isSubmitting) return true;
+
+    if (action === 'start') {
+      // 可启动: (空闲+已派工) 或 (暂停+暂停中)
+      if (lineStatus === '空闲' && woStatus === '已派工') return false;
+      if (lineStatus === '暂停' && woStatus === '暂停中') return false;
+      return true;
+    }
+    if (action === 'stop') {
+      return lineStatus !== '生产中';
+    }
+    if (action === 'reset') {
+      // 仅工单完成/无工单时可复位
+      if (woStatus === '生产中' || woStatus === '暂停中') return true;
+      return false;
+    }
+    // exception
+    return lineStatus !== '生产中';
   }
 
   @Builder

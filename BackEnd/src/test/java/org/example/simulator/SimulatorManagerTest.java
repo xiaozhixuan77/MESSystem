@@ -6,6 +6,7 @@ import org.example.entity.ProductionLine;
 import org.example.entity.Workstation;
 import org.example.exception.BusinessException;
 import org.example.service.ProductionLineService;
+import org.example.service.WorkOrderService;
 import org.example.service.WorkstationService;
 import org.example.websocket.LineBroadcaster;
 import org.junit.jupiter.api.AfterEach;
@@ -53,6 +54,8 @@ class SimulatorManagerTest {
     private LineBroadcaster lineBroadcaster;
     @Mock
     private SimulatorTickService tickService;
+    @Mock
+    private WorkOrderService workOrderService;
 
     @Mock
     private LambdaQueryChainWrapper<Workstation> workstationQuery;
@@ -83,7 +86,7 @@ class SimulatorManagerTest {
         when(config.getGoodRate()).thenReturn(0.95);
 
         manager = new SimulatorManager(workstationService, productionLineService,
-                config, lineBroadcaster, tickService);
+                config, lineBroadcaster, tickService, workOrderService);
     }
 
     @AfterEach

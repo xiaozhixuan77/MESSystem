@@ -8,10 +8,12 @@ export struct LineListView {
   @Local activeTab: string = '全部';
 
   aboutToAppear(): void {
+    this.viewModel.isActive = true;
     this.viewModel.loadLines();
   }
 
   aboutToDisappear(): void {
+    this.viewModel.isActive = false;
     this.viewModel.unsubscribeLineList();
   }
 
@@ -256,6 +258,11 @@ export struct LineListView {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA');
+    .backgroundColor('#F5F7FA')
+    .onAppear(() => {
+      if (this.viewModel.lines.length > 0) {
+        this.viewModel.loadLines();
+      }
+    });
   }
 }

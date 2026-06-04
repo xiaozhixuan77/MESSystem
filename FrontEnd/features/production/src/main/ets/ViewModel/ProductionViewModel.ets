@@ -22,6 +22,7 @@ export class ProductionViewModel {
   @Trace isDataStale: boolean = false;
 
   private activeLineId: number = 0;
+  isActive: boolean = false;
 
   async loadLines(status?: string): Promise<void> {
     this.isLoading = true;
@@ -33,6 +34,9 @@ export class ProductionViewModel {
       }
       this.unsubscribeLineList();
       this.lines = await LineApi.getLines(params) as LineModel[];
+      if (!this.isActive) {
+        return;
+      }
       this.subscribeLineList();
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -210,6 +214,15 @@ export class ProductionViewModel {
       if (data['workOrderId'] !== undefined) {
         line.currentWorkorderId = data['workOrderId'] as number ?? null;
       }
+      if (data['finishedCount'] !== undefined) {
+        line.finishedCount = data['finishedCount'] as number;
+      }
+      if (data['ngCount'] !== undefined) {
+        line.ngCount = data['ngCount'] as number;
+      }
+      if (data['woStatus'] !== undefined && data['woStatus'] !== null) {
+        line.workOrderStatus = data['woStatus'] as string;
+      }
     }
   };
 
@@ -220,8 +233,20 @@ export class ProductionViewModel {
       if (data['status'] !== undefined) {
         this.lineDetail.status = data['status'] as string;
       }
-      if (data['workOrderId'] !== undefined) {
-        this.lineDetail.currentWorkorderId = data['workOrderId'] as number ?? null;
+      if (data['finishedCount'] !== undefined) {
+        // 详情页保持不动
+      }
+      if (data['ngCount'] !== undefined) {
+        // 详情页保持不动
+      }
+      if (data['woStatus'] !== undefined) {
+        const ws = data['woStatus'] as string | null;
+        if (ws && this.lineDetail.activeWorkOrder) {
+          this.lineDetail.activeWorkOrder.status = ws;
+          this.lineDetail.currentWorkorderId = this.lineDetail.activeWorkOrder.id;
+        } else if (ws === null || ws === undefined) {
+          this.lineDetail.currentWorkorderId = null;
+        }
       }
     }
   };
