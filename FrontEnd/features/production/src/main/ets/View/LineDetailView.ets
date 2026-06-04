@@ -537,7 +537,10 @@ export struct LineDetailView {
                 .width(36).height(36)
                 .backgroundColor('rgba(255,255,255,0.15)')
                 .borderRadius(12)
-                .onClick(() => this.pageStack.pop());
+                .onClick(() => {
+                // 通知列表刷新
+                this.pageStack.pop();
+              });
 
                 Text(this.viewModel.lineDetail.name)
                   .fontSize(18)

@@ -28,10 +28,15 @@ export struct DataTabDestination {
   build() {
     NavDestination() {
       Navigation(this.dataStack) {
-        LineListView()
+        Stack() {}
       }
       .navDestination(this.PageMap)
       .hideTitleBar(true)
+      .onAppear(() => {
+        if (this.dataStack.size() === 0) {
+          this.dataStack.replacePath({ name: 'LineList' });
+        }
+      })
     }
     .hideTitleBar(true)
   }

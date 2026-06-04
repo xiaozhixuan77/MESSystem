@@ -34,6 +34,9 @@ export class ProductionViewModel {
       }
       this.unsubscribeLineList();
       this.lines = await LineApi.getLines(params) as LineModel[];
+      if (!this.isActive) {
+        return;
+      }
       this.subscribeLineList();
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -165,9 +168,7 @@ export class ProductionViewModel {
     if (this.activeLineId <= 0) {
       return;
     }
-    const ws = WebSocketService.getInstance();
-    ws.unsubscribe(`/topic/lines/${this.activeLineId}`);
-    ws.unsubscribe(`/topic/lines/${this.activeLineId}/stations`);
+    // 不移除 STOMP 订阅 (ws.unsubscribe) — 列表页可能共享同一个 topic
     WebSocketService.removeListener(`/topic/lines/${this.activeLineId}`, this.onLineStatusUpdate);
     WebSocketService.removeListener(`/topic/lines/${this.activeLineId}/stations`, this.onStationUpdate);
     this.activeLineId = 0;

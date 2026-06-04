@@ -6,8 +6,7 @@ export struct LineListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Local viewModel: ProductionViewModel = new ProductionViewModel();
   @Local activeTab: string = '全部';
-  @Local hasAppeared: boolean = false;
-  @Local refreshing: boolean = false;
+  @Local isRefreshing: boolean = false;
 
   aboutToAppear(): void {
     this.viewModel.isActive = true;
@@ -58,17 +57,17 @@ export struct LineListView {
     return '空闲中';
   }
 
-  private selectTab(tab: string): void {
+  private selectTab(tab: string): Promise<void> {
     this.activeTab = tab;
     if (tab === '全部') {
-      this.viewModel.loadLines();
+      return this.viewModel.loadLines();
     } else {
       const statusMap: Record<string, string> = {
         '运行中': '生产中',
         '故障': '异常',
         '待机': '空闲'
       };
-      this.viewModel.loadLines(statusMap[tab] || tab);
+      return this.viewModel.loadLines(statusMap[tab] || tab);
     }
   }
 
@@ -86,198 +85,179 @@ export struct LineListView {
 
   build() {
     Column() {
-      // Header
-      Row() {
-        Image($r('app.media.icon_arrow_left_gray'))
-          .width(20).height(20)
-          .onClick(() => this.pageStack.pop());
-
-        Text('产线数据')
-          .fontSize(18)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#1A1A2E')
-          .layoutWeight(1)
-          .margin({ left: 12 });
-      }
-      .width('100%')
-      .padding({ left: 16, right: 16, top: 16, bottom: 12 })
-      .backgroundColor('#FFFFFF')
-      .border({ width: { bottom: 1 }, color: '#E8EBF0' });
-
-      // Status Tabs
-      Row({ space: 8 }) {
-        this.StatusTab('全部', '全部');
-        this.StatusTab('运行中', '运行中');
-        this.StatusTab('故障', '故障');
-        this.StatusTab('待机', '待机');
-      }
-      .width('100%')
-      .padding({ left: 16, right: 16, top: 12, bottom: 8 })
-      .backgroundColor('#FFFFFF');
-
-      // Content
-      if (this.viewModel.isLoading && this.viewModel.lines.length === 0) {
-        Column() {
-          LoadingProgress().width(32).height(32).color('#1565C0');
-          Text('加载中...').fontSize(13).fontColor('#999').margin({ top: 8 });
+        // Header
+        Row() {
+          Text('产线数据')
+            .fontSize(18)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#1A1A2E');
         }
-        .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
-      } else if (this.viewModel.errorMessage && this.viewModel.lines.length === 0) {
-        Column() {
-          Text('加载失败').fontSize(15).fontColor('#f5222d').margin({ bottom: 8 });
-          Text(this.viewModel.errorMessage).fontSize(12).fontColor('#999').margin({ bottom: 16 });
-          Button('重试').fontSize(13).backgroundColor('#1565C0').borderRadius(8)
-            .onClick(() => this.selectTab(this.activeTab));
-        }
-        .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
-      } else if (this.viewModel.lines.length === 0) {
-        Column() {
-          Text('暂无产线数据').fontSize(14).fontColor('#999');
-        }
-        .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
-      } else {
-        Refresh({ refreshing: $$this.refreshing }) {
-          List() {
-            ForEach(this.viewModel.lines, (line: LineModel) => {
-              ListItem() {
-                Column() {
-                  // Card Header
-                  Row() {
-                    // Line icon
-                    Column() {
-                      Image($r('app.media.icon_line_white'))
-                        .width(22).height(22);
-                    }
-                    .width(44).height(44)
-                    .borderRadius(12)
-                    .linearGradient({
-                      direction: GradientDirection.Bottom,
-                      colors: [
-                        [this.getIconBgColor(line.status)[0], 0],
-                        [this.getIconBgColor(line.status)[1], 1]
-                      ]
-                    })
-                    .justifyContent(FlexAlign.Center)
-                    .alignItems(HorizontalAlign.Center);
+        .width('100%')
+        .padding({ left: 16, right: 16, top: 16, bottom: 12 })
+        .backgroundColor('#FFFFFF')
+        .border({ width: { bottom: 1 }, color: '#E8EBF0' });
 
-                    // Line name + type
-                    Column() {
-                      Text(line.name)
-                        .fontSize(15)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor('#1A1A2E');
-                      Text(`${line.stationCount || '—'}工作站 · ${line.workshopName || ''}`)
-                        .fontSize(11)
-                        .fontColor('#5A5A6E')
-                        .margin({ top: 2 });
-                    }
-                    .layoutWeight(1)
-                    .alignItems(HorizontalAlign.Start)
-                    .margin({ left: 10 });
+        // Status Tabs
+        Row({ space: 8 }) {
+          this.StatusTab('全部', '全部');
+          this.StatusTab('运行中', '运行中');
+          this.StatusTab('故障', '故障');
+          this.StatusTab('待机', '待机');
+        }
+        .width('100%')
+        .padding({ left: 16, right: 16, top: 12, bottom: 8 })
+        .backgroundColor('#FFFFFF');
 
-                    // Status badge
+        // Content
+        if (this.viewModel.isLoading && this.viewModel.lines.length === 0) {
+          Column() {
+            LoadingProgress().width(32).height(32).color('#1565C0');
+            Text('加载中...').fontSize(13).fontColor('#999').margin({ top: 8 });
+          }
+          .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
+        } else if (this.viewModel.errorMessage && this.viewModel.lines.length === 0) {
+          Column() {
+            Text('加载失败').fontSize(15).fontColor('#f5222d').margin({ bottom: 8 });
+            Text(this.viewModel.errorMessage).fontSize(12).fontColor('#999').margin({ bottom: 16 });
+            Button('重试').fontSize(13).backgroundColor('#1565C0').borderRadius(8)
+              .onClick(() => this.selectTab(this.activeTab));
+          }
+          .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
+        } else if (this.viewModel.lines.length === 0) {
+          Column() {
+            Text('暂无产线数据').fontSize(14).fontColor('#999');
+          }
+          .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
+        } else {
+          Refresh({ refreshing: $$this.isRefreshing }) {
+            List() {
+              ForEach(this.viewModel.lines, (line: LineModel) => {
+                ListItem() {
+                  Column() {
+                    // Card Header
                     Row() {
-                      Circle({ width: 8, height: 8 })
-                        .fill(this.getStatusBadgeColor(line.status)[1]);
-                      Text(line.status)
-                        .fontSize(11)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor(this.getStatusBadgeColor(line.status)[1])
-                        .margin({ left: 4 });
-                    }
-                    .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-                    .backgroundColor(this.getStatusBadgeColor(line.status)[0])
-                    .borderRadius(12);
-                  }
-                  .width('100%')
-                  .margin({ bottom: 14 });
+                      // Line icon
+                      Column() {
+                        Image($r('app.media.icon_line_white'))
+                          .width(22).height(22);
+                      }
+                      .width(44).height(44)
+                      .borderRadius(12)
+                      .linearGradient({
+                        direction: GradientDirection.Bottom,
+                        colors: [
+                          [this.getIconBgColor(line.status)[0], 0],
+                          [this.getIconBgColor(line.status)[1], 1]
+                        ]
+                      })
+                      .justifyContent(FlexAlign.Center)
+                      .alignItems(HorizontalAlign.Center);
 
-                  // Stats Grid
-                  if (line.workOrderCode) {
-                    Row() {
+                      // Line name + type
                       Column() {
-                        Text(this.getProgress(line.workOrderCode, line.finishedCount, line.planQty))
-                          .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#1A1A2E');
-                        Text('完成进度').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
+                        Text(line.name)
+                          .fontSize(15)
+                          .fontWeight(FontWeight.Bold)
+                          .fontColor('#1A1A2E');
+                        Text(`${line.stationCount || '—'}工作站 · ${line.workshopName || ''}`)
+                          .fontSize(11)
+                          .fontColor('#5A5A6E')
+                          .margin({ top: 2 });
                       }
-                      .layoutWeight(1);
-                      Column() {
-                        Text(this.getYieldRate(line.finishedCount, line.ngCount))
-                          .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#4CAF50');
-                        Text('良品率').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
+                      .layoutWeight(1)
+                      .alignItems(HorizontalAlign.Start)
+                      .margin({ left: 10 });
+
+                      // Status badge
+                      Row() {
+                        Circle({ width: 8, height: 8 })
+                          .fill(this.getStatusBadgeColor(line.status)[1]);
+                        Text(line.status)
+                          .fontSize(11)
+                          .fontWeight(FontWeight.Medium)
+                          .fontColor(this.getStatusBadgeColor(line.status)[1])
+                          .margin({ left: 4 });
                       }
-                      .layoutWeight(1);
-                      Column() {
-                        Text(this.getOutput(line.finishedCount))
-                          .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#1A1A2E');
-                        Text('已产出').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
-                      }
-                      .layoutWeight(1);
+                      .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+                      .backgroundColor(this.getStatusBadgeColor(line.status)[0])
+                      .borderRadius(12);
                     }
                     .width('100%')
-                    .padding(12)
-                    .backgroundColor('#F5F7FA')
-                    .borderRadius(12)
-                    .margin({ bottom: 12 });
-                  }
+                    .margin({ bottom: 14 });
 
-                  // Footer
-                  Row() {
-                    Text(this.getFooterText(line))
-                      .fontSize(12)
-                      .fontColor('#5A5A6E')
-                      .layoutWeight(1);
+                    // Stats Grid
+                    if (line.workOrderCode) {
+                      Row() {
+                        Column() {
+                          Text(this.getProgress(line.workOrderCode, line.finishedCount, line.planQty))
+                            .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#1A1A2E');
+                          Text('完成进度').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
+                        }
+                        .layoutWeight(1);
+                        Column() {
+                          Text(this.getYieldRate(line.finishedCount, line.ngCount))
+                            .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#4CAF50');
+                          Text('良品率').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
+                        }
+                        .layoutWeight(1);
+                        Column() {
+                          Text(this.getOutput(line.finishedCount))
+                            .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#1A1A2E');
+                          Text('已产出').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
+                        }
+                        .layoutWeight(1);
+                      }
+                      .width('100%')
+                      .padding(12)
+                      .backgroundColor('#F5F7FA')
+                      .borderRadius(12)
+                      .margin({ bottom: 12 });
+                    }
 
-                    Text('查看详情')
-                      .fontSize(12)
-                      .fontWeight(FontWeight.Bold)
-                      .fontColor('#FFFFFF')
-                      .padding({ left: 14, right: 14, top: 6, bottom: 6 })
-                      .backgroundColor('#1565C0')
-                      .borderRadius(8)
-                      .onClick(() => {
-                        const p: Record<string, number> = { 'lineId': line.id };
-                        this.pageStack.pushPathByName('LineDetail', p);
-                      });
+                    // Footer
+                    Row() {
+                      Text(this.getFooterText(line))
+                        .fontSize(12)
+                        .fontColor('#5A5A6E')
+                        .layoutWeight(1);
+
+                      Text('查看详情')
+                        .fontSize(12)
+                        .fontWeight(FontWeight.Bold)
+                        .fontColor('#FFFFFF')
+                        .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+                        .backgroundColor('#1565C0')
+                        .borderRadius(8)
+                        .onClick(() => {
+                          const p: Record<string, number> = { 'lineId': line.id };
+                          this.pageStack.pushPathByName('LineDetail', p);
+                        });
+                    }
+                    .width('100%');
                   }
-                  .width('100%');
+                  .width('100%')
+                  .padding(16)
+                  .backgroundColor('#FFFFFF')
+                  .borderRadius(16)
+                  .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)', offsetY: 2 });
                 }
-                .width('100%')
-                .padding(16)
-                .backgroundColor('#FFFFFF')
-                .borderRadius(16)
-                .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)', offsetY: 2 });
-              }
-              .margin({ left: 16, right: 16, bottom: 12 });
-            }, (line: LineModel) => `${line.id}`);
+                .margin({ left: 16, right: 16, bottom: 12 });
+              }, (line: LineModel) => `${line.id}`);
+            }
+            .scrollBar(BarState.Off)
+            .layoutWeight(1)
+            .edgeEffect(EdgeEffect.Spring);
           }
-          .scrollBar(BarState.Off)
-          .layoutWeight(1)
-          .edgeEffect(EdgeEffect.Spring);
-        }
-        .onRefreshing(() => {
-          this.refreshing = true;
-          const statusMap: Record<string, string> = {
-            '运行中': '生产中',
-            '故障': '异常',
-            '待机': '空闲'
-          };
-          const status = this.activeTab === '全部' ? undefined : statusMap[this.activeTab];
-          this.viewModel.loadLines(status).then(() => {
-            this.refreshing = false;
+          .onRefreshing(() => {
+            this.isRefreshing = true;
+            this.selectTab(this.activeTab).finally(() => {
+              this.isRefreshing = false;
+            });
           });
-        });
+        }
       }
-    }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#F5F7FA')
-    .onAppear(() => {
-      this.viewModel.isActive = true;
-      if (this.hasAppeared) {
-        this.viewModel.loadLines();
-      }
-      this.hasAppeared = true;
-    });
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#F5F7FA');
   }
 }
