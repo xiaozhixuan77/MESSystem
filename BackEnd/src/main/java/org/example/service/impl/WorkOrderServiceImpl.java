@@ -321,9 +321,11 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             if (simulatorManager.isRunning(line.getId())) {
                 simulatorManager.stop(line.getId());
             }
-            line.setStatus("空闲");
-            line.setCurrentWorkorderId(null);
-            productionLineService.updateById(line);
+            productionLineService.lambdaUpdate()
+                    .eq(ProductionLine::getId, line.getId())
+                    .set(ProductionLine::getStatus, "空闲")
+                    .set(ProductionLine::getCurrentWorkorderId, null)
+                    .update();
         }
     }
 
@@ -354,9 +356,11 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 .last("FOR UPDATE")
                 .one();
         if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
-            line.setStatus("空闲");
-            line.setCurrentWorkorderId(null);
-            productionLineService.updateById(line);
+            productionLineService.lambdaUpdate()
+                    .eq(ProductionLine::getId, line.getId())
+                    .set(ProductionLine::getStatus, "空闲")
+                    .set(ProductionLine::getCurrentWorkorderId, null)
+                    .update();
         }
     }
 

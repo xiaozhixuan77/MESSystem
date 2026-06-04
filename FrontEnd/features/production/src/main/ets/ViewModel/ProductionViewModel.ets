@@ -233,12 +233,6 @@ export class ProductionViewModel {
       if (data['status'] !== undefined) {
         this.lineDetail.status = data['status'] as string;
       }
-      if (data['finishedCount'] !== undefined) {
-        // 详情页保持不动
-      }
-      if (data['ngCount'] !== undefined) {
-        // 详情页保持不动
-      }
       if (data['woStatus'] !== undefined) {
         const ws = data['woStatus'] as string | null;
         if (ws && this.lineDetail.activeWorkOrder) {
@@ -246,6 +240,7 @@ export class ProductionViewModel {
           this.lineDetail.currentWorkorderId = this.lineDetail.activeWorkOrder.id;
         } else if (ws === null || ws === undefined) {
           this.lineDetail.currentWorkorderId = null;
+          this.lineDetail.activeWorkOrder = null;
         }
       }
     }

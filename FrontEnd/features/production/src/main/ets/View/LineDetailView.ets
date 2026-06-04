@@ -127,6 +127,9 @@ export struct LineDetailView {
 
   private async confirmReset(): Promise<void> {
     this.viewModel.showResetConfirm = false;
+    // 立即清空工单卡片，不依赖 WebSocket/HTTP 时序
+    this.viewModel.lineDetail.currentWorkorderId = null;
+    this.viewModel.lineDetail.activeWorkOrder = null;
     const ok = await this.viewModel.resetLine(this.lineId);
     if (ok) {
       this.showToast('产线已复位');

@@ -194,9 +194,12 @@ public class SimulatorManager {
                 .eq(ProductionLine::getId, lineId)
                 .one();
         if (line != null) {
-            line.setStatus("空闲");
-            line.setCurrentWorkorderId(null);
-            productionLineService.updateById(line);
+            boolean updated = productionLineService.lambdaUpdate()
+                    .eq(ProductionLine::getId, lineId)
+                    .set(ProductionLine::getStatus, "空闲")
+                    .set(ProductionLine::getCurrentWorkorderId, null)
+                    .update();
+            log.info("产线 {} 复位, currentWorkorderId 清空结果: {}", lineId, updated);
         }
 
         lineBroadcaster.broadcastLineStatus(lineId, "空闲", null, 0, 0, null);
