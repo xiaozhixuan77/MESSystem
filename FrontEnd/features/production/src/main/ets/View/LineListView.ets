@@ -4,18 +4,18 @@ import { LineModel } from '../Model/LineModel';
 @ComponentV2
 export struct LineListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
-  @Local viewModel: ProductionViewModel = new ProductionViewModel();
+  @Consumer('sharedVm') viewModel: ProductionViewModel = new ProductionViewModel();
   @Local activeTab: string = '全部';
   @Local isRefreshing: boolean = false;
 
   aboutToAppear(): void {
-    this.viewModel.isActive = true;
+    console.log('text: [LineListView.aboutToAppear] 组件即将出现，开始加载数据');
     this.viewModel.loadLines();
   }
 
   aboutToDisappear(): void {
-    this.viewModel.isActive = false;
-    this.viewModel.unsubscribeLineList();
+    console.log('text: [LineListView.aboutToDisappear] 组件即将隐藏（保持WS订阅）');
+    // 不取消 WebSocket 订阅 — 保持在后台接收实时推送
   }
 
   private getIconBgColor(status: string): [string, string] {
@@ -58,6 +58,7 @@ export struct LineListView {
   }
 
   private selectTab(tab: string): Promise<void> {
+    console.log('text: [LineListView.selectTab] 切换筛选Tab', `tab=${tab}`);
     this.activeTab = tab;
     if (tab === '全部') {
       return this.viewModel.loadLines();
@@ -85,9 +86,11 @@ export struct LineListView {
 
   build() {
     Column() {
+      // 引用 refreshKey 确保 push/pop 后 @Trace 能触发重渲染
+      if (this.viewModel.refreshKey >= 0) {
         // Header
-        Row() {
-          Text('产线数据')
+      Row() {
+        Text('产线数据')
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
             .fontColor('#1A1A2E');
@@ -136,7 +139,6 @@ export struct LineListView {
                   Column() {
                     // Card Header
                     Row() {
-                      // Line icon
                       Column() {
                         Image($r('app.media.icon_line_white'))
                           .width(22).height(22);
@@ -153,7 +155,6 @@ export struct LineListView {
                       .justifyContent(FlexAlign.Center)
                       .alignItems(HorizontalAlign.Center);
 
-                      // Line name + type
                       Column() {
                         Text(line.name)
                           .fontSize(15)
@@ -168,7 +169,6 @@ export struct LineListView {
                       .alignItems(HorizontalAlign.Start)
                       .margin({ left: 10 });
 
-                      // Status badge
                       Row() {
                         Circle({ width: 8, height: 8 })
                           .fill(this.getStatusBadgeColor(line.status)[1]);
@@ -185,7 +185,6 @@ export struct LineListView {
                     .width('100%')
                     .margin({ bottom: 14 });
 
-                    // Stats Grid
                     if (line.workOrderCode) {
                       Row() {
                         Column() {
@@ -214,7 +213,6 @@ export struct LineListView {
                       .margin({ bottom: 12 });
                     }
 
-                    // Footer
                     Row() {
                       Text(this.getFooterText(line))
                         .fontSize(12)
@@ -229,6 +227,7 @@ export struct LineListView {
                         .backgroundColor('#1565C0')
                         .borderRadius(8)
                         .onClick(() => {
+                          console.log('text: [LineListView] 点击查看详情', `lineId=${line.id}`);
                           const p: Record<string, number> = { 'lineId': line.id };
                           this.pageStack.pushPathByName('LineDetail', p);
                         });
@@ -249,15 +248,25 @@ export struct LineListView {
             .edgeEffect(EdgeEffect.Spring);
           }
           .onRefreshing(() => {
+            console.log('text: [LineListView.onRefresh] 下拉刷新触发');
             this.isRefreshing = true;
             this.selectTab(this.activeTab).finally(() => {
+              console.log('text: [LineListView.onRefresh] 刷新完成');
               this.isRefreshing = false;
             });
           });
         }
       }
-      .width('100%')
-      .height('100%')
-      .backgroundColor('#F5F7FA');
+      }
+    .width('100%')
+    .height('100%')
+    .backgroundColor('#F5F7FA')
+    .onAppear(() => {
+      let s = '';
+      for (let i = 0; i < this.viewModel.lines.length; i++) {
+        s += `[id=${this.viewModel.lines[i].id}, status=${this.viewModel.lines[i].status}] `;
+      }
+      console.log('text: [LineListView.onAppear] 列表UI可见', `lines数量=${this.viewModel.lines.length}`, s);
+    });
   }
 }
