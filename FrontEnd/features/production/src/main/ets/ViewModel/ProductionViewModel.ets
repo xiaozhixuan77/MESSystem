@@ -34,9 +34,6 @@ export class ProductionViewModel {
       }
       this.unsubscribeLineList();
       this.lines = await LineApi.getLines(params) as LineModel[];
-      if (!this.isActive) {
-        return;
-      }
       this.subscribeLineList();
     } catch (e) {
       this.errorMessage = (e as Error).message;

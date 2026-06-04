@@ -6,6 +6,8 @@ export struct LineListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Local viewModel: ProductionViewModel = new ProductionViewModel();
   @Local activeTab: string = '全部';
+  @Local hasAppeared: boolean = false;
+  @Local refreshing: boolean = false;
 
   aboutToAppear(): void {
     this.viewModel.isActive = true;
@@ -134,7 +136,7 @@ export struct LineListView {
         }
         .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
       } else {
-        Refresh({ refreshing: $$this.viewModel.isLoading }) {
+        Refresh({ refreshing: $$this.refreshing }) {
           List() {
             ForEach(this.viewModel.lines, (line: LineModel) => {
               ListItem() {
@@ -253,16 +255,29 @@ export struct LineListView {
           .layoutWeight(1)
           .edgeEffect(EdgeEffect.Spring);
         }
-        .onRefreshing(() => this.selectTab(this.activeTab));
+        .onRefreshing(() => {
+          this.refreshing = true;
+          const statusMap: Record<string, string> = {
+            '运行中': '生产中',
+            '故障': '异常',
+            '待机': '空闲'
+          };
+          const status = this.activeTab === '全部' ? undefined : statusMap[this.activeTab];
+          this.viewModel.loadLines(status).then(() => {
+            this.refreshing = false;
+          });
+        });
       }
     }
     .width('100%')
     .height('100%')
     .backgroundColor('#F5F7FA')
     .onAppear(() => {
-      if (this.viewModel.lines.length > 0) {
+      this.viewModel.isActive = true;
+      if (this.hasAppeared) {
         this.viewModel.loadLines();
       }
+      this.hasAppeared = true;
     });
   }
 }
