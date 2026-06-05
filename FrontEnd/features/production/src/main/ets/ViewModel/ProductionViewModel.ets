@@ -218,24 +218,34 @@ export class ProductionViewModel {
 
   subscribeLineList(): void {
     const ws = WebSocketService.getInstance();
+    let newCount = 0;
+    let skipCount = 0;
     for (let i = 0; i < this.lines.length; i++) {
       const line = this.lines[i];
       if (this.subscribedLineIds.has(line.id)) {
+        skipCount++;
         continue;
       }
-      const topic = `/topic/lines/${line.id}`;
-      ws.subscribe(topic);
-      WebSocketService.addListener(topic, this.onLineListStatusUpdate);
+      const lineTopic = `/topic/lines/${line.id}`;
+      const stationTopic = `/topic/lines/${line.id}/stations`;
+      ws.subscribe(lineTopic);
+      ws.subscribe(stationTopic);
+      WebSocketService.addListener(lineTopic, this.onLineListStatusUpdate);
+      WebSocketService.addListener(stationTopic, this.onLineListStationUpdate);
       this.subscribedLineIds.add(line.id);
+      newCount++;
     }
   }
 
   unsubscribeLineList(): void {
     const ws = WebSocketService.getInstance();
     this.subscribedLineIds.forEach((lineId: number) => {
-      const topic = `/topic/lines/${lineId}`;
-      ws.unsubscribe(topic);
-      WebSocketService.removeListener(topic, this.onLineListStatusUpdate);
+      const lineTopic = `/topic/lines/${lineId}`;
+      const stationTopic = `/topic/lines/${lineId}/stations`;
+      ws.unsubscribe(lineTopic);
+      ws.unsubscribe(stationTopic);
+      WebSocketService.removeListener(lineTopic, this.onLineListStatusUpdate);
+      WebSocketService.removeListener(stationTopic, this.onLineListStationUpdate);
     });
     this.subscribedLineIds.clear();
   }
@@ -268,6 +278,30 @@ export class ProductionViewModel {
         line.workOrderStatus = data['woStatus'] as string;
       }
     }
+  };
+
+  onLineListStationUpdate = (payload: Object): void => {
+    const msg = payload as Record<string, Object>;
+    const lineId = msg['lineId'] as number | undefined;
+    const stationData = msg['data'] as Object[];
+    if (!lineId || !stationData || stationData.length === 0) {
+      return;
+    }
+    const line = this.lines.find(l => l.id === lineId);
+    if (!line) {
+      return;
+    }
+    // 取最后一个工作站的 finishedCount 作为产线总产出（与详情页 todayOutput 一致）
+    // NG 也取最后一个工作站，保持良品率计算一致
+    const lastStation = stationData[stationData.length - 1] as Record<string, Object>;
+    line.finishedCount = lastStation['finishedCount'] as number ?? 0;
+    line.ngCount = lastStation['ngCount'] as number ?? 0;
+    if (lastStation['deviceStatus'] === '运行中') {
+      line.workOrderStatus = '生产中';
+    }
+    // 强制替换数组引用以触发 ForEach 重渲染
+    this.lines = [...this.lines];
+    this.refreshKey++;
   };
 
   onLineStatusUpdate = (payload: Object): void => {

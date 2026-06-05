@@ -2,19 +2,9 @@ import { ProductionViewModel } from '../ViewModel/ProductionViewModel';
 import { LineModel } from '../Model/LineModel';
 
 @ComponentV2
-export struct LineListView {
+struct LineCard {
+  @Param line: LineModel = new LineModel();
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
-  @Consumer('sharedVm') viewModel: ProductionViewModel = new ProductionViewModel();
-  @Local activeTab: string = '全部';
-  @Local isRefreshing: boolean = false;
-
-  aboutToAppear(): void {
-    this.viewModel.loadLines();
-  }
-
-  aboutToDisappear(): void {
-    // 不取消 WebSocket 订阅 — 保持在后台接收实时推送
-  }
 
   private getIconBgColor(status: string): [string, string] {
     if (status === '生产中') return ['#42A5F5', '#1565C0'];
@@ -45,14 +35,135 @@ export struct LineListView {
     return finished > 0 ? `${finished}` : '—';
   }
 
-  private getFooterText(line: LineModel): string {
-    if (line.workOrderCode) {
-      return `当前工单：${line.workOrderCode}`;
+  private getFooterText(): string {
+    if (this.line.workOrderCode) {
+      return `当前工单：${this.line.workOrderCode}`;
     }
-    if (line.status === '异常' || line.status === '故障') {
+    if (this.line.status === '异常' || this.line.status === '故障') {
       return '异常停机中';
     }
     return '空闲中';
+  }
+
+  build() {
+    Column() {
+      // Card Header
+      Row() {
+        Column() {
+          Image($r('app.media.icon_line_white'))
+            .width(22).height(22);
+        }
+        .width(44).height(44)
+        .borderRadius(12)
+        .linearGradient({
+          direction: GradientDirection.Bottom,
+          colors: [
+            [this.getIconBgColor(this.line.status)[0], 0],
+            [this.getIconBgColor(this.line.status)[1], 1]
+          ]
+        })
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center);
+
+        Column() {
+          Text(this.line.name)
+            .fontSize(15)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#1A1A2E');
+          Text(`${this.line.stationCount || '—'}工作站 · ${this.line.workshopName || ''}`)
+            .fontSize(11)
+            .fontColor('#5A5A6E')
+            .margin({ top: 2 });
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+        .margin({ left: 10 });
+
+        Row() {
+          Circle({ width: 8, height: 8 })
+            .fill(this.getStatusBadgeColor(this.line.status)[1]);
+          Text(this.line.status)
+            .fontSize(11)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.getStatusBadgeColor(this.line.status)[1])
+            .margin({ left: 4 });
+        }
+        .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+        .backgroundColor(this.getStatusBadgeColor(this.line.status)[0])
+        .borderRadius(12);
+      }
+      .width('100%')
+      .margin({ bottom: 14 });
+
+      if (this.line.workOrderCode) {
+        Row() {
+          Column() {
+            Text(this.getProgress(this.line.workOrderCode, this.line.finishedCount, this.line.planQty))
+              .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#1A1A2E');
+            Text('完成进度').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
+          }
+          .layoutWeight(1);
+          Column() {
+            Text(this.getYieldRate(this.line.finishedCount, this.line.ngCount))
+              .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#4CAF50');
+            Text('良品率').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
+          }
+          .layoutWeight(1);
+          Column() {
+            Text(this.getOutput(this.line.finishedCount))
+              .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#1A1A2E');
+            Text('已产出').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
+          }
+          .layoutWeight(1);
+        }
+        .width('100%')
+        .padding(12)
+        .backgroundColor('#F5F7FA')
+        .borderRadius(12)
+        .margin({ bottom: 12 });
+      }
+
+      Row() {
+        Text(this.getFooterText())
+          .fontSize(12)
+          .fontColor('#5A5A6E')
+          .layoutWeight(1);
+
+        Text('查看详情')
+          .fontSize(12)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#FFFFFF')
+          .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+          .backgroundColor('#1565C0')
+          .borderRadius(8)
+          .onClick(() => {
+            const p: Record<string, number> = { 'lineId': this.line.id };
+            this.pageStack.pushPathByName('LineDetail', p);
+          });
+      }
+      .width('100%');
+    }
+    .width('100%')
+    .padding(16)
+    .backgroundColor('#FFFFFF')
+    .borderRadius(16)
+    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)', offsetY: 2 });
+  }
+}
+
+@ComponentV2
+export struct LineListView {
+  @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('sharedVm') viewModel: ProductionViewModel = new ProductionViewModel();
+  @Local activeTab: string = '全部';
+  @Local isRefreshing: boolean = false;
+
+  aboutToAppear(): void {
+    this.viewModel.loadLines();
+  }
+
+  aboutToDisappear(): void {
+    // 不取消 WebSocket 订阅 — 保持在后台接收实时推送
   }
 
   private selectTab(tab: string): Promise<void> {
@@ -132,111 +243,10 @@ export struct LineListView {
             List() {
               ForEach(this.viewModel.lines, (line: LineModel) => {
                 ListItem() {
-                  Column() {
-                    // Card Header
-                    Row() {
-                      Column() {
-                        Image($r('app.media.icon_line_white'))
-                          .width(22).height(22);
-                      }
-                      .width(44).height(44)
-                      .borderRadius(12)
-                      .linearGradient({
-                        direction: GradientDirection.Bottom,
-                        colors: [
-                          [this.getIconBgColor(line.status)[0], 0],
-                          [this.getIconBgColor(line.status)[1], 1]
-                        ]
-                      })
-                      .justifyContent(FlexAlign.Center)
-                      .alignItems(HorizontalAlign.Center);
-
-                      Column() {
-                        Text(line.name)
-                          .fontSize(15)
-                          .fontWeight(FontWeight.Bold)
-                          .fontColor('#1A1A2E');
-                        Text(`${line.stationCount || '—'}工作站 · ${line.workshopName || ''}`)
-                          .fontSize(11)
-                          .fontColor('#5A5A6E')
-                          .margin({ top: 2 });
-                      }
-                      .layoutWeight(1)
-                      .alignItems(HorizontalAlign.Start)
-                      .margin({ left: 10 });
-
-                      Row() {
-                        Circle({ width: 8, height: 8 })
-                          .fill(this.getStatusBadgeColor(line.status)[1]);
-                        Text(line.status)
-                          .fontSize(11)
-                          .fontWeight(FontWeight.Medium)
-                          .fontColor(this.getStatusBadgeColor(line.status)[1])
-                          .margin({ left: 4 });
-                      }
-                      .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-                      .backgroundColor(this.getStatusBadgeColor(line.status)[0])
-                      .borderRadius(12);
-                    }
-                    .width('100%')
-                    .margin({ bottom: 14 });
-
-                    if (line.workOrderCode) {
-                      Row() {
-                        Column() {
-                          Text(this.getProgress(line.workOrderCode, line.finishedCount, line.planQty))
-                            .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#1A1A2E');
-                          Text('完成进度').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
-                        }
-                        .layoutWeight(1);
-                        Column() {
-                          Text(this.getYieldRate(line.finishedCount, line.ngCount))
-                            .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#4CAF50');
-                          Text('良品率').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
-                        }
-                        .layoutWeight(1);
-                        Column() {
-                          Text(this.getOutput(line.finishedCount))
-                            .fontSize(15).fontWeight(FontWeight.Bold).fontColor('#1A1A2E');
-                          Text('已产出').fontSize(10).fontColor('#5A5A6E').margin({ top: 2 });
-                        }
-                        .layoutWeight(1);
-                      }
-                      .width('100%')
-                      .padding(12)
-                      .backgroundColor('#F5F7FA')
-                      .borderRadius(12)
-                      .margin({ bottom: 12 });
-                    }
-
-                    Row() {
-                      Text(this.getFooterText(line))
-                        .fontSize(12)
-                        .fontColor('#5A5A6E')
-                        .layoutWeight(1);
-
-                      Text('查看详情')
-                        .fontSize(12)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor('#FFFFFF')
-                        .padding({ left: 14, right: 14, top: 6, bottom: 6 })
-                        .backgroundColor('#1565C0')
-                        .borderRadius(8)
-                        .onClick(() => {
-                          const p: Record<string, number> = { 'lineId': line.id };
-                          this.pageStack.pushPathByName('LineDetail', p);
-                        });
-                    }
-                    .width('100%');
-                  }
-                  .width('100%')
-                  .padding(16)
-                  .backgroundColor('#FFFFFF')
-                  .borderRadius(16)
-                  .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)', offsetY: 2 });
+                  LineCard({ line: line })
                 }
                 .margin({ left: 16, right: 16, bottom: 12 });
-              }, (line: LineModel) => `${line.id}`);
+              }, (line: LineModel) => `${line.id}_${line.finishedCount}_${line.ngCount}_${line.status}`);
             }
             .scrollBar(BarState.Off)
             .layoutWeight(1)
