@@ -105,7 +105,13 @@ public class SimulatorManager {
                     Collections.emptyList(), config.getGoodRate());
             simulators.put(lineId, simulator);
 
-            lineBroadcaster.broadcastLineStatus(lineId, "生产中", workOrderId, 0, 0, "生产中");
+            WorkOrder wo = workOrderService.lambdaQuery()
+                    .eq(WorkOrder::getId, workOrderId)
+                    .select(WorkOrder::getCode, WorkOrder::getPlanQty)
+                    .one();
+            lineBroadcaster.broadcastLineStatus(lineId, "生产中", workOrderId, 0, 0, "生产中",
+                    wo != null ? wo.getCode() : null,
+                    wo != null ? wo.getPlanQty() : null);
 
             ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(
                     () -> tick(lineId), 0, config.getTickInterval(), TimeUnit.MILLISECONDS);
@@ -162,7 +168,20 @@ public class SimulatorManager {
         int finished = stations.stream().mapToInt(ws -> ws.getFinishedCount() != null ? ws.getFinishedCount() : 0).sum();
         int ng = stations.stream().mapToInt(ws -> ws.getNgCount() != null ? ws.getNgCount() : 0).sum();
         Long woId = line != null ? line.getCurrentWorkorderId() : null;
-        lineBroadcaster.broadcastLineStatus(lineId, finalStatus, woId, finished, ng, "暂停中");
+        String woCode = null;
+        Integer planQty = null;
+        if (woId != null) {
+            WorkOrder wo = workOrderService.lambdaQuery()
+                    .eq(WorkOrder::getId, woId)
+                    .select(WorkOrder::getCode, WorkOrder::getPlanQty)
+                    .one();
+            if (wo != null) {
+                woCode = wo.getCode();
+                planQty = wo.getPlanQty();
+            }
+        }
+        lineBroadcaster.broadcastLineStatus(lineId, finalStatus, woId, finished, ng, "暂停中",
+                woCode, planQty);
 
         log.info("产线 {} 仿真已停止，最终状态: {}, 已处理: {}, NG: {}", lineId, finalStatus, finished, ng);
     }
@@ -202,7 +221,7 @@ public class SimulatorManager {
             log.info("产线 {} 复位, currentWorkorderId 清空结果: {}", lineId, updated);
         }
 
-        lineBroadcaster.broadcastLineStatus(lineId, "空闲", null, 0, 0, null);
+        lineBroadcaster.broadcastLineStatus(lineId, "空闲", null, 0, 0, null, null, null);
 
         log.info("产线 {} 已复位", lineId);
     }
@@ -327,7 +346,20 @@ public class SimulatorManager {
         int ng = stations.get(stations.size() - 1).getNgCount() != null
                 ? stations.get(stations.size() - 1).getNgCount() : 0;
         Long woId = simulator.getWorkOrderId();
-        lineBroadcaster.broadcastLineStatus(lineId, "空闲", woId, finished, ng, "生产完成");
+        String woCode = null;
+        Integer planQty = null;
+        if (woId != null) {
+            WorkOrder wo = workOrderService.lambdaQuery()
+                    .eq(WorkOrder::getId, woId)
+                    .select(WorkOrder::getCode, WorkOrder::getPlanQty)
+                    .one();
+            if (wo != null) {
+                woCode = wo.getCode();
+                planQty = wo.getPlanQty();
+            }
+        }
+        lineBroadcaster.broadcastLineStatus(lineId, "空闲", woId, finished, ng, "生产完成",
+                woCode, planQty);
 
         log.info("产线 {} 完工清理完成，良品: {}, NG: {}", lineId, finished, ng);
     }

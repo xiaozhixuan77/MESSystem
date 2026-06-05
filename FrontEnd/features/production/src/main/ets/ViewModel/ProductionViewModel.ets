@@ -280,6 +280,13 @@ export class ProductionViewModel {
       if (data['ngCount'] !== undefined) {
         line.ngCount = data['ngCount'] as number;
       }
+      if (data['workOrderCode'] !== undefined) {
+        const code = data['workOrderCode'] as string | null;
+        line.workOrderCode = code ?? '';
+      }
+      if (data['planQty'] !== undefined) {
+        line.planQty = (data['planQty'] as number) ?? 0;
+      }
       if (data['woStatus'] !== undefined) {
         if (data['woStatus'] !== null) {
           line.workOrderStatus = data['woStatus'] as string;
