@@ -23,9 +23,6 @@ export struct WorkOrderFormView {
     this.viewModel.searchProducts('');
     if (this.mode === 'edit') {
       this.viewModel.loadForEdit(this.workOrderId);
-      if (this.viewModel.formWorkshopId > 0) {
-        this.viewModel.loadLines(this.viewModel.formWorkshopId);
-      }
     } else if (this.mode === 'copy') {
       this.viewModel.loadForCopy(this.sourceWorkOrderId);
     }

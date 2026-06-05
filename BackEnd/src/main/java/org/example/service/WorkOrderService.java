@@ -38,4 +38,6 @@ public interface WorkOrderService extends IService<WorkOrder> {
     void autoComplete(Long workOrderId);
 
     void scrap(Long workOrderId, String reason);
+
+    void deleteWorkOrder(Long workOrderId);
 }

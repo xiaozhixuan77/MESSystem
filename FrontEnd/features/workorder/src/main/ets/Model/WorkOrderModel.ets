@@ -12,6 +12,8 @@ export class WorkOrderModel {
   status: string = '待派工';
   operatorId: number | null = null;
   productName: string = '';
+  workshopName: string = '';
+  lineName: string = '';
   operatorName: string = '';
   planStartTime: string = '';
   planEndTime: string = '';

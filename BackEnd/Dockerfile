@@ -3,11 +3,13 @@ FROM maven:3.9-eclipse-temurin-17-alpine AS builder
 WORKDIR /app
 
 # 先缓存依赖（源码变更时此层不变，跳过依赖下载）
+COPY docker/settings.xml /usr/share/maven/conf/settings.xml
 COPY pom.xml .
 RUN --mount=type=cache,target=/root/.m2 \
     mvn dependency:go-offline -B
 
 # 编译（使用缓存 Maven repo + 跳过测试）
+ARG CACHEBUST=0
 COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 \
     mvn clean package -DskipTests -B

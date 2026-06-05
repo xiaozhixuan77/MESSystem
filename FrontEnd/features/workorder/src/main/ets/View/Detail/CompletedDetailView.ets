@@ -41,6 +41,7 @@ export struct CompletedDetailView {
         Scroll() {
           Column() {
             this.ResultSection();
+            this.InfoSection();
             this.ReportFormSection();
             this.OperatorSection();
             this.TimelineSection();
@@ -118,6 +119,54 @@ export struct CompletedDetailView {
       .width('100%').height(48)
       .backgroundColor('#4CAF50').borderRadius(12)
       .justifyContent(FlexAlign.Center);
+    }
+    .padding(16).backgroundColor(Color.White).borderRadius(16)
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
+    .width('100%').margin({ bottom: 12 });
+  }
+
+  @Builder InfoSection() {
+    Column() {
+      this.SectionTitle('工单信息');
+      Flex({ wrap: FlexWrap.Wrap }) {
+        Column() {
+          Text('工单编号').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.code || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('工单类型').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.type || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('所属车间').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.workshopName || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('所属产线').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.lineName || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('产品名称').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.productName || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('计划数量').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(`${this.viewModel.currentWorkOrder?.planQty || 0} 件`).fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('计划开始').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.planStartTime || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('计划完成').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.planEndTime || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('操作员').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.operatorName || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+      }
+      .width('100%');
     }
     .padding(16).backgroundColor(Color.White).borderRadius(16)
     .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
@@ -282,5 +331,13 @@ export struct CompletedDetailView {
       .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
       .padding({ bottom: 10 }).border({ width: { bottom: 1 }, color: '#E8EBF0' })
       .width('100%').margin({ bottom: 14 });
+  }
+
+  @Builder FieldItem(label: string, value: string) {
+    Column() {
+      Text(label).fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+      Text(value).fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+    }
+    .alignItems(HorizontalAlign.Start).width('100%');
   }
 }

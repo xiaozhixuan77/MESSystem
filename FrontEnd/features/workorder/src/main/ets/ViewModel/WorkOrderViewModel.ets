@@ -37,7 +37,7 @@ export class WorkOrderViewModel {
   @Trace formPlanQty: number = 0;
   @Trace formPlanStartTime: string = '';
   @Trace formPlanEndTime: string = '';
-  @Trace formVersion: number = 0;
+  @Trace formVersion: number = -1;
   @Trace formSourceWorkOrderId: number = 0;
   @Trace formSourceWorkOrderCode: string = '';
   @Trace isSubmitting: boolean = false;
@@ -100,6 +100,8 @@ export class WorkOrderViewModel {
       wo.status = raw['status'] as string;
       wo.operatorId = (raw['operatorId'] as number) ?? null;
       wo.productName = (raw['productName'] as string) ?? '';
+      wo.workshopName = (raw['workshopName'] as string) ?? '';
+      wo.lineName = (raw['lineName'] as string) ?? '';
       wo.operatorName = (raw['operatorName'] as string) ?? '';
       wo.planStartTime = (raw['planStartTime'] as string) ?? '';
       wo.planEndTime = (raw['planEndTime'] as string) ?? '';
@@ -164,6 +166,11 @@ export class WorkOrderViewModel {
 
   get canComplete(): boolean {
     return this.currentWorkOrder?.status === '生产中';
+  }
+
+  get canDelete(): boolean {
+    const s = this.currentWorkOrder?.status;
+    return s === '完工' || s === '报废';
   }
 
   // ========== 详情页动作方法 ==========
@@ -320,6 +327,21 @@ export class WorkOrderViewModel {
     }
   }
 
+  async deleteWorkOrder(workOrderId: number): Promise<boolean> {
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    try {
+      await WorkOrderApi.deleteWorkOrder(workOrderId);
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
   // ========== 表单方法 ==========
 
   async loadWorkshops(): Promise<void> {
@@ -418,6 +440,10 @@ export class WorkOrderViewModel {
         step.name = r['name'] as string;
         return step;
       });
+      await this.loadWorkshops();
+      if (this.formWorkshopId > 0) {
+        await this.loadLines(this.formWorkshopId);
+      }
     } catch (e) {
       this.errorMessage = (e as Error).message;
     } finally {
@@ -487,7 +513,7 @@ export class WorkOrderViewModel {
         return '计划开始时间必须早于计划完成时间';
       }
     }
-    if (this.formMode === 'edit' && (!this.formVersion || this.formVersion <= 0)) {
+    if (this.formMode === 'edit' && this.formVersion < 0) {
       return '缺少版本号，无法更新';
     }
     return null;

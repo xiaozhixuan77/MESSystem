@@ -13,6 +13,10 @@ export struct ReportedDetailView {
       PermissionUtil.hasPermission('workorder.confirm', this.currentRole);
   }
 
+  private get hasDeleteAction(): boolean {
+    return this.isEndState && PermissionUtil.hasPermission('workorder.delete', this.currentRole);
+  }
+
   aboutToAppear(): void {
     const navInfo = this.queryNavDestinationInfo();
     const param = navInfo?.param as Record<string, Object>;
@@ -57,6 +61,7 @@ export struct ReportedDetailView {
         this.StatusCard();
         Scroll() {
           Column() {
+            this.InfoSection();
             this.ReportDetailSection();
             this.TimelineSection();
             Blank().height(this.isEndState ? 16 : 100);
@@ -71,6 +76,8 @@ export struct ReportedDetailView {
 
       if (!this.isEndState && this.hasBottomActions) {
         this.BottomActions();
+      } else if (this.isEndState && this.hasDeleteAction) {
+        this.EndStateActions();
       }
     }
     .width('100%').height('100%');
@@ -139,6 +146,54 @@ export struct ReportedDetailView {
     }
     .padding(8).backgroundColor('rgba(255,255,255,0.1)').borderRadius(8)
     .alignItems(HorizontalAlign.Center).width('100%');
+  }
+
+  @Builder InfoSection() {
+    Column() {
+      this.SectionTitle('工单信息');
+      Flex({ wrap: FlexWrap.Wrap }) {
+        Column() {
+          Text('工单编号').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.code || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('工单类型').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.type || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('所属车间').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.workshopName || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('所属产线').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.lineName || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('产品名称').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.productName || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('计划数量').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(`${this.viewModel.currentWorkOrder?.planQty || 0} 件`).fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('计划开始').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.planStartTime || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('计划完成').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.planEndTime || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+        Column() {
+          Text('操作员').fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
+          Text(this.viewModel.currentWorkOrder?.operatorName || '—').fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        }.alignItems(HorizontalAlign.Start).width('50%').margin({ bottom: 12 });
+      }
+      .width('100%');
+    }
+    .padding(16).backgroundColor(Color.White).borderRadius(16)
+    .shadow({ radius: 16, color: 'rgba(0,0,0,0.06)', offsetY: 2 })
+    .width('100%').margin({ bottom: 12 });
   }
 
   @Builder ReportDetailSection() {
@@ -227,6 +282,25 @@ export struct ReportedDetailView {
             if (ok) { this.pageStack.pop(); }
           });
       }
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, top: 12, bottom: 28 })
+    .backgroundColor(Color.White)
+    .border({ width: { top: 1 }, color: '#E8EBF0' });
+  }
+
+  @Builder EndStateActions() {
+    Row() {
+      Button('删除工单')
+        .layoutWeight(1).height(46)
+        .fontSize(15).fontWeight(600)
+        .fontColor(Color.White)
+        .backgroundColor(this.viewModel.isSubmitting ? '#EF9A9A' : '#F44336').borderRadius(12)
+        .enabled(!this.viewModel.isSubmitting)
+        .onClick(async () => {
+          const ok = await this.viewModel.deleteWorkOrder(this.workOrderId);
+          if (ok) { this.pageStack.pop(); }
+        });
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 12, bottom: 28 })

@@ -9,10 +9,14 @@ import org.example.dto.request.WorkOrderScrapRequest;
 import org.example.dto.response.R;
 import org.example.entity.Process;
 import org.example.entity.Product;
+import org.example.entity.ProductionLine;
 import org.example.entity.User;
 import org.example.entity.WorkOrder;
+import org.example.entity.Workshop;
 import org.example.entity.WorkOrderRouteStep;
 import org.example.security.RequiresPermission;
+import org.example.service.WorkshopService;
+import org.example.service.ProductionLineService;
 import org.example.service.ProcessService;
 import org.example.service.ProductService;
 import org.example.service.UserService;
@@ -40,6 +44,8 @@ public class WorkOrderController {
     private final ProductService productService;
     private final ProcessService processService;
     private final WorkOrderRouteStepService workOrderRouteStepService;
+    private final WorkshopService workshopService;
+    private final ProductionLineService productionLineService;
     private final SimulatorManager simulatorManager;
 
     public WorkOrderController(WorkOrderService workOrderService,
@@ -47,12 +53,16 @@ public class WorkOrderController {
                                ProductService productService,
                                ProcessService processService,
                                WorkOrderRouteStepService workOrderRouteStepService,
+                               WorkshopService workshopService,
+                               ProductionLineService productionLineService,
                                SimulatorManager simulatorManager) {
         this.workOrderService = workOrderService;
         this.userService = userService;
         this.productService = productService;
         this.processService = processService;
         this.workOrderRouteStepService = workOrderRouteStepService;
+        this.workshopService = workshopService;
+        this.productionLineService = productionLineService;
         this.simulatorManager = simulatorManager;
     }
 
@@ -85,8 +95,23 @@ public class WorkOrderController {
                 : userService.listByIds(operatorIds).stream()
                         .collect(Collectors.toMap(User::getId, u -> u));
 
+        Set<Long> workshopIds = orders.stream()
+                .map(WorkOrder::getWorkshopId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Set<Long> lineIds = orders.stream()
+                .map(WorkOrder::getLineId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Map<Long, Workshop> workshopMap = workshopIds.isEmpty() ? Map.of()
+                : workshopService.listByIds(workshopIds).stream()
+                        .collect(Collectors.toMap(Workshop::getId, w -> w));
+        Map<Long, ProductionLine> lineMap = lineIds.isEmpty() ? Map.of()
+                : productionLineService.listByIds(lineIds).stream()
+                        .collect(Collectors.toMap(ProductionLine::getId, l -> l));
+
         List<WorkOrderVO> vos = orders.stream()
-                .map(wo -> toWorkOrderVO(wo, productMap, userMap))
+                .map(wo -> toWorkOrderVO(wo, productMap, userMap, workshopMap, lineMap))
                 .collect(Collectors.toList());
         return R.ok(vos);
     }
@@ -190,8 +215,17 @@ public class WorkOrderController {
         return R.ok();
     }
 
+    @DeleteMapping("/workorders/{id}")
+    @RequiresPermission("workorder.delete")
+    public R<Void> delete(@PathVariable Long id) {
+        workOrderService.deleteWorkOrder(id);
+        return R.ok();
+    }
+
     private WorkOrderVO toWorkOrderVO(WorkOrder wo, Map<Long, Product> productMap,
-                                       Map<Long, User> userMap) {
+                                       Map<Long, User> userMap,
+                                       Map<Long, Workshop> workshopMap,
+                                       Map<Long, ProductionLine> lineMap) {
         WorkOrderVO vo = new WorkOrderVO();
         vo.setId(wo.getId());
         vo.setCode(wo.getCode());
@@ -218,6 +252,18 @@ public class WorkOrderController {
             User operator = userMap.get(wo.getOperatorId());
             if (operator != null) {
                 vo.setOperatorName(operator.getName());
+            }
+        }
+        if (wo.getWorkshopId() != null) {
+            Workshop workshop = workshopMap.get(wo.getWorkshopId());
+            if (workshop != null) {
+                vo.setWorkshopName(workshop.getName());
+            }
+        }
+        if (wo.getLineId() != null) {
+            ProductionLine line = lineMap.get(wo.getLineId());
+            if (line != null) {
+                vo.setLineName(line.getName());
             }
         }
 
@@ -275,6 +321,18 @@ public class WorkOrderController {
             User creator = userService.getById(wo.getCreatedBy());
             if (creator != null) {
                 vo.setCreatedByName(creator.getName());
+            }
+        }
+        if (wo.getWorkshopId() != null) {
+            Workshop workshop = workshopService.getById(wo.getWorkshopId());
+            if (workshop != null) {
+                vo.setWorkshopName(workshop.getName());
+            }
+        }
+        if (wo.getLineId() != null) {
+            ProductionLine line = productionLineService.getById(wo.getLineId());
+            if (line != null) {
+                vo.setLineName(line.getName());
             }
         }
 

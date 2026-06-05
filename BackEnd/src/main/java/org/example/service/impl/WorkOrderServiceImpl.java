@@ -510,6 +510,23 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteWorkOrder(Long workOrderId) {
+        WorkOrder wo = lambdaQuery()
+                .eq(WorkOrder::getId, workOrderId)
+                .last("FOR UPDATE")
+                .one();
+        if (wo == null) {
+            throw new BusinessException(404, "工单不存在");
+        }
+        if (!"完工".equals(wo.getStatus()) && !"报废".equals(wo.getStatus())) {
+            throw new BusinessException(400, "只有\"完工\"或\"报废\"状态才能删除");
+        }
+
+        removeById(workOrderId);
+    }
+
     private boolean hasActiveWorkOrder(Long operatorId) {
         return lambdaQuery()
                 .eq(WorkOrder::getOperatorId, operatorId)

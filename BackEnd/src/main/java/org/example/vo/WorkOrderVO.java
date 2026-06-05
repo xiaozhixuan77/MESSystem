@@ -18,6 +18,8 @@ public class WorkOrderVO {
     private String status;
     private Long operatorId;
     private String operatorName;
+    private String workshopName;
+    private String lineName;
     private LocalDateTime planStartTime;
     private LocalDateTime planEndTime;
     private LocalDateTime createdAt;
