@@ -170,14 +170,8 @@ export struct LineListView {
     this.activeTab = tab;
     if (tab === '全部') {
       return this.viewModel.loadLines();
-    } else {
-      const statusMap: Record<string, string> = {
-        '运行中': '生产中',
-        '故障': '异常',
-        '待机': '空闲'
-      };
-      return this.viewModel.loadLines(statusMap[tab] || tab);
     }
+    return this.viewModel.loadLines(tab);
   }
 
   @Builder
@@ -210,9 +204,10 @@ export struct LineListView {
         // Status Tabs
         Row({ space: 8 }) {
           this.StatusTab('全部', '全部');
-          this.StatusTab('运行中', '运行中');
-          this.StatusTab('故障', '故障');
-          this.StatusTab('待机', '待机');
+          this.StatusTab('生产中', '生产中');
+          this.StatusTab('暂停', '暂停');
+          this.StatusTab('异常', '异常');
+          this.StatusTab('空闲', '空闲');
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 12, bottom: 8 })

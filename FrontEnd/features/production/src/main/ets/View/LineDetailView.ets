@@ -782,18 +782,19 @@ export struct LineDetailView {
                   ListItem() {
                     Row() {
                       // Numbered circle
-                      Text(`${index + 1}`)
-                        .fontSize(12)
-                        .fontWeight(FontWeight.Bold)
-                        .fontColor('#FFFFFF')
-                        .width(28).height(28)
-                        .lineHeight(28)
-                        .textAlign(TextAlign.Center)
-                        .borderRadius(14)
-                        .linearGradient({
-                          direction: GradientDirection.Bottom,
-                          colors: [['#1565C0', 0], ['#0D47A1', 1]]
-                        });
+                      Stack() {
+                        Text(`${index + 1}`)
+                          .fontSize(12)
+                          .fontWeight(FontWeight.Bold)
+                          .fontColor('#FFFFFF');
+                      }
+                      .width(28).height(28)
+                      .alignContent(Alignment.Center)
+                      .borderRadius(14)
+                      .linearGradient({
+                        direction: GradientDirection.Bottom,
+                        colors: [['#1565C0', 0], ['#0D47A1', 1]]
+                      });
 
                       // Station info
                       Column() {
