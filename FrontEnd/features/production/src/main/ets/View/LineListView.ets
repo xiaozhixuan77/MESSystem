@@ -9,12 +9,10 @@ export struct LineListView {
   @Local isRefreshing: boolean = false;
 
   aboutToAppear(): void {
-    console.log('text: [LineListView.aboutToAppear] 组件即将出现，开始加载数据');
     this.viewModel.loadLines();
   }
 
   aboutToDisappear(): void {
-    console.log('text: [LineListView.aboutToDisappear] 组件即将隐藏（保持WS订阅）');
     // 不取消 WebSocket 订阅 — 保持在后台接收实时推送
   }
 
@@ -58,7 +56,6 @@ export struct LineListView {
   }
 
   private selectTab(tab: string): Promise<void> {
-    console.log('text: [LineListView.selectTab] 切换筛选Tab', `tab=${tab}`);
     this.activeTab = tab;
     if (tab === '全部') {
       return this.viewModel.loadLines();
@@ -86,7 +83,6 @@ export struct LineListView {
 
   build() {
     Column() {
-      // 引用 refreshKey 确保 push/pop 后 @Trace 能触发重渲染
       if (this.viewModel.refreshKey >= 0) {
         // Header
       Row() {
@@ -227,7 +223,6 @@ export struct LineListView {
                         .backgroundColor('#1565C0')
                         .borderRadius(8)
                         .onClick(() => {
-                          console.log('text: [LineListView] 点击查看详情', `lineId=${line.id}`);
                           const p: Record<string, number> = { 'lineId': line.id };
                           this.pageStack.pushPathByName('LineDetail', p);
                         });
@@ -248,10 +243,8 @@ export struct LineListView {
             .edgeEffect(EdgeEffect.Spring);
           }
           .onRefreshing(() => {
-            console.log('text: [LineListView.onRefresh] 下拉刷新触发');
             this.isRefreshing = true;
             this.selectTab(this.activeTab).finally(() => {
-              console.log('text: [LineListView.onRefresh] 刷新完成');
               this.isRefreshing = false;
             });
           });
@@ -260,13 +253,6 @@ export struct LineListView {
       }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F7FA')
-    .onAppear(() => {
-      let s = '';
-      for (let i = 0; i < this.viewModel.lines.length; i++) {
-        s += `[id=${this.viewModel.lines[i].id}, status=${this.viewModel.lines[i].status}] `;
-      }
-      console.log('text: [LineListView.onAppear] 列表UI可见', `lines数量=${this.viewModel.lines.length}`, s);
-    });
+    .backgroundColor('#F5F7FA');
   }
 }

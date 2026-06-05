@@ -69,8 +69,7 @@ export struct StationDetailView {
 
   private unsubscribeStation(): void {
     const topic = `/topic/lines/${this.lineId}/stations`;
-    const ws = WebSocketService.getInstance();
-    ws.unsubscribe(topic);
+    // 不移除 STOMP 订阅 — LineDetailView (ProductionViewModel) 共享同一个 topic
     WebSocketService.removeListener(topic, this.onStationUpdate);
   }
 

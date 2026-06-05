@@ -16,21 +16,17 @@ export struct LineDetailView {
     const navInfo = this.queryNavDestinationInfo();
     const param = navInfo?.param as Record<string, Object>;
     this.lineId = (param?.['lineId'] as number) ?? 0;
-    console.log('text: [LineDetailView.aboutToAppear] 组件即将出现', `lineId=${this.lineId}`);
     if (this.lineId <= 0) {
-      console.log('text: [LineDetailView.aboutToAppear] lineId无效，跳过加载');
       return;
     }
     this.loadData();
   }
 
   aboutToDisappear(): void {
-    console.log('text: [LineDetailView.aboutToDisappear] 组件即将隐藏，取消详情WS订阅');
     this.viewModel.unsubscribeLine();
   }
 
   private async loadData(): Promise<void> {
-    console.log('text: [LineDetailView.loadData] 开始加载详情数据', `lineId=${this.lineId}`);
     const userStr = await preferencesUtil.get('currentUser');
     if (userStr) {
       try {
@@ -42,7 +38,6 @@ export struct LineDetailView {
     }
     await this.viewModel.loadLineDetail(this.lineId);
     this.viewModel.subscribeLine(this.lineId);
-    console.log('text: [LineDetailView.loadData] 详情数据加载完成');
   }
 
   private showToast(message: string): void {
@@ -106,49 +101,40 @@ export struct LineDetailView {
   }
 
   private async confirmStart(): Promise<void> {
-    console.log('text: [LineDetailView.confirmStart] 确认启动', `lineId=${this.lineId}`);
     this.viewModel.showStartConfirm = false;
     const woId = this.viewModel.lineDetail.currentWorkorderId;
     const ok = await this.viewModel.startLine(this.lineId, woId!);
     if (ok) {
-      console.log('text: [LineDetailView.confirmStart] 启动成功，刷新详情');
       this.showToast('产线已启动');
       await this.viewModel.loadLineDetail(this.lineId);
     } else {
-      console.log('text: [LineDetailView.confirmStart] 启动失败');
       this.viewModel.errorDialogMessage = this.viewModel.errorMessage || '启动失败';
       this.viewModel.showErrorDialog = true;
     }
   }
 
   private async confirmStop(): Promise<void> {
-    console.log('text: [LineDetailView.confirmStop] 确认停止', `lineId=${this.lineId}`);
     this.viewModel.showStopConfirm = false;
     const ok = await this.viewModel.stopLine(this.lineId);
     if (ok) {
-      console.log('text: [LineDetailView.confirmStop] 停止成功，刷新详情');
       this.showToast('产线已停止');
       await this.viewModel.loadLineDetail(this.lineId);
     } else {
-      console.log('text: [LineDetailView.confirmStop] 停止失败');
       this.viewModel.errorDialogMessage = this.viewModel.errorMessage || '停止失败';
       this.viewModel.showErrorDialog = true;
     }
   }
 
   private async confirmReset(): Promise<void> {
-    console.log('text: [LineDetailView.confirmReset] 确认复位', `lineId=${this.lineId}`);
     this.viewModel.showResetConfirm = false;
     // 立即清空工单卡片，不依赖 WebSocket/HTTP 时序
     this.viewModel.lineDetail.currentWorkorderId = null;
     this.viewModel.lineDetail.activeWorkOrder = null;
     const ok = await this.viewModel.resetLine(this.lineId);
     if (ok) {
-      console.log('text: [LineDetailView.confirmReset] 复位成功，刷新详情');
       this.showToast('产线已复位');
       await this.viewModel.loadLineDetail(this.lineId);
     } else {
-      console.log('text: [LineDetailView.confirmReset] 复位失败');
       this.viewModel.errorDialogMessage = this.viewModel.errorMessage || '复位失败';
       this.viewModel.showErrorDialog = true;
     }
@@ -165,7 +151,6 @@ export struct LineDetailView {
   }
 
   private async confirmException(): Promise<void> {
-    console.log('text: [LineDetailView.confirmException] 确认上报异常', `lineId=${this.lineId}`);
     const desc = this.viewModel.exceptionDescription.trim();
     if (desc.length === 0) {
       return;
@@ -173,7 +158,6 @@ export struct LineDetailView {
     this.viewModel.showExceptionDialog = false;
     const ok = await this.viewModel.reportException(this.lineId, desc);
     if (ok) {
-      console.log('text: [LineDetailView.confirmException] 异常上报成功，刷新详情');
       this.showToast('异常已上报');
       await this.viewModel.loadLineDetail(this.lineId);
     } else {
@@ -554,7 +538,6 @@ export struct LineDetailView {
                 .backgroundColor('rgba(255,255,255,0.15)')
                 .borderRadius(12)
                 .onClick(() => {
-                  console.log('text: [LineDetailView] 点击返回按钮，pop回列表');
                   this.pageStack.pop();
                 });
 

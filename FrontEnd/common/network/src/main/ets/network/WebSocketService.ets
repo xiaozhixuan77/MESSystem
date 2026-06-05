@@ -53,18 +53,22 @@ export class WebSocketService {
 
     this.ws = webSocket.createWebSocket();
     this.ws.on('open', (_err: BusinessError, _value: Object): void => {
+      console.log('text: [WS.onOpen] TCP连接已建立，发送STOMP CONNECT');
       this.sendStompConnect();
     });
     this.ws.on('message', (_err: BusinessError, value: string | ArrayBuffer): void => {
       const data: string = typeof value === 'string' ? value : '';
       if (data.length > 0) {
+        console.log('text: [WS.onMessage] 收到原始消息', `len=${data.length}`, data.substring(0, 120));
         this.onData(data);
       }
     });
     this.ws.on('close', (_err: BusinessError, _value: Object): void => {
+      console.log('text: [WS.onClose] TCP连接关闭', `err=${_err?.message ?? '无'}`);
       this.onDisconnect();
     });
     this.ws.on('error', (_err: BusinessError): void => {
+      console.log('text: [WS.onError] 连接错误', `err=${_err?.message ?? '无'}`);
       this.onDisconnect();
     });
     this.ws.connect(url);
@@ -85,8 +89,11 @@ export class WebSocketService {
     this.pendingSubscriptions.set(subId, destination);
 
     if (this.isConnected && this.ws) {
+      console.log('text: [WS.subscribe] 发送SUBSCRIBE', `subId=${subId}`, `dest=${destination}`);
       const subHeaders: Record<string, string> = { "id": subId, "destination": destination };
       this.sendStompFrame('SUBSCRIBE', subHeaders);
+    } else {
+      console.log('text: [WS.subscribe] 暂存待发送', `subId=${subId}`, `dest=${destination}`, `connected=${this.isConnected}`);
     }
   }
 
@@ -156,6 +163,7 @@ export class WebSocketService {
   // ─── STOMP frame serialization ───
 
   private sendStompConnect(): void {
+    console.log('text: [WS.sendStompConnect] 发送STOMP CONNECT帧', `hasToken=${this.currentToken.length > 0}`);
     const headers: Record<string, string> = {
       'accept-version': '1.1,1.2',
       'heart-beat': '30000,10000',
@@ -227,32 +235,46 @@ export class WebSocketService {
     if (data === '\n') {
       return;
     }
-    this.receiveBuffer += data;
 
-    if (this.receiveBuffer.length > MAX_BUFFER_SIZE) {
-      this.receiveBuffer = '';
-      this.ws?.close();
+    // 标准 STOMP：帧以 \0 终止
+    if (data.indexOf('\0') !== -1) {
+      this.receiveBuffer += data;
+      if (this.receiveBuffer.length > MAX_BUFFER_SIZE) {
+        this.receiveBuffer = '';
+        this.ws?.close();
+        return;
+      }
+      while (true) {
+        const nullIndex = this.receiveBuffer.indexOf('\0');
+        if (nullIndex === -1) {
+          break;
+        }
+        const frameStr = this.receiveBuffer.substring(0, nullIndex);
+        this.receiveBuffer = this.receiveBuffer.substring(nullIndex + 1);
+        if (frameStr.length === 0 || frameStr === '\n') {
+          continue;
+        }
+        try {
+          const frame = this.parseStompFrame(frameStr);
+          this.processFrame(frame);
+        } catch (_e) {
+          // malformed frame, skip
+        }
+      }
       return;
     }
 
-    while (true) {
-      const nullIndex = this.receiveBuffer.indexOf('\0');
-      if (nullIndex === -1) {
-        break;
-      }
-      const frameStr = this.receiveBuffer.substring(0, nullIndex);
-      this.receiveBuffer = this.receiveBuffer.substring(nullIndex + 1);
-
-      if (frameStr.length === 0 || frameStr === '\n') {
-        continue;
-      }
-
-      try {
-        const frame = this.parseStompFrame(frameStr);
-        this.processFrame(frame);
-      } catch (_e) {
-        // malformed frame, skip
-      }
+    // Spring STOMP：无 \0，每个 WebSocket message 就是一个完整帧
+    const firstLine = data.split('\n')[0];
+    if (!/^[A-Z]+$/.test(firstLine)) {
+      return;
+    }
+    console.log('text: [WS.onData] 直接处理帧', `cmd=${firstLine}`, `len=${data.length}`);
+    try {
+      const frame = this.parseStompFrame(data);
+      this.processFrame(frame);
+    } catch (_e) {
+      // malformed frame, skip
     }
   }
 
@@ -295,9 +317,12 @@ export class WebSocketService {
         this.isReconnectFailed = false;
         this.lastMessageTime = Date.now();
 
+        console.log('text: [WS.CONNECTED] STOMP连接成功', `pendingSubs=${this.pendingSubscriptions.size}`, `heartbeat=${frame.headers['heart-beat'] ?? '无'}`);
+
         this.startHeartbeat(frame.headers['heart-beat']);
 
         this.pendingSubscriptions.forEach((destination: string, subId: string) => {
+          console.log('text: [WS.CONNECTED] 重放订阅', `subId=${subId}`, `dest=${destination}`);
           const replayHeaders: Record<string, string> = { "id": subId, "destination": destination };
           this.sendStompFrame('SUBSCRIBE', replayHeaders);
         });
@@ -307,15 +332,17 @@ export class WebSocketService {
       case 'MESSAGE': {
         this.lastMessageTime = Date.now();
         const destination = frame.headers['destination'];
+        console.log('text: [WS.MESSAGE] 收到STOMP消息', `dest=${destination ?? '无'}`, `bodyLen=${frame.body.length}`, `subId=${frame.headers['subscription'] ?? '无'}`);
         if (destination && frame.body.length > 0) {
           const list = WebSocketService.listeners.get(destination);
+          console.log('text: [WS.MESSAGE] 监听器查找', `dest=${destination}`, `found=${list ? list.length : 0}`);
           if (list) {
             const parsed = JSON.parse(frame.body) as Object;
             for (let i = 0; i < list.length; i++) {
               try {
                 list[i](parsed);
               } catch (_e) {
-                // handler error, skip
+                console.log('text: [WS.MESSAGE] 监听器执行异常', `dest=${destination}`, `index=${i}`);
               }
             }
           }
@@ -324,7 +351,7 @@ export class WebSocketService {
       }
 
       case 'ERROR':
-        console.error('[WebSocket] STOMP ERROR frame:', JSON.stringify(frame));
+        console.log('text: [WS.ERROR] STOMP错误帧', `body=${frame.body.substring(0, 200)}`, `headers=${JSON.stringify(frame.headers)}`);
         break;
 
       case 'RECEIPT':
@@ -374,6 +401,7 @@ export class WebSocketService {
   // ─── Reconnect ───
 
   private onDisconnect(): void {
+    console.log('text: [WS.onDisconnect] 连接断开，准备重连', `attempt=${this.reconnectAttempts + 1}/${MAX_RETRY}`);
     this.isConnected = false;
     this.receiveBuffer = '';
     this.stopHeartbeat();

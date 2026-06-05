@@ -92,6 +92,7 @@ struct Index {
 
         const loginToken = (payload['token'] as string) ?? '';
         if (loginToken) {
+          console.log('text: [Index] 登录成功，连接WebSocket', `url=${ApiConstants.autoWsUrl}`, `tokenLen=${loginToken.length}`);
           WebSocketService.getInstance().connect(ApiConstants.autoWsUrl, loginToken);
         }
       }
@@ -122,6 +123,7 @@ struct Index {
         }
 
         httpClient.configure(ApiConstants.autoBaseUrl, token as string);
+        console.log('text: [Index] 恢复登录态，连接WebSocket', `url=${ApiConstants.autoWsUrl}`, `tokenLen=${token.length}`);
         WebSocketService.getInstance().connect(ApiConstants.autoWsUrl, token as string);
         this.showTabBar = true;
         this.targetPage = 'HomeTab';
