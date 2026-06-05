@@ -215,7 +215,7 @@ export struct StationDetailView {
               Button() {
                 Column() {
                   Column() {
-                    Image($r('app.media.icon_play_white')).width(16).height(16);
+                    Image($r('app.media.icon_play_green')).width(16).height(16);
                   }
                   .width(32).height(32)
                   .backgroundColor('rgba(255,255,255,0.95)').borderRadius(8)
@@ -231,7 +231,7 @@ export struct StationDetailView {
               Button() {
                 Column() {
                   Column() {
-                    Image($r('app.media.icon_stop_white')).width(16).height(16);
+                    Image($r('app.media.icon_stop_orange')).width(16).height(16);
                   }
                   .width(32).height(32)
                   .backgroundColor('rgba(255,255,255,0.95)').borderRadius(8)
@@ -247,7 +247,7 @@ export struct StationDetailView {
               Button() {
                 Column() {
                   Column() {
-                    Image($r('app.media.icon_reset_white')).width(16).height(16);
+                    Image($r('app.media.icon_reset_blue')).width(16).height(16);
                   }
                   .width(32).height(32)
                   .backgroundColor('rgba(255,255,255,0.95)').borderRadius(8)
@@ -263,7 +263,7 @@ export struct StationDetailView {
               Button() {
                 Column() {
                   Column() {
-                    Image($r('app.media.icon_alert_white')).width(16).height(16);
+                    Image($r('app.media.icon_alert_red')).width(16).height(16);
                   }
                   .width(32).height(32)
                   .backgroundColor('rgba(255,255,255,0.95)').borderRadius(8)
