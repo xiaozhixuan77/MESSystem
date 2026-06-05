@@ -314,6 +314,14 @@ public class SimulatorManager {
         }
         workstationService.updateBatchById(stations);
 
+        ProductionLine line = productionLineService.lambdaQuery()
+                .eq(ProductionLine::getId, lineId)
+                .one();
+        if (line != null) {
+            line.setStatus("空闲");
+            productionLineService.updateById(line);
+        }
+
         int finished = stations.get(stations.size() - 1).getFinishedCount() != null
                 ? stations.get(stations.size() - 1).getFinishedCount() : 0;
         int ng = stations.get(stations.size() - 1).getNgCount() != null

@@ -359,7 +359,6 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             productionLineService.lambdaUpdate()
                     .eq(ProductionLine::getId, line.getId())
                     .set(ProductionLine::getStatus, "空闲")
-                    .set(ProductionLine::getCurrentWorkorderId, null)
                     .update();
         }
     }

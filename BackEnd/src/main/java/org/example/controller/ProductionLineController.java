@@ -112,15 +112,21 @@ public class ProductionLineController {
                     .collect(Collectors.groupingBy(Workstation::getProductionLineId));
         }
 
-        // Active work orders per line
+        // Active work orders per line — 按 currentWorkorderId 查找，不做状态过滤
         Map<Long, WorkOrder> activeOrders = Collections.emptyMap();
         if (!lineIds.isEmpty()) {
-            activeOrders = workOrderService.lambdaQuery()
-                    .in(WorkOrder::getLineId, lineIds)
-                    .in(WorkOrder::getStatus, java.util.Arrays.asList("生产中", "暂停中"))
-                    .list()
-                    .stream()
-                    .collect(Collectors.toMap(WorkOrder::getLineId, wo -> wo, (a, b) -> a));
+            List<Long> woIds = lines.stream()
+                    .map(ProductionLine::getCurrentWorkorderId)
+                    .filter(id -> id != null && id > 0)
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (!woIds.isEmpty()) {
+                activeOrders = workOrderService.lambdaQuery()
+                        .in(WorkOrder::getId, woIds)
+                        .list()
+                        .stream()
+                        .collect(Collectors.toMap(WorkOrder::getLineId, wo -> wo, (a, b) -> a));
+            }
         }
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

@@ -161,6 +161,8 @@ export class ProductionViewModel {
         line.workOrderStatus = '';
         line.currentWorkorderId = null;
         line.workOrderCode = '';
+        line.finishedCount = 0;
+        line.ngCount = 0;
       }
       if (this.lineDetail.id === id) {
         this.lineDetail.status = '空闲';
@@ -266,7 +268,11 @@ export class ProductionViewModel {
         line.status = data['status'] as string;
       }
       if (data['workOrderId'] !== undefined) {
-        line.currentWorkorderId = data['workOrderId'] as number ?? null;
+        const newWoId = data['workOrderId'] as number ?? null;
+        if (newWoId === null) {
+          line.workOrderCode = '';
+        }
+        line.currentWorkorderId = newWoId;
       }
       if (data['finishedCount'] !== undefined) {
         line.finishedCount = data['finishedCount'] as number;
@@ -274,10 +280,17 @@ export class ProductionViewModel {
       if (data['ngCount'] !== undefined) {
         line.ngCount = data['ngCount'] as number;
       }
-      if (data['woStatus'] !== undefined && data['woStatus'] !== null) {
-        line.workOrderStatus = data['woStatus'] as string;
+      if (data['woStatus'] !== undefined) {
+        if (data['woStatus'] !== null) {
+          line.workOrderStatus = data['woStatus'] as string;
+        } else {
+          line.workOrderStatus = '';
+          line.workOrderCode = '';
+        }
       }
     }
+    this.lines = [...this.lines];
+    this.refreshKey++;
   };
 
   onLineListStationUpdate = (payload: Object): void => {
@@ -310,6 +323,9 @@ export class ProductionViewModel {
     if (data) {
       if (data['status'] !== undefined) {
         this.lineDetail.status = data['status'] as string;
+      }
+      if (data['workOrderId'] !== undefined) {
+        this.lineDetail.currentWorkorderId = data['workOrderId'] as number ?? null;
       }
       if (data['woStatus'] !== undefined) {
         const ws = data['woStatus'] as string | null;
