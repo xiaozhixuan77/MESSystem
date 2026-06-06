@@ -81,8 +81,6 @@ export class WorkOrderViewModel {
     const woId = data['workOrderId'] as number;
     const newStatus = data['status'] as string;
 
-    // 直接触发全量静默刷新：绕过 ArkUI V2 对普通对象属性变化不追踪的问题，
-    // 同时确保分类标签下不匹配的工单从列表中消失
     try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
 
     if (this.currentWorkOrder && this.currentWorkOrder.id === woId) {

@@ -300,7 +300,7 @@ export struct WorkOrderListView {
     }
     .onAppear(() => {
       if (this.hasAppeared) {
-        this.viewModel.loadWorkOrders(true); // 静默刷新
+        this.viewModel.loadWorkOrders(true);
       }
       this.hasAppeared = true;
     })

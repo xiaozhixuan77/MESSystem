@@ -7,6 +7,7 @@ export struct ReportedDetailView {
   @Consumer('currentRole') currentRole: string = '';
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local workOrderId: number = 0;
+  private hasAppeared: boolean = false;
 
   private get hasBottomActions(): boolean {
     return PermissionUtil.hasPermission('workorder.scrap', this.currentRole) ||
@@ -80,7 +81,13 @@ export struct ReportedDetailView {
         this.EndStateActions();
       }
     }
-    .width('100%').height('100%');
+    .width('100%').height('100%')
+    .onAppear(() => {
+      if (this.hasAppeared) {
+        this.viewModel.loadDetail(this.workOrderId);
+      }
+      this.hasAppeared = true;
+    });
   }
 
   @Builder PageHeader() {

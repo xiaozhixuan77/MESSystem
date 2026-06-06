@@ -24,6 +24,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
@@ -136,6 +138,17 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
         save(wo);
 
+        final Long copyWoId = wo.getId();
+        final Long copyLineId = wo.getLineId();
+        final String copyWoCode = wo.getCode();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                lineBroadcaster.broadcastWorkOrderUpdate(copyLineId, copyWoId, copyWoCode,
+                        "待派工", null);
+            }
+        });
+
         List<WorkOrderRouteStep> sourceSteps = workOrderRouteStepService.lambdaQuery()
                 .eq(WorkOrderRouteStep::getWorkOrderId, sourceId)
                 .orderByAsc(WorkOrderRouteStep::getSeqNo)
@@ -210,6 +223,17 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         if (!updated) {
             throw new BusinessException(409, "工单已被其他用户修改，请刷新后重试");
         }
+
+        final Long updateWoId = wo.getId();
+        final Long updateLineId = wo.getLineId();
+        final String updateWoCode = wo.getCode();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                lineBroadcaster.broadcastWorkOrderUpdate(updateLineId, updateWoId, updateWoCode,
+                        "待派工", null);
+            }
+        });
 
         return getById(id);
     }
@@ -619,6 +643,17 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         save(wo);
 
         copyProcessStepsToRoute(wo.getId(), product.getDefaultProcessId());
+
+        final Long createWoId = wo.getId();
+        final Long createLineId = wo.getLineId();
+        final String createWoCode = wo.getCode();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                lineBroadcaster.broadcastWorkOrderUpdate(createLineId, createWoId, createWoCode,
+                        "待派工", null);
+            }
+        });
 
         return wo;
     }

@@ -55,7 +55,7 @@ class WorkOrderWebSocketTest extends SNCTestBase {
     @Test
     @DisplayName("完整生命周期：待派工→已派工→生产中→暂停中→生产中→生产完成→已报工→完工")
     void fullLifecycleAllBroadcasts() throws Exception {
-        // === Step 1: 创建工单（不产生广播） ===
+        // === Step 1: 创建工单 → 应收到 "待派工" ===
         Map<String, Object> createReq = Map.of(
                 "type", "量产", "workshopId", 2, "lineId", 1, "productId", 1, "planQty", 10
         );
@@ -63,6 +63,8 @@ class WorkOrderWebSocketTest extends SNCTestBase {
         assertHttpOk(createResp);
         Long woId = extractId(createResp);
         log.info("=== [创建] id={} code={} ===", woId, extractField(createResp, "code"));
+        expectMsg(woId, "待派工");
+        log.info("=== [OK] 创建 → 待派工 ===");
 
         // === Step 2: 派工 → 应收到 "已派工" ===
         httpPost("/workorders/" + woId + "/dispatch", Map.of("operatorId", 3), leaderToken);
@@ -112,9 +114,10 @@ class WorkOrderWebSocketTest extends SNCTestBase {
     @Test
     @DisplayName("报废流程：创建→派工→启动→暂停→报废")
     void scrapFlowBroadcast() throws Exception {
-        // 创建 → 派工 → 启动（3 个 API 调用，2 个广播：派工+启动）
+        // 创建 → 派工 → 启动（3 个 API 调用，3 个广播：待派工+已派工+生产中）
         Long woId = createDispatchAndStartLine();
-        // 清掉 dispatch 和 start 两条消息
+        // 清掉创建/派工/启动三条消息
+        expectMsg(woId, "待派工");
         expectMsg(woId, "已派工");
         expectMsg(woId, "生产中");
 
@@ -139,6 +142,7 @@ class WorkOrderWebSocketTest extends SNCTestBase {
     void scrapFromReportedBroadcast() throws Exception {
         // 创建 → 派工 → 启动 → 完成 → 报工
         Long woId = createDispatchAndStartLine();
+        expectMsg(woId, "待派工");
         expectMsg(woId, "已派工");
         expectMsg(woId, "生产中");
 
@@ -174,9 +178,11 @@ class WorkOrderWebSocketTest extends SNCTestBase {
 
         // 创建 → 派工 → 启动
         Long woId = createDispatchAndStartLine();
-        // 两个队列都清掉 dispatch + start 消息
+        // 两个队列都清掉 待派工+已派工+生产中 消息
+        expectMsgFrom(msgs, woId, "待派工");
         expectMsgFrom(msgs, woId, "已派工");
         expectMsgFrom(msgs, woId, "生产中");
+        expectMsgFrom(msgs2, woId, "待派工");
         expectMsgFrom(msgs2, woId, "已派工");
         expectMsgFrom(msgs2, woId, "生产中");
 
@@ -193,6 +199,51 @@ class WorkOrderWebSocketTest extends SNCTestBase {
         log.info("=== [OK] 多客户端同步广播: 两端都收到 暂停中 ===");
 
         stompClient2.stop();
+    }
+
+    @Test
+    @DisplayName("复制工单产生广播")
+    void copyWorkOrderBroadcast() throws Exception {
+        // 先创建一个工单
+        ResponseEntity<Map> createResp = httpPost("/workorders", Map.of(
+                "type", "量产", "workshopId", 2, "lineId", 1, "productId", 1, "planQty", 10
+        ), leaderToken);
+        assertHttpOk(createResp);
+        Long sourceWoId = extractId(createResp);
+        expectMsg(sourceWoId, "待派工");
+        log.info("=== [创建源工单] id={} ===", sourceWoId);
+
+        // 复制工单 → 应收到 "待派工"
+        ResponseEntity<Map> copyResp = httpPost("/workorders?copyFrom=" + sourceWoId,
+                Map.of("planQty", 20), leaderToken);
+        assertHttpOk(copyResp);
+        Long copyWoId = extractId(copyResp);
+        expectMsg(copyWoId, "待派工");
+        assertNotEquals(sourceWoId, copyWoId, "复制出来的工单 ID 应与源工单不同");
+        log.info("=== [OK] 复制工单 id={} → 待派工 ===", copyWoId);
+    }
+
+    @Test
+    @DisplayName("修改工单产生广播")
+    void updateWorkOrderBroadcast() throws Exception {
+        // 创建一个工单
+        ResponseEntity<Map> createResp = httpPost("/workorders", Map.of(
+                "type", "量产", "workshopId", 2, "lineId", 1, "productId", 1, "planQty", 10
+        ), leaderToken);
+        assertHttpOk(createResp);
+        Long woId = extractId(createResp);
+        expectMsg(woId, "待派工");
+        String versionStr = extractField(createResp, "version");
+        int version = Integer.parseInt(versionStr != null ? versionStr : "0");
+        String code = (String) extractField(createResp, "code");
+        log.info("=== [创建] id={} version={} ===", woId, version);
+
+        // 修改工单 → 应收到 "待派工"
+        httpPut("/workorders/" + woId, Map.of(
+                "planQty", 50, "version", version
+        ), leaderToken);
+        expectMsg(woId, "待派工");
+        log.info("=== [OK] 修改工单 id={} code={} → 待派工 ===", woId, code);
     }
 
     // ---- 辅助 ----

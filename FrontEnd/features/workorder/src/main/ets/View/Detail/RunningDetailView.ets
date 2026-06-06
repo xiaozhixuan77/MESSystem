@@ -7,6 +7,7 @@ export struct RunningDetailView {
   @Consumer('currentRole') currentRole: string = '';
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local workOrderId: number = 0;
+  private hasAppeared: boolean = false;
 
   aboutToAppear(): void {
     const navInfo = this.queryNavDestinationInfo();
@@ -53,7 +54,13 @@ export struct RunningDetailView {
 
       this.BottomActions();
     }
-    .width('100%').height('100%');
+    .width('100%').height('100%')
+    .onAppear(() => {
+      if (this.hasAppeared) {
+        this.viewModel.loadDetail(this.workOrderId);
+      }
+      this.hasAppeared = true;
+    });
   }
 
   @Builder PageHeader() {
