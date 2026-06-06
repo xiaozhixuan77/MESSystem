@@ -73,8 +73,7 @@ export class WorkOrderViewModel {
 
   private onWorkOrderUpdate = (payload: Object): void => {
     const envelope = payload as Record<string, Object>;
-    const type = envelope['type'] as string;
-    if (type !== 'WORKORDER_UPDATE') return;
+    if (envelope['type'] !== 'WORKORDER_UPDATE') return;
 
     const data = envelope['data'] as Record<string, Object>;
     if (!data) return;
@@ -82,13 +81,10 @@ export class WorkOrderViewModel {
     const woId = data['workOrderId'] as number;
     const newStatus = data['status'] as string;
 
-    const item = this.workOrderList.find(w => w.id === woId);
-    if (item) {
-      item.status = newStatus;
-      this.workOrderList = [...this.workOrderList];
-    } else {
-      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
-    }
+    // 直接触发全量静默刷新：绕过 ArkUI V2 对普通对象属性变化不追踪的问题，
+    // 同时确保分类标签下不匹配的工单从列表中消失
+    try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
+
     if (this.currentWorkOrder && this.currentWorkOrder.id === woId) {
       this.currentWorkOrder.status = newStatus;
     }

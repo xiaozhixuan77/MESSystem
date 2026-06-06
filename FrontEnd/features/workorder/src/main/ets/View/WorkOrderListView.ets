@@ -284,7 +284,7 @@ export struct WorkOrderListView {
                   const p: Record<string, Object> = { 'workOrderId': wo.id };
                   this.pageStack.pushPathByName(this.getDetailPageName(wo.status), p);
                 });
-              }, (wo: WorkOrderModel) => `${wo.id}`);
+              }, (wo: WorkOrderModel) => `${wo.id}-${wo.status}`);
             }
           }
           .width('100%')
