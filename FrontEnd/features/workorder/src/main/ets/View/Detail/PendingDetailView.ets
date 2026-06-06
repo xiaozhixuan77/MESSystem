@@ -1,3 +1,5 @@
+import { emitter } from '@kit.BasicServicesKit';
+import { WORKORDER_CHANGED_EVENT } from '@ohos/datastore';
 import { PermissionUtil } from '@ohos/utils';
 import { UserModel } from '@ohos/user';
 import { WorkOrderViewModel } from '../../ViewModel/WorkOrderViewModel';
@@ -10,6 +12,7 @@ export struct PendingDetailView {
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local workOrderId: number = 0;
   private hasAppeared: boolean = false;
+  private refreshListener: (() => void) | null = null;
 
   private get hasBottomActions(): boolean {
     return PermissionUtil.hasPermission('workorder.create', this.currentRole) ||
@@ -23,6 +26,16 @@ export struct PendingDetailView {
     if (this.workOrderId > 0) {
       this.viewModel.loadDetail(this.workOrderId);
       this.viewModel.loadOperators();
+    }
+    this.refreshListener = () => {
+      this.viewModel.loadDetail(this.workOrderId);
+    };
+    emitter.on(WORKORDER_CHANGED_EVENT, this.refreshListener);
+  }
+
+  aboutToDisappear(): void {
+    if (this.refreshListener) {
+      emitter.off(WORKORDER_CHANGED_EVENT.eventId, this.refreshListener);
     }
   }
 
@@ -58,7 +71,10 @@ export struct PendingDetailView {
     }
     .width('100%').height('100%')
     .onAppear(() => {
+      console.info('test: PendingDetailView.onAppear hasAppeared=' + this.hasAppeared +
+        ' workOrderId=' + this.workOrderId);
       if (this.hasAppeared) {
+        console.info('test: PendingDetailView.onAppear calling loadDetail');
         this.viewModel.loadDetail(this.workOrderId);
       }
       this.hasAppeared = true;
