@@ -6,4 +6,8 @@ export class WorkOrderRouteModel {
   name: string = '';
   stationId: number | null = null;
   status: string = 'pending';
+  stationProcessedCount: number = 0;
+  stationFinishedCount: number = 0;
+  stationNgCount: number = 0;
+  stationDeviceStatus: string = '';
 }

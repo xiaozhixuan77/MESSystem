@@ -22,10 +22,34 @@ export struct CompletedDetailView {
     }
   }
 
+  aboutToDisappear(): void {
+    this.viewModel.cleanup();
+  }
+
+  get totalOutput(): string {
+    const v = (this.viewModel.stationTotalOutput || 0) + (this.viewModel.stationTotalNg || 0);
+    return `${v || this.viewModel.currentWorkOrder?.planQty || 0}`;
+  }
+
+  get completedGood(): string {
+    const v = this.viewModel.stationTotalOutput || this.viewModel.currentWorkOrder?.reportedQtyGood || 0;
+    return `${v}`;
+  }
+
+  get completedNg(): string {
+    const v = this.viewModel.stationTotalNg || this.viewModel.currentWorkOrder?.reportedQtyNg || 0;
+    return `${v}`;
+  }
+
   get yieldRate(): string {
-    const wo = this.viewModel.currentWorkOrder;
-    if (!wo || wo.planQty <= 0) { return '0%'; }
-    return (wo.reportedQtyGood / wo.planQty * 100).toFixed(1) + '%';
+    const good = this.viewModel.stationTotalOutput > 0
+      ? this.viewModel.stationTotalOutput
+      : (this.viewModel.currentWorkOrder?.reportedQtyGood || 0);
+    const total = good + (this.viewModel.stationTotalNg > 0
+      ? this.viewModel.stationTotalNg
+      : (this.viewModel.currentWorkOrder?.reportedQtyNg || 0));
+    if (total <= 0) { return '0%'; }
+    return (good / total * 100).toFixed(1) + '%';
   }
 
   build() {
@@ -111,9 +135,24 @@ export struct CompletedDetailView {
       this.SectionTitle('自动生产结果');
 
       Row({ space: 12 }) {
-        this.StatCard('总产出', `${this.viewModel.currentWorkOrder?.planQty || 0}`, '#1565C0');
-        this.StatCard('良品', `${this.viewModel.currentWorkOrder?.reportedQtyGood || 0}`, '#4CAF50');
-        this.StatCard('NG', `${this.viewModel.currentWorkOrder?.reportedQtyNg || 0}`, '#F44336');
+        Column() {
+          Text(this.totalOutput).fontSize(24).fontWeight(700).fontColor('#1565C0');
+          Text('总产出').fontSize(12).fontColor('#5A5A6E').margin({ bottom: 4 });
+        }
+        .layoutWeight(1).padding({ top: 16, bottom: 16, left: 8, right: 8 })
+        .backgroundColor('#F5F7FA').borderRadius(12).alignItems(HorizontalAlign.Center);
+        Column() {
+          Text(this.completedGood).fontSize(24).fontWeight(700).fontColor('#4CAF50');
+          Text('良品').fontSize(12).fontColor('#5A5A6E').margin({ bottom: 4 });
+        }
+        .layoutWeight(1).padding({ top: 16, bottom: 16, left: 8, right: 8 })
+        .backgroundColor('#F5F7FA').borderRadius(12).alignItems(HorizontalAlign.Center);
+        Column() {
+          Text(this.completedNg).fontSize(24).fontWeight(700).fontColor('#F44336');
+          Text('NG').fontSize(12).fontColor('#5A5A6E').margin({ bottom: 4 });
+        }
+        .layoutWeight(1).padding({ top: 16, bottom: 16, left: 8, right: 8 })
+        .backgroundColor('#F5F7FA').borderRadius(12).alignItems(HorizontalAlign.Center);
       }
       .width('100%').margin({ bottom: 16 });
 

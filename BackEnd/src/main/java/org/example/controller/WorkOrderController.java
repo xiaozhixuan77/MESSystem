@@ -14,6 +14,7 @@ import org.example.entity.User;
 import org.example.entity.WorkOrder;
 import org.example.entity.Workshop;
 import org.example.entity.WorkOrderRouteStep;
+import org.example.entity.Workstation;
 import org.example.security.RequiresPermission;
 import org.example.service.WorkshopService;
 import org.example.service.ProductionLineService;
@@ -22,6 +23,7 @@ import org.example.service.ProductService;
 import org.example.service.UserService;
 import org.example.service.WorkOrderRouteStepService;
 import org.example.service.WorkOrderService;
+import org.example.service.WorkstationService;
 import org.example.simulator.SimulatorManager;
 import org.example.vo.WorkOrderDetailVO;
 import org.example.vo.WorkOrderRouteStepVO;
@@ -31,6 +33,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +51,7 @@ public class WorkOrderController {
     private final WorkshopService workshopService;
     private final ProductionLineService productionLineService;
     private final SimulatorManager simulatorManager;
+    private final WorkstationService workstationService;
 
     public WorkOrderController(WorkOrderService workOrderService,
                                UserService userService,
@@ -55,7 +60,8 @@ public class WorkOrderController {
                                WorkOrderRouteStepService workOrderRouteStepService,
                                WorkshopService workshopService,
                                ProductionLineService productionLineService,
-                               SimulatorManager simulatorManager) {
+                               SimulatorManager simulatorManager,
+                               WorkstationService workstationService) {
         this.workOrderService = workOrderService;
         this.userService = userService;
         this.productService = productService;
@@ -64,6 +70,7 @@ public class WorkOrderController {
         this.workshopService = workshopService;
         this.productionLineService = productionLineService;
         this.simulatorManager = simulatorManager;
+        this.workstationService = workstationService;
     }
 
     @GetMapping("/workorders")
@@ -340,7 +347,7 @@ public class WorkOrderController {
                 .eq(WorkOrderRouteStep::getWorkOrderId, wo.getId())
                 .orderByAsc(WorkOrderRouteStep::getSeqNo)
                 .list();
-        vo.setRouteSteps(steps.stream().map(step -> {
+        List<WorkOrderRouteStepVO> stepVOs = steps.stream().map(step -> {
             WorkOrderRouteStepVO stepVO = new WorkOrderRouteStepVO();
             stepVO.setId(step.getId());
             stepVO.setSeqNo(step.getSeqNo());
@@ -348,8 +355,75 @@ public class WorkOrderController {
             stepVO.setName(step.getName());
             stepVO.setStationId(step.getStationId());
             return stepVO;
-        }).collect(Collectors.toList()));
+        }).collect(Collectors.toList());
 
+        // 聚合工站实时计数器
+        if (wo.getLineId() != null) {
+            List<Workstation> workstations = workstationService.lambdaQuery()
+                    .eq(Workstation::getProductionLineId, wo.getLineId())
+                    .eq(Workstation::getIsDeleted, 0)
+                    .list();
+            Map<Long, Workstation> stationMap = workstations.stream()
+                    .collect(Collectors.toMap(Workstation::getId, w -> w));
+
+            int totalNg = 0;
+            for (Workstation ws : workstations) {
+                if (ws.getNgCount() != null) {
+                    totalNg += ws.getNgCount();
+                }
+            }
+
+            // 最后工序步骤对应的工站数据作为总产出
+            WorkOrderRouteStepVO lastStep = null;
+            for (WorkOrderRouteStepVO sv : stepVOs) {
+                if (lastStep == null || sv.getSeqNo() > lastStep.getSeqNo()) {
+                    lastStep = sv;
+                }
+            }
+            if (lastStep != null && lastStep.getStationId() != null) {
+                Workstation lastStation = stationMap.get(lastStep.getStationId());
+                if (lastStation != null) {
+                    vo.setStationTotalOutput(lastStation.getFinishedCount());
+                    vo.setStationProcessedCount(lastStation.getProcessedCount());
+                }
+            }
+            vo.setStationTotalNg(totalNg);
+
+            // 回填每个工序步骤的工站数据
+            for (WorkOrderRouteStepVO sv : stepVOs) {
+                if (sv.getStationId() != null) {
+                    Workstation ws = stationMap.get(sv.getStationId());
+                    if (ws != null) {
+                        sv.setStationProcessedCount(ws.getProcessedCount());
+                        sv.setStationFinishedCount(ws.getFinishedCount());
+                        sv.setStationNgCount(ws.getNgCount());
+                        sv.setStationDeviceStatus(ws.getDeviceStatus());
+                    }
+                }
+            }
+
+            // 计算已运行时长
+            LocalDateTime startTime = wo.getActualStartTime();
+            if (startTime != null) {
+                LocalDateTime endTime;
+                String status = wo.getStatus();
+                if ("生产中".equals(status)) {
+                    endTime = LocalDateTime.now();
+                } else if ("暂停中".equals(status) && wo.getPauseTime() != null) {
+                    endTime = wo.getPauseTime();
+                } else if (("生产完成".equals(status) || "已报工".equals(status) || "完工".equals(status))
+                        && wo.getActualEndTime() != null) {
+                    endTime = wo.getActualEndTime();
+                } else {
+                    endTime = null;
+                }
+                if (endTime != null) {
+                    vo.setElapsedSeconds(ChronoUnit.SECONDS.between(startTime, endTime));
+                }
+            }
+        }
+
+        vo.setRouteSteps(stepVOs);
         return vo;
     }
 

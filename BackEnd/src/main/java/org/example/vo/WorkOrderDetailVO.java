@@ -24,4 +24,8 @@ public class WorkOrderDetailVO extends WorkOrderVO {
     private Long sourceWorkorderId;
     private List<WorkOrderRouteStepVO> routeSteps;
     private String processName;
+    private Integer stationTotalOutput;
+    private Integer stationTotalNg;
+    private Integer stationProcessedCount;
+    private Long elapsedSeconds;
 }

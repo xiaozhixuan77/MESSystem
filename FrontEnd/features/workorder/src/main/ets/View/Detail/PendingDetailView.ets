@@ -71,10 +71,7 @@ export struct PendingDetailView {
     }
     .width('100%').height('100%')
     .onAppear(() => {
-      console.info('test: PendingDetailView.onAppear hasAppeared=' + this.hasAppeared +
-        ' workOrderId=' + this.workOrderId);
       if (this.hasAppeared) {
-        console.info('test: PendingDetailView.onAppear calling loadDetail');
         this.viewModel.loadDetail(this.workOrderId);
       }
       this.hasAppeared = true;

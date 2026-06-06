@@ -33,4 +33,9 @@ export class WorkOrderModel {
   sourceWorkorderId: number = 0;
   routeSteps: WorkOrderRouteModel[] = [];
   processName: string = '';
+  // 实时生产进度（从工站计数器聚合）
+  stationTotalOutput: number = 0;
+  stationTotalNg: number = 0;
+  stationProcessedCount: number = 0;
+  elapsedSeconds: number = 0;
 }

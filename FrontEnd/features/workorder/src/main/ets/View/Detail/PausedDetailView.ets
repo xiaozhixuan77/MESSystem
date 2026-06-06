@@ -9,6 +9,17 @@ export struct PausedDetailView {
   @Local workOrderId: number = 0;
   private hasAppeared: boolean = false;
 
+  get completedCount(): string {
+    const v = this.viewModel.stationTotalOutput || this.viewModel.currentWorkOrder?.reportedQtyGood || 0;
+    return `${v}`;
+  }
+
+  get remainingCount(): string {
+    const plan = this.viewModel.currentWorkOrder?.planQty || 0;
+    const done = this.viewModel.stationTotalOutput || this.viewModel.currentWorkOrder?.reportedQtyGood || 0;
+    return `${plan - done}`;
+  }
+
   private get hasBottomActions(): boolean {
     return PermissionUtil.hasPermission('workorder.scrap', this.currentRole) ||
       PermissionUtil.hasPermission('workorder.resume', this.currentRole);
@@ -19,8 +30,16 @@ export struct PausedDetailView {
     const param = navInfo?.param as Record<string, Object>;
     this.workOrderId = (param?.['workOrderId'] as number) ?? 0;
     if (this.workOrderId > 0) {
-      this.viewModel.loadDetail(this.workOrderId);
+      this.viewModel.loadDetail(this.workOrderId).then(() => {
+        if (this.viewModel.currentWorkOrder && this.viewModel.currentWorkOrder.lineId > 0) {
+          this.viewModel.subscribeStationUpdates(this.viewModel.currentWorkOrder.lineId);
+        }
+      });
     }
+  }
+
+  aboutToDisappear(): void {
+    this.viewModel.cleanup();
   }
 
   build() {
@@ -59,7 +78,11 @@ export struct PausedDetailView {
     .width('100%').height('100%')
     .onAppear(() => {
       if (this.hasAppeared) {
-        this.viewModel.loadDetail(this.workOrderId);
+        this.viewModel.loadDetail(this.workOrderId).then(() => {
+          if (this.viewModel.currentWorkOrder && this.viewModel.currentWorkOrder.lineId > 0) {
+            this.viewModel.subscribeStationUpdates(this.viewModel.currentWorkOrder.lineId);
+          }
+        });
       }
       this.hasAppeared = true;
     });
@@ -151,11 +174,27 @@ export struct PausedDetailView {
     Column() {
       this.SectionTitle('当前进度');
       Row({ space: 10 }) {
-        this.ProgressItem('计划数量', `${this.viewModel.currentWorkOrder?.planQty || 0}`, '#1A1A2E');
-        this.ProgressItem('已完成', `${this.viewModel.currentWorkOrder?.reportedQtyGood || 0}`, '#4CAF50');
-        this.ProgressItem('剩余',
-          `${(this.viewModel.currentWorkOrder?.planQty || 0) - (this.viewModel.currentWorkOrder?.reportedQtyGood || 0)}`,
-          '#F44336');
+        Column() {
+          Text(`${this.viewModel.currentWorkOrder?.planQty || 0}`).fontSize(20).fontWeight(700).fontColor('#1A1A2E');
+          Text('计划数量').fontSize(10).fontColor('#5A5A6E').margin({ bottom: 4 });
+        }
+        .layoutWeight(1).padding({ top: 14, bottom: 14, left: 8, right: 8 })
+        .backgroundColor('#F5F7FA').borderRadius(12)
+        .alignItems(HorizontalAlign.Center);
+        Column() {
+          Text(this.completedCount).fontSize(20).fontWeight(700).fontColor('#4CAF50');
+          Text('已完成').fontSize(10).fontColor('#5A5A6E').margin({ bottom: 4 });
+        }
+        .layoutWeight(1).padding({ top: 14, bottom: 14, left: 8, right: 8 })
+        .backgroundColor('#F5F7FA').borderRadius(12)
+        .alignItems(HorizontalAlign.Center);
+        Column() {
+          Text(this.remainingCount).fontSize(20).fontWeight(700).fontColor('#F44336');
+          Text('剩余').fontSize(10).fontColor('#5A5A6E').margin({ bottom: 4 });
+        }
+        .layoutWeight(1).padding({ top: 14, bottom: 14, left: 8, right: 8 })
+        .backgroundColor('#F5F7FA').borderRadius(12)
+        .alignItems(HorizontalAlign.Center);
       }
       .width('100%');
     }

@@ -52,6 +52,14 @@ export class WorkOrderViewModel {
   @Trace reportFormHours: number = 0;
   @Trace reportFormNote: string = '';
 
+  // 实时生产进度（从工站 WebSocket 聚合）
+  @Trace stationTotalOutput: number = 0;
+  @Trace stationTotalNg: number = 0;
+  @Trace stationProcessedCount: number = 0;
+  @Trace elapsedText: string = '--';
+  private elapsedTimer: number = -1;
+  private subscribedStationLineId: number = 0;
+
   // WebSocket 订阅管理
   private subscribedLineIds: Set<number> = new Set();
 
@@ -71,6 +79,23 @@ export class WorkOrderViewModel {
     WebSocketService.removeListener(topic, this.onWorkOrderUpdate);
   }
 
+  subscribeStationUpdates(lineId: number): void {
+    if (this.subscribedStationLineId === lineId) return;
+    this.unsubscribeStationUpdates();
+    this.subscribedStationLineId = lineId;
+    const topic = `/topic/lines/${lineId}/stations`;
+    const ws = WebSocketService.getInstance();
+    ws.subscribe(topic);
+    WebSocketService.addListener(topic, this.onStationUpdate);
+  }
+
+  unsubscribeStationUpdates(): void {
+    if (this.subscribedStationLineId <= 0) return;
+    const topic = `/topic/lines/${this.subscribedStationLineId}/stations`;
+    WebSocketService.removeListener(topic, this.onStationUpdate);
+    this.subscribedStationLineId = 0;
+  }
+
   private onWorkOrderUpdate = (payload: Object): void => {
     const envelope = payload as Record<string, Object>;
     if (envelope['type'] !== 'WORKORDER_UPDATE') return;
@@ -85,6 +110,50 @@ export class WorkOrderViewModel {
 
     if (this.currentWorkOrder && this.currentWorkOrder.id === woId) {
       this.currentWorkOrder.status = newStatus;
+    }
+  };
+
+  private onStationUpdate = (payload: Object): void => {
+    const msg = payload as Record<string, Object>;
+    const lineId = msg['lineId'] as number | undefined;
+    const stationData = msg['data'] as Object[];
+    if (!lineId || !stationData || stationData.length === 0) return;
+    if (!this.currentWorkOrder || this.currentWorkOrder.lineId !== lineId) return;
+
+    const routeStationIds = this.currentWorkOrder.routeSteps
+      .map(s => s.stationId)
+      .filter((id: number | null) => id !== null) as number[];
+    if (routeStationIds.length === 0) return;
+
+    // 最后工序步骤工站 finishedCount = 总良品
+    const lastStationId = routeStationIds[routeStationIds.length - 1];
+    const lastStation = stationData.find(
+      (s: Object) => (s as Record<string, Object>)['stationId'] === lastStationId
+    ) as Record<string, Object> | undefined;
+    if (lastStation) {
+      this.stationTotalOutput = (lastStation['finishedCount'] as number) ?? this.stationTotalOutput;
+      this.stationProcessedCount = (lastStation['processedCount'] as number) ?? this.stationProcessedCount;
+    }
+
+    // 所有工站 ngCount 求和
+    let totalNg = 0;
+    for (const s of stationData) {
+      totalNg += (s as Record<string, Object>)['ngCount'] as number ?? 0;
+    }
+    this.stationTotalNg = totalNg;
+
+    // 回填各工序步骤的工站数据
+    for (const step of this.currentWorkOrder.routeSteps) {
+      if (step.stationId === null) continue;
+      const update = stationData.find(
+        (s: Object) => (s as Record<string, Object>)['stationId'] === step.stationId
+      ) as Record<string, Object> | undefined;
+      if (update) {
+        step.stationProcessedCount = (update['processedCount'] as number) ?? step.stationProcessedCount;
+        step.stationFinishedCount = (update['finishedCount'] as number) ?? step.stationFinishedCount;
+        step.stationNgCount = (update['ngCount'] as number) ?? step.stationNgCount;
+        step.stationDeviceStatus = (update['deviceStatus'] as string) ?? step.stationDeviceStatus;
+      }
     }
   };
 
@@ -155,6 +224,10 @@ export class WorkOrderViewModel {
       wo.sourceWorkorderId = (raw['sourceWorkorderId'] as number) ?? 0;
       wo.processName = (raw['processName'] as string) ?? '';
       wo.pauseTime = (raw['pauseTime'] as string) ?? '';
+      wo.stationTotalOutput = (raw['stationTotalOutput'] as number) ?? 0;
+      wo.stationTotalNg = (raw['stationTotalNg'] as number) ?? 0;
+      wo.stationProcessedCount = (raw['stationProcessedCount'] as number) ?? 0;
+      wo.elapsedSeconds = (raw['elapsedSeconds'] as number) ?? 0;
       const stepsRaw = raw['routeSteps'] as Object[];
       wo.routeSteps = (stepsRaw || []).map((s: Object) => {
         const step = new WorkOrderRouteModel();
@@ -164,10 +237,21 @@ export class WorkOrderViewModel {
         step.opCode = r['opCode'] as string;
         step.name = r['name'] as string;
         step.stationId = (r['stationId'] as number) ?? null;
+        step.stationProcessedCount = (r['stationProcessedCount'] as number) ?? 0;
+        step.stationFinishedCount = (r['stationFinishedCount'] as number) ?? 0;
+        step.stationNgCount = (r['stationNgCount'] as number) ?? 0;
+        step.stationDeviceStatus = (r['stationDeviceStatus'] as string) ?? '';
         return step;
       });
-      // 详情加载后预设报工默认值
-      this.reportFormGood = wo.planQty;
+      // 详情加载后初始化实时状态
+      this.stationTotalOutput = wo.stationTotalOutput;
+      this.stationTotalNg = wo.stationTotalNg;
+      this.stationProcessedCount = wo.stationProcessedCount;
+      this.startElapsedTimer(wo);
+      // 报工默认值：优先用实际产出
+      const actualGood = wo.stationTotalOutput > 0 ? wo.stationTotalOutput : wo.planQty;
+      this.reportFormGood = actualGood;
+      this.reportFormNg = wo.stationTotalNg;
       this.currentWorkOrder = wo;
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -660,8 +744,51 @@ export class WorkOrderViewModel {
     if (!raw) {
       return '';
     }
-    // Convert ISO "2026-06-02T08:00:00" or "2026-06-02 08:00:00" to "2026-06-02 08:00"
     const str = raw.replace('T', ' ');
     return str.length >= 16 ? str.substring(0, 16) : str;
+  }
+
+  startElapsedTimer(wo: WorkOrderModel): void {
+    this.stopElapsedTimer();
+    if (!wo.actualStartTime || wo.actualStartTime.length === 0) {
+      this.elapsedText = '--';
+      return;
+    }
+    const startTime = new Date(wo.actualStartTime.replace(' ', 'T')).getTime();
+    const update = (): void => {
+      let endTime: number;
+      if (wo.status === '暂停中' && wo.pauseTime && wo.pauseTime.length > 0) {
+        endTime = new Date(wo.pauseTime.replace(' ', 'T')).getTime();
+      } else if ((wo.status === '生产完成' || wo.status === '已报工' || wo.status === '完工')
+        && wo.actualEndTime && wo.actualEndTime.length > 0) {
+        endTime = new Date(wo.actualEndTime.replace(' ', 'T')).getTime();
+      } else {
+        endTime = Date.now();
+      }
+      const seconds = Math.max(0, Math.floor((endTime - startTime) / 1000));
+      this.elapsedText = this.formatElapsed(seconds);
+    };
+    update();
+    this.elapsedTimer = setInterval(update, 1000);
+  }
+
+  stopElapsedTimer(): void {
+    if (this.elapsedTimer !== -1) {
+      clearInterval(this.elapsedTimer);
+      this.elapsedTimer = -1;
+    }
+  }
+
+  private formatElapsed(totalSeconds: number): string {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    const pad = (n: number) => n < 10 ? '0' + n : '' + n;
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+
+  cleanup(): void {
+    this.unsubscribeStationUpdates();
+    this.stopElapsedTimer();
   }
 }

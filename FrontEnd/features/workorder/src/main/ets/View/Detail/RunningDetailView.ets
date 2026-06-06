@@ -14,14 +14,43 @@ export struct RunningDetailView {
     const param = navInfo?.param as Record<string, Object>;
     this.workOrderId = (param?.['workOrderId'] as number) ?? 0;
     if (this.workOrderId > 0) {
-      this.viewModel.loadDetail(this.workOrderId);
+      this.viewModel.loadDetail(this.workOrderId).then(() => {
+        if (this.viewModel.currentWorkOrder && this.viewModel.currentWorkOrder.lineId > 0) {
+          this.viewModel.subscribeStationUpdates(this.viewModel.currentWorkOrder.lineId);
+        }
+      });
     }
+  }
+
+  aboutToDisappear(): void {
+    this.viewModel.cleanup();
   }
 
   get progressValue(): number {
     const wo = this.viewModel.currentWorkOrder;
     if (!wo || wo.planQty <= 0) { return 0; }
-    return Math.round(wo.reportedQtyGood / wo.planQty * 100);
+    const actual = this.viewModel.stationTotalOutput > 0
+      ? this.viewModel.stationTotalOutput
+      : (wo.reportedQtyGood || 0);
+    return Math.round(actual / wo.planQty * 100);
+  }
+
+  get goodCount(): string {
+    const v = this.viewModel.stationTotalOutput || this.viewModel.currentWorkOrder?.reportedQtyGood || 0;
+    return `${v}`;
+  }
+
+  get ngCount(): string {
+    const v = this.viewModel.stationTotalNg || this.viewModel.currentWorkOrder?.reportedQtyNg || 0;
+    return `${v}`;
+  }
+
+  get targetCount(): string {
+    return `${this.viewModel.currentWorkOrder?.planQty || 0}`;
+  }
+
+  get elapsedDisplay(): string {
+    return this.viewModel.elapsedText;
   }
 
   build() {
@@ -57,7 +86,11 @@ export struct RunningDetailView {
     .width('100%').height('100%')
     .onAppear(() => {
       if (this.hasAppeared) {
-        this.viewModel.loadDetail(this.workOrderId);
+        this.viewModel.loadDetail(this.workOrderId).then(() => {
+          if (this.viewModel.currentWorkOrder && this.viewModel.currentWorkOrder.lineId > 0) {
+            this.viewModel.subscribeStationUpdates(this.viewModel.currentWorkOrder.lineId);
+          }
+        });
       }
       this.hasAppeared = true;
     });
@@ -119,9 +152,18 @@ export struct RunningDetailView {
       .padding({ top: 20, bottom: 20 });
 
       Row({ space: 32 }) {
-        this.StatCard('良品', `${this.viewModel.currentWorkOrder?.reportedQtyGood || 0}`, '#4CAF50');
-        this.StatCard('NG', `${this.viewModel.currentWorkOrder?.reportedQtyNg || 0}`, '#F44336');
-        this.StatCard('目标', `${this.viewModel.currentWorkOrder?.planQty || 0}`, '#1A1A2E');
+        Column() {
+          Text(this.goodCount).fontSize(20).fontWeight(700).fontColor('#4CAF50');
+          Text('良品').fontSize(12).fontColor('#5A5A6E').margin({ top: 2 });
+        }.alignItems(HorizontalAlign.Center);
+        Column() {
+          Text(this.ngCount).fontSize(20).fontWeight(700).fontColor('#F44336');
+          Text('NG').fontSize(12).fontColor('#5A5A6E').margin({ top: 2 });
+        }.alignItems(HorizontalAlign.Center);
+        Column() {
+          Text(this.targetCount).fontSize(20).fontWeight(700).fontColor('#1A1A2E');
+          Text('目标').fontSize(12).fontColor('#5A5A6E').margin({ top: 2 });
+        }.alignItems(HorizontalAlign.Center);
       }
       .width('100%').justifyContent(FlexAlign.Center).margin({ top: 20 });
     }
@@ -191,7 +233,7 @@ export struct RunningDetailView {
       this.SectionTitle('实时数据');
       Grid() {
         GridItem() { this.FieldItem('实际开始时间', this.viewModel.currentWorkOrder?.actualStartTime || '—'); }
-        GridItem() { this.FieldItem('已运行时长', '—'); }
+        GridItem() { this.FieldItem('已运行时长', this.elapsedDisplay); }
         GridItem() { this.FieldItem('当前工序', this.viewModel.currentWorkOrder?.processName || '—'); }
         GridItem() { this.FieldItem('预估完成', this.viewModel.currentWorkOrder?.planEndTime || '—'); }
       }
