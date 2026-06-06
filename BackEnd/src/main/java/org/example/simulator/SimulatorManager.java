@@ -341,10 +341,8 @@ public class SimulatorManager {
             productionLineService.updateById(line);
         }
 
-        int finished = stations.get(stations.size() - 1).getFinishedCount() != null
-                ? stations.get(stations.size() - 1).getFinishedCount() : 0;
-        int ng = stations.get(stations.size() - 1).getNgCount() != null
-                ? stations.get(stations.size() - 1).getNgCount() : 0;
+        int finished = stations.stream().mapToInt(ws -> ws.getFinishedCount() != null ? ws.getFinishedCount() : 0).sum();
+        int ng = stations.stream().mapToInt(ws -> ws.getNgCount() != null ? ws.getNgCount() : 0).sum();
         Long woId = simulator.getWorkOrderId();
         String woCode = null;
         Integer planQty = null;
