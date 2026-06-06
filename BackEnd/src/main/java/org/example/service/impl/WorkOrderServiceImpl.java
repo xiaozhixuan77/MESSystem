@@ -16,6 +16,7 @@ import org.example.service.ProductionLineService;
 import org.example.service.WorkOrderRouteStepService;
 import org.example.service.WorkOrderService;
 import org.example.simulator.SimulatorManager;
+import org.example.websocket.LineBroadcaster;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.dao.DuplicateKeyException;
@@ -27,6 +28,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,19 +43,22 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final ProductionLineService productionLineService;
     private final TransactionTemplate transactionTemplate;
     private final SimulatorManager simulatorManager;
+    private final LineBroadcaster lineBroadcaster;
 
     public WorkOrderServiceImpl(ProductService productService,
                                 ProcessStepService processStepService,
                                 WorkOrderRouteStepService workOrderRouteStepService,
                                 ProductionLineService productionLineService,
                                 TransactionTemplate transactionTemplate,
-                                SimulatorManager simulatorManager) {
+                                SimulatorManager simulatorManager,
+                                LineBroadcaster lineBroadcaster) {
         this.productService = productService;
         this.processStepService = processStepService;
         this.workOrderRouteStepService = workOrderRouteStepService;
         this.productionLineService = productionLineService;
         this.transactionTemplate = transactionTemplate;
         this.simulatorManager = simulatorManager;
+        this.lineBroadcaster = lineBroadcaster;
     }
 
     @Override
@@ -239,6 +244,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         wo.setOperatorId(operatorId);
         wo.setDispatchTime(LocalDateTime.now());
         updateById(wo);
+
+        lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
+                "已派工", Map.of("operatorId", operatorId));
     }
 
     @Override
@@ -288,6 +296,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         line.setStatus("生产中");
         line.setCurrentWorkorderId(workOrderId);
         productionLineService.updateById(line);
+
+        lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
+                "生产中", null);
     }
 
     @Override
@@ -312,6 +323,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         wo.setStatus("生产完成");
         wo.setActualEndTime(LocalDateTime.now());
         updateById(wo);
+
+        lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
+                "生产完成", null);
 
         ProductionLine line = productionLineService.lambdaQuery()
                 .eq(ProductionLine::getId, wo.getLineId())
@@ -396,6 +410,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             line.setStatus("暂停");
             productionLineService.updateById(line);
         }
+
+        lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
+                "暂停中", null);
     }
 
     @Override
@@ -414,6 +431,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
         wo.setStatus("生产中");
         updateById(wo);
+
+        lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
+                "生产中", null);
     }
 
     @Override
@@ -442,6 +462,10 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             wo.setExceptionNote(existing != null ? existing + "; " + request.getNote() : request.getNote());
         }
         updateById(wo);
+
+        lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
+                "已报工", Map.of("good", request.getGood(), "ng", request.getNg(),
+                        "hours", request.getHours()));
     }
 
     @Override
@@ -473,6 +497,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 productionLineService.updateById(line);
             }
         }
+
+        lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
+                "完工", null);
     }
 
     @Override
@@ -508,6 +535,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 productionLineService.updateById(line);
             }
         }
+
+        lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
+                "报废", reason != null ? Map.of("reason", reason) : null);
     }
 
     @Override

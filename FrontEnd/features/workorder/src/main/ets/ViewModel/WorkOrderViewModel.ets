@@ -1,6 +1,6 @@
 import { emitter } from '@kit.BasicServicesKit';
 import { WORKORDER_CHANGED_EVENT } from '@ohos/datastore';
-import { WorkOrderApi, WorkshopApi, ProductApi, LineApi, UserApi } from '@ohos/network';
+import { WorkOrderApi, WorkshopApi, ProductApi, LineApi, UserApi, WebSocketService } from '@ohos/network';
 import { UserModel } from '@ohos/user';
 import { WorkOrderModel } from '../Model/WorkOrderModel';
 import { WorkshopModel } from '../Model/WorkshopModel';
@@ -51,6 +51,48 @@ export class WorkOrderViewModel {
   @Trace reportFormNg: number = 0;
   @Trace reportFormHours: number = 0;
   @Trace reportFormNote: string = '';
+
+  // WebSocket 订阅管理
+  private subscribedLineIds: Set<number> = new Set();
+
+  subscribeWorkOrderUpdates(lineId: number): void {
+    if (this.subscribedLineIds.has(lineId)) return;
+    this.subscribedLineIds.add(lineId);
+    const topic = `/topic/lines/${lineId}/workorders`;
+    const ws = WebSocketService.getInstance();
+    ws.subscribe(topic);
+    WebSocketService.addListener(topic, this.onWorkOrderUpdate);
+  }
+
+  unsubscribeWorkOrderUpdates(lineId: number): void {
+    if (!this.subscribedLineIds.has(lineId)) return;
+    this.subscribedLineIds.delete(lineId);
+    const topic = `/topic/lines/${lineId}/workorders`;
+    WebSocketService.removeListener(topic, this.onWorkOrderUpdate);
+  }
+
+  private onWorkOrderUpdate = (payload: Object): void => {
+    const envelope = payload as Record<string, Object>;
+    const type = envelope['type'] as string;
+    if (type !== 'WORKORDER_UPDATE') return;
+
+    const data = envelope['data'] as Record<string, Object>;
+    if (!data) return;
+
+    const woId = data['workOrderId'] as number;
+    const newStatus = data['status'] as string;
+
+    const item = this.workOrderList.find(w => w.id === woId);
+    if (item) {
+      item.status = newStatus;
+      this.workOrderList = [...this.workOrderList];
+    } else {
+      try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
+    }
+    if (this.currentWorkOrder && this.currentWorkOrder.id === woId) {
+      this.currentWorkOrder.status = newStatus;
+    }
+  };
 
   get filteredList(): WorkOrderModel[] {
     if (!this.searchKeyword) {

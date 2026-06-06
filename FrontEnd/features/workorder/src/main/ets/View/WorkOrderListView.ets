@@ -22,6 +22,8 @@ const STATUS_COLORS: Record<string, StatusColor> = {
   '报废': { text: '#F44336', bg: '#FFEBEE' } as StatusColor,
 };
 
+const KNOWN_LINE_IDS = [1, 2];
+
 @ComponentV2
 export struct WorkOrderListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
@@ -33,9 +35,19 @@ export struct WorkOrderListView {
 
   aboutToAppear(): void {
     this.viewModel.loadWorkOrders();
+    for (const lineId of KNOWN_LINE_IDS) {
+      this.viewModel.subscribeWorkOrderUpdates(lineId);
+    }
     emitter.on(WORKORDER_CHANGED_EVENT, () => {
       this.viewModel.loadWorkOrders(true);
     });
+  }
+
+  aboutToDisappear(): void {
+    for (const lineId of KNOWN_LINE_IDS) {
+      this.viewModel.unsubscribeWorkOrderUpdates(lineId);
+    }
+    emitter.off(WORKORDER_CHANGED_EVENT.eventId);
   }
 
   private statusLabelToFilter(label: string): string {

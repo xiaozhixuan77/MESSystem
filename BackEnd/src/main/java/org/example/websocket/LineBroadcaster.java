@@ -66,6 +66,30 @@ public class LineBroadcaster {
     }
 
     /**
+     * 工单状态变更广播 → /topic/lines/{lineId}/workorders。
+     */
+    public void broadcastWorkOrderUpdate(Long lineId, Long workOrderId,
+                                          String workOrderCode, String status,
+                                          Map<String, Object> extra) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("workOrderId", workOrderId);
+        data.put("workOrderCode", workOrderCode);
+        data.put("status", status);
+        if (extra != null && !extra.isEmpty()) {
+            data.put("extra", extra);
+        }
+
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "WORKORDER_UPDATE");
+        message.put("lineId", lineId);
+        message.put("timestamp", System.currentTimeMillis());
+        message.put("data", data);
+
+        messagingTemplate.convertAndSend("/topic/lines/" + lineId + "/workorders", message);
+        log.debug("WORKORDER_UPDATE 已广播 lineId={} woId={} status={}", lineId, workOrderId, status);
+    }
+
+    /**
      * 点对点私有消息，发送到 /user/{userId}/{destination}。
      */
     public void sendToUser(Long userId, String destination, Object payload) {
