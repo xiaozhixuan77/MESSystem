@@ -26,7 +26,7 @@ export class LineDetailModel {
   }
 
   get yieldRate(): string {
-    const finished = this.stations.reduce((sum, s) => sum + s.finishedCount, 0);
+    const finished = this.stations.length > 0 ? this.stations[this.stations.length - 1].finishedCount : 0;
     const ng = this.stations.reduce((sum, s) => sum + s.ngCount, 0);
     const total = finished + ng;
     if (total === 0) {
