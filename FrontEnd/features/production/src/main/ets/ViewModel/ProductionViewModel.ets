@@ -274,12 +274,6 @@ export class ProductionViewModel {
         }
         line.currentWorkorderId = newWoId;
       }
-      if (data['finishedCount'] !== undefined) {
-        line.finishedCount = data['finishedCount'] as number;
-      }
-      if (data['ngCount'] !== undefined) {
-        line.ngCount = data['ngCount'] as number;
-      }
       if (data['workOrderCode'] !== undefined) {
         const code = data['workOrderCode'] as string | null;
         line.workOrderCode = code ?? '';
@@ -311,11 +305,15 @@ export class ProductionViewModel {
     if (!line) {
       return;
     }
-    // 取最后一个工作站的 finishedCount 作为产线总产出（与详情页 todayOutput 一致）
-    // NG 也取最后一个工作站，保持良品率计算一致
+    // finishedCount = 最后工位产出（与详情页 todayOutput 一致）
     const lastStation = stationData[stationData.length - 1] as Record<string, Object>;
     line.finishedCount = lastStation['finishedCount'] as number ?? 0;
-    line.ngCount = lastStation['ngCount'] as number ?? 0;
+    // ngCount = 所有工位 NG 求和（与详情页 yieldRate 口径一致，避免良品率恒为 100%）
+    let totalNg = 0;
+    for (const s of stationData) {
+      totalNg += (s as Record<string, Object>)['ngCount'] as number ?? 0;
+    }
+    line.ngCount = totalNg;
     if (lastStation['deviceStatus'] === '运行中') {
       line.workOrderStatus = '生产中';
     }

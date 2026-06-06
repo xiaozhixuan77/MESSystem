@@ -147,7 +147,7 @@ public class ProductionLineController {
 
             List<Workstation> lineStations = finalStationsByLine.getOrDefault(line.getId(), Collections.emptyList());
             vo.setStationCount(lineStations.size());
-            // 流水线产出 = 最后工位(OP70)的良品/不良数
+            // 流水线产出 = 最后工位(OP70)的良品数
             Workstation lastStation = lineStations.stream()
                     .max((a, b) -> {
                         String ca = a.getCode() != null ? a.getCode() : "";
@@ -157,8 +157,10 @@ public class ProductionLineController {
                     .orElse(null);
             int finished = lastStation != null && lastStation.getFinishedCount() != null
                     ? lastStation.getFinishedCount() : 0;
-            int ng = lastStation != null && lastStation.getNgCount() != null
-                    ? lastStation.getNgCount() : 0;
+            // NG 汇总所有工位（与详情页 yieldRate 口径一致）
+            int ng = lineStations.stream()
+                    .mapToInt(ws -> ws.getNgCount() != null ? ws.getNgCount() : 0)
+                    .sum();
             vo.setFinishedCount(finished);
             vo.setNgCount(ng);
 

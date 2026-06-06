@@ -430,7 +430,20 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
 
         wo.setStatus("生产中");
+        wo.setPauseTime(null);
         updateById(wo);
+
+        ProductionLine line = productionLineService.lambdaQuery()
+                .eq(ProductionLine::getId, wo.getLineId())
+                .last("FOR UPDATE")
+                .one();
+        if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
+            if (!simulatorManager.isRunning(line.getId())) {
+                simulatorManager.start(line.getId(), wo.getId());
+            }
+            line.setStatus("生产中");
+            productionLineService.updateById(line);
+        }
 
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "生产中", null);
