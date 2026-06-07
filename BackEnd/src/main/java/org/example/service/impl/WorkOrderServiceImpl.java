@@ -357,11 +357,10 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 .one();
         if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
             if (simulatorManager.isRunning(line.getId())) {
-                simulatorManager.stop(line.getId());
+                simulatorManager.stop(line.getId(), "空闲", "生产完成");
             }
             productionLineService.lambdaUpdate()
                     .eq(ProductionLine::getId, line.getId())
-                    .set(ProductionLine::getStatus, "空闲")
                     .set(ProductionLine::getCurrentWorkorderId, null)
                     .update();
         }
@@ -397,6 +396,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             productionLineService.lambdaUpdate()
                     .eq(ProductionLine::getId, line.getId())
                     .set(ProductionLine::getStatus, "空闲")
+                    .set(ProductionLine::getCurrentWorkorderId, null)
                     .update();
         }
     }
@@ -429,10 +429,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 .one();
         if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
             if (simulatorManager.isRunning(line.getId())) {
-                simulatorManager.stop(line.getId());
+                simulatorManager.stop(line.getId(), "暂停", "暂停中");
             }
-            line.setStatus("暂停");
-            productionLineService.updateById(line);
         }
 
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),

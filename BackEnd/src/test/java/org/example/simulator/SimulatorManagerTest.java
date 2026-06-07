@@ -15,10 +15,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.example.entity.WorkOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+
+import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +33,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,6 +65,12 @@ class SimulatorManagerTest {
     private LambdaQueryChainWrapper<Workstation> workstationQuery;
     @Mock
     private LambdaQueryChainWrapper<ProductionLine> lineQuery;
+    @Mock
+    private LambdaQueryChainWrapper<WorkOrder> workOrderQuery;
+    @Mock
+    private LambdaUpdateChainWrapper<Workstation> workstationUpdate;
+    @Mock
+    private LambdaUpdateChainWrapper<ProductionLine> lineUpdate;
 
     private SimulatorManager manager;
 
@@ -84,6 +94,22 @@ class SimulatorManagerTest {
     void setUp() {
         when(config.getTickInterval()).thenReturn(1000L);
         when(config.getGoodRate()).thenReturn(0.95);
+
+        // lambdaUpdate 通用 stub
+        when(workstationService.lambdaUpdate()).thenReturn(workstationUpdate);
+        when(productionLineService.lambdaUpdate()).thenReturn(lineUpdate);
+        when(lineUpdate.eq(any(), any())).thenReturn(lineUpdate);
+        when(lineUpdate.set(any(), any())).thenReturn(lineUpdate);
+        when(lineUpdate.update()).thenReturn(true);
+        when(workstationUpdate.eq(any(), any())).thenReturn(workstationUpdate);
+        when(workstationUpdate.set(any(), any())).thenReturn(workstationUpdate);
+        when(workstationUpdate.update()).thenReturn(true);
+
+        // workOrderService stub（SimulatorManager.start() 从中获取 planQty）
+        when(workOrderService.lambdaQuery()).thenReturn(workOrderQuery);
+        when(workOrderQuery.eq(any(), any())).thenReturn(workOrderQuery);
+        when(workOrderQuery.one()).thenReturn(
+                new WorkOrder().setCode("WO-001").setPlanQty(10));
 
         manager = new SimulatorManager(workstationService, productionLineService,
                 config, lineBroadcaster, tickService, workOrderService);
@@ -117,8 +143,7 @@ class SimulatorManagerTest {
 
             assertTrue(manager.isRunning(LINE_ID));
             assertTrue(manager.getRunningLineIds().contains(LINE_ID));
-            verify(workstationService, atLeastOnce()).updateBatchById(anyList());
-            verify(productionLineService).updateById(any(ProductionLine.class));
+            verify(workstationService, atLeastOnce()).lambdaUpdate();
         }
 
         @Test
@@ -169,8 +194,7 @@ class SimulatorManagerTest {
         void setsDeviceStatusToRunning() {
             manager.start(LINE_ID, WORK_ORDER_ID);
 
-            verify(workstationService, atLeastOnce()).updateBatchById(anyList());
-            verify(productionLineService).updateById(any(ProductionLine.class));
+            verify(workstationService, atLeastOnce()).lambdaUpdate();
         }
 
         @Test
@@ -211,14 +235,10 @@ class SimulatorManagerTest {
         }
 
         @Test
-        @DisplayName("停止未运行的产线 → BusinessException 409")
-        void stopNonRunningThrowsException() {
+        @DisplayName("停止未运行的产线 → 幂等不抛异常")
+        void stopNonRunningIsIdempotent() {
             manager.stop(LINE_ID); // first stop ok
-
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> manager.stop(LINE_ID));
-            assertEquals(409, ex.getCode());
-            assertTrue(ex.getMessage().contains("未在仿真运行中"));
+            assertDoesNotThrow(() -> manager.stop(LINE_ID)); // second stop also ok
         }
 
         @Test
@@ -278,7 +298,7 @@ class SimulatorManagerTest {
         void setsLineStatusToIdle() {
             manager.reset(LINE_ID);
 
-            verify(productionLineService, atLeastOnce()).updateById(any(ProductionLine.class));
+            verify(productionLineService, atLeastOnce()).lambdaUpdate();
         }
     }
 

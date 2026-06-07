@@ -98,14 +98,18 @@ public class SimulatorManager {
 
             WorkOrder wo = workOrderService.lambdaQuery()
                     .eq(WorkOrder::getId, workOrderId)
-                    .select(WorkOrder::getCode, WorkOrder::getPlanQty)
                     .one();
             int planQty = wo != null && wo.getPlanQty() != null ? wo.getPlanQty() : Integer.MAX_VALUE;
 
+            // 只更新 deviceStatus → "运行中"，不动计数器
+            workstationService.lambdaUpdate()
+                    .eq(Workstation::getProductionLineId, lineId)
+                    .eq(Workstation::getIsDeleted, 0)
+                    .set(Workstation::getDeviceStatus, "运行中")
+                    .update();
             for (Workstation ws : stations) {
                 ws.setDeviceStatus("运行中");
             }
-            workstationService.updateBatchById(stations);
 
             LineSimulator simulator = new LineSimulator(lineId, workOrderId, stations,
                     Collections.emptyList(), config.getGoodRate(), planQty);
@@ -130,14 +134,14 @@ public class SimulatorManager {
      * 停止产线仿真，产线置为"暂停"。
      */
     public void stop(Long lineId) {
-        stop(lineId, "暂停");
+        stop(lineId, "暂停", "暂停中");
     }
 
     /**
-     * 停止产线仿真并指定最终产线状态。
+     * 停止产线仿真并指定最终产线状态和工单状态。
      * 即使仿真器未运行，也仍然更新产线和工作站到目标状态（幂等）。
      */
-    public void stop(Long lineId, String finalStatus) {
+    public void stop(Long lineId, String finalStatus, String woStatus) {
         ScheduledFuture<?> future = runningSimulators.remove(lineId);
         if (future != null) {
             future.cancel(false);
@@ -147,14 +151,18 @@ public class SimulatorManager {
             waitForTickCompletion(lineId);
         }
 
+        // 只更新 deviceStatus 字段，不动计数器（避免 lambdaUpdate 覆盖并发增量）
+        workstationService.lambdaUpdate()
+                .eq(Workstation::getProductionLineId, lineId)
+                .eq(Workstation::getIsDeleted, 0)
+                .set(Workstation::getDeviceStatus, "待机")
+                .update();
+
+        // 重新读取以获取最新计数器用于日志和广播
         List<Workstation> stations = workstationService.lambdaQuery()
                 .eq(Workstation::getProductionLineId, lineId)
                 .eq(Workstation::getIsDeleted, 0)
                 .list();
-        for (Workstation ws : stations) {
-            ws.setDeviceStatus("待机");
-        }
-        workstationService.updateBatchById(stations);
 
         ProductionLine line = productionLineService.lambdaQuery()
                 .eq(ProductionLine::getId, lineId)
@@ -182,7 +190,7 @@ public class SimulatorManager {
                 planQty = wo.getPlanQty();
             }
         }
-        lineBroadcaster.broadcastLineStatus(lineId, finalStatus, woId, finished, ng, "暂停中",
+        lineBroadcaster.broadcastLineStatus(lineId, finalStatus, woId, finished, ng, woStatus,
                 woCode, planQty);
 
         log.info("产线 {} 仿真已停止，最终状态: {}, 已处理: {}, NG: {}", lineId, finalStatus, finished, ng);
@@ -202,14 +210,11 @@ public class SimulatorManager {
 
         workstationService.resetCounters(lineId);
 
-        List<Workstation> stations = workstationService.lambdaQuery()
+        workstationService.lambdaUpdate()
                 .eq(Workstation::getProductionLineId, lineId)
                 .eq(Workstation::getIsDeleted, 0)
-                .list();
-        for (Workstation ws : stations) {
-            ws.setDeviceStatus("待机");
-        }
-        workstationService.updateBatchById(stations);
+                .set(Workstation::getDeviceStatus, "待机")
+                .update();
 
         ProductionLine line = productionLineService.lambdaQuery()
                 .eq(ProductionLine::getId, lineId)
@@ -261,7 +266,6 @@ public class SimulatorManager {
         }
 
         tickingLines.add(lineId);
-        boolean completed = false;
         try {
             List<Workstation> fresh = workstationService.lambdaQuery()
                     .eq(Workstation::getProductionLineId, lineId)
@@ -275,15 +279,13 @@ public class SimulatorManager {
 
             lineBroadcaster.broadcastStationUpdate(lineId, states);
 
-            completed = checkProductionComplete(lineId, simulator);
+            if (checkProductionComplete(lineId, simulator)) {
+                markCompleted(lineId, simulator);
+            }
         } catch (Exception e) {
             log.error("产线 {} Tick 异常", lineId, e);
         } finally {
             tickingLines.remove(lineId);
-        }
-
-        if (completed) {
-            markCompleted(lineId, simulator);
         }
     }
 
@@ -306,7 +308,6 @@ public class SimulatorManager {
             Long woId = simulator.getWorkOrderId();
             int planQty = workOrderService.lambdaQuery()
                     .eq(WorkOrder::getId, woId)
-                    .select(WorkOrder::getPlanQty)
                     .oneOpt()
                     .map(w -> w.getPlanQty() != null ? w.getPlanQty() : Integer.MAX_VALUE)
                     .orElse(Integer.MAX_VALUE);
@@ -335,10 +336,13 @@ public class SimulatorManager {
         simulators.remove(lineId);
 
         List<Workstation> stations = simulator.getStations();
-        for (Workstation ws : stations) {
-            ws.setDeviceStatus("待机");
-        }
-        workstationService.updateBatchById(stations);
+
+        // 只更新 deviceStatus，不动计数器
+        workstationService.lambdaUpdate()
+                .eq(Workstation::getProductionLineId, lineId)
+                .eq(Workstation::getIsDeleted, 0)
+                .set(Workstation::getDeviceStatus, "待机")
+                .update();
 
         ProductionLine line = productionLineService.lambdaQuery()
                 .eq(ProductionLine::getId, lineId)

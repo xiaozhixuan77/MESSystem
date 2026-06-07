@@ -268,16 +268,17 @@ public class ProductionLineController {
     @PostMapping("/lines/{id}/stop")
     @RequiresPermission("line.operate")
     public R<Void> stop(@PathVariable Long id) {
+        // 先暂停工单（FOR UPDATE 保证原子性），成功后再停仿真器
         WorkOrder activeWo = workOrderService.lambdaQuery()
                 .eq(WorkOrder::getLineId, id)
                 .eq(WorkOrder::getStatus, "生产中")
                 .one();
 
-        simulatorManager.stop(id);
-
-        if (activeWo != null && "生产中".equals(activeWo.getStatus())) {
+        if (activeWo != null) {
             workOrderService.pause(activeWo.getId(), null);
         }
+
+        simulatorManager.stop(id);
 
         return R.ok();
     }
@@ -309,11 +310,11 @@ public class ProductionLineController {
                 .eq(WorkOrder::getStatus, "生产中")
                 .one();
 
-        simulatorManager.stop(id);
-
         if (activeWo != null) {
             workOrderService.pause(activeWo.getId(), description);
         }
+
+        simulatorManager.stop(id);
 
         return R.ok();
     }
