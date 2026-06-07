@@ -22,18 +22,16 @@ export class LineDetailModel {
 
   get todayOutput(): number {
     if (this.stations.length === 0) return 0;
-    return this.stations[this.stations.length - 1].finishedCount;
+    const last = this.stations[this.stations.length - 1];
+    return last.finishedCount + last.ngCount;
   }
 
   get yieldRate(): string {
-    const finished = this.stations.length > 0 ? this.stations[this.stations.length - 1].finishedCount : 0;
-    const ng = this.stations.reduce((sum, s) => sum + s.ngCount, 0);
-    const total = finished + ng;
-    if (total === 0) {
-      return '0%';
-    }
-    const rate = (finished / total) * 100;
-    return rate.toFixed(1) + '%';
+    const last = this.stations.length > 0 ? this.stations[this.stations.length - 1] : null;
+    if (!last) return '0%';
+    const total = last.finishedCount + last.ngCount;
+    if (total === 0) return '0%';
+    return (last.finishedCount / total * 100).toFixed(1) + '%';
   }
 
   get runtime(): string {

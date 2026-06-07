@@ -96,19 +96,21 @@ public class SimulatorManager {
                 throw new BusinessException(422, "产线 " + lineId + " 下没有工作站，无法启动仿真");
             }
 
+            WorkOrder wo = workOrderService.lambdaQuery()
+                    .eq(WorkOrder::getId, workOrderId)
+                    .select(WorkOrder::getCode, WorkOrder::getPlanQty)
+                    .one();
+            int planQty = wo != null && wo.getPlanQty() != null ? wo.getPlanQty() : Integer.MAX_VALUE;
+
             for (Workstation ws : stations) {
                 ws.setDeviceStatus("运行中");
             }
             workstationService.updateBatchById(stations);
 
             LineSimulator simulator = new LineSimulator(lineId, workOrderId, stations,
-                    Collections.emptyList(), config.getGoodRate());
+                    Collections.emptyList(), config.getGoodRate(), planQty);
             simulators.put(lineId, simulator);
 
-            WorkOrder wo = workOrderService.lambdaQuery()
-                    .eq(WorkOrder::getId, workOrderId)
-                    .select(WorkOrder::getCode, WorkOrder::getPlanQty)
-                    .one();
             lineBroadcaster.broadcastLineStatus(lineId, "生产中", workOrderId, 0, 0, "生产中",
                     wo != null ? wo.getCode() : null,
                     wo != null ? wo.getPlanQty() : null);
@@ -295,8 +297,12 @@ public class SimulatorManager {
             if (stations.isEmpty()) {
                 return false;
             }
+            Workstation firstStation = stations.get(0);
             Workstation lastStation = stations.get(stations.size() - 1);
-            int finished = lastStation.getFinishedCount() != null ? lastStation.getFinishedCount() : 0;
+            int rawCount = firstStation.getRawCount() != null ? firstStation.getRawCount() : 0;
+            int lastFinished = lastStation.getFinishedCount() != null ? lastStation.getFinishedCount() : 0;
+            int lastNg = lastStation.getNgCount() != null ? lastStation.getNgCount() : 0;
+            int totalOutput = lastFinished + lastNg;
             Long woId = simulator.getWorkOrderId();
             int planQty = workOrderService.lambdaQuery()
                     .eq(WorkOrder::getId, woId)
@@ -305,8 +311,9 @@ public class SimulatorManager {
                     .map(w -> w.getPlanQty() != null ? w.getPlanQty() : Integer.MAX_VALUE)
                     .orElse(Integer.MAX_VALUE);
 
-            if (finished >= planQty) {
-                log.info("产线 {} 产量达标 ({}>={})，自动完工", lineId, finished, planQty);
+            if (rawCount >= planQty && totalOutput >= planQty) {
+                log.info("产线 {} 产量达标 (来料{}>=计划{} 且 总产出{}>=计划{})，自动完工",
+                        lineId, rawCount, planQty, totalOutput, planQty);
                 workOrderService.autoComplete(woId);
                 return true;
             }

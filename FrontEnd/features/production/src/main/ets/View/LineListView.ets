@@ -20,9 +20,10 @@ struct LineCard {
   }
 
   private getYieldRate(finished: number, ng: number): string {
-    const total = finished + ng;
+    const total = finished;
     if (total === 0) return '—';
-    return ((finished / total) * 100).toFixed(1) + '%';
+    const good = finished - ng;
+    return ((good / total) * 100).toFixed(1) + '%';
   }
 
   private getProgress(woCode: string | undefined, finished: number, planQty: number): string {

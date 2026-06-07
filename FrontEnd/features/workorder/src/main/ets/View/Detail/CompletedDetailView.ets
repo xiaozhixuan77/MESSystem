@@ -27,12 +27,14 @@ export struct CompletedDetailView {
   }
 
   get totalOutput(): string {
-    const v = (this.viewModel.stationTotalOutput || 0) + (this.viewModel.stationTotalNg || 0);
-    return `${v || this.viewModel.currentWorkOrder?.planQty || 0}`;
+    const v = this.viewModel.stationTotalOutput || this.viewModel.currentWorkOrder?.planQty || 0;
+    return `${v}`;
   }
 
   get completedGood(): string {
-    const v = this.viewModel.stationTotalOutput || this.viewModel.currentWorkOrder?.reportedQtyGood || 0;
+    const v = this.viewModel.stationTotalOutput > 0
+      ? this.viewModel.stationTotalOutput - this.viewModel.stationTotalNg
+      : (this.viewModel.currentWorkOrder?.reportedQtyGood || 0);
     return `${v}`;
   }
 
@@ -42,12 +44,13 @@ export struct CompletedDetailView {
   }
 
   get yieldRate(): string {
-    const good = this.viewModel.stationTotalOutput > 0
+    const total = this.viewModel.stationTotalOutput > 0
       ? this.viewModel.stationTotalOutput
+      : ((this.viewModel.currentWorkOrder?.reportedQtyGood || 0) +
+        (this.viewModel.currentWorkOrder?.reportedQtyNg || 0));
+    const good = this.viewModel.stationTotalOutput > 0
+      ? this.viewModel.stationTotalOutput - this.viewModel.stationTotalNg
       : (this.viewModel.currentWorkOrder?.reportedQtyGood || 0);
-    const total = good + (this.viewModel.stationTotalNg > 0
-      ? this.viewModel.stationTotalNg
-      : (this.viewModel.currentWorkOrder?.reportedQtyNg || 0));
     if (total <= 0) { return '0%'; }
     return (good / total * 100).toFixed(1) + '%';
   }

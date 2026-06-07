@@ -305,16 +305,13 @@ export class ProductionViewModel {
     if (!line) {
       return;
     }
-    // finishedCount = 最后工位产出（与详情页 todayOutput 一致）
-    const lastStation = stationData[stationData.length - 1] as Record<string, Object>;
-    line.finishedCount = lastStation['finishedCount'] as number ?? 0;
-    // ngCount = 所有工位 NG 求和（与详情页 yieldRate 口径一致，避免良品率恒为 100%）
-    let totalNg = 0;
-    for (const s of stationData) {
-      totalNg += (s as Record<string, Object>)['ngCount'] as number ?? 0;
-    }
-    line.ngCount = totalNg;
-    if (lastStation['deviceStatus'] === '运行中') {
+    // finishedCount = 最后工位总产出(finished+ng), ngCount = 最后工位 NG
+    const last = stationData[stationData.length - 1] as Record<string, Object>;
+    const lastFinished = last['finishedCount'] as number ?? 0;
+    const lastNg = last['ngCount'] as number ?? 0;
+    line.finishedCount = lastFinished + lastNg;
+    line.ngCount = lastNg;
+    if (last['deviceStatus'] === '运行中') {
       line.workOrderStatus = '生产中';
     }
     // 强制替换数组引用以触发 ForEach 重渲染

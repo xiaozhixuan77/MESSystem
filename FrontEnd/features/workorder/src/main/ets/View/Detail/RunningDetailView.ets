@@ -36,7 +36,9 @@ export struct RunningDetailView {
   }
 
   get goodCount(): string {
-    const v = this.viewModel.stationTotalOutput || this.viewModel.currentWorkOrder?.reportedQtyGood || 0;
+    const v = this.viewModel.stationTotalOutput > 0
+      ? this.viewModel.stationTotalOutput - this.viewModel.stationTotalNg
+      : (this.viewModel.currentWorkOrder?.reportedQtyGood || 0);
     return `${v}`;
   }
 

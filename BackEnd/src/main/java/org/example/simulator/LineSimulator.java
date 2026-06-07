@@ -21,16 +21,18 @@ public class LineSimulator {
     private final List<Workstation> stations;
     private final List<ProcessStep> processSteps;
     private final double goodRate;
+    private final int planQty;
     private int currentOpIndex = 0;
     private int productSnCounter = 0;
 
     public LineSimulator(Long lineId, Long workOrderId, List<Workstation> stations,
-                         List<ProcessStep> processSteps, double goodRate) {
+                         List<ProcessStep> processSteps, double goodRate, int planQty) {
         this.lineId = lineId;
         this.workOrderId = workOrderId;
         this.stations = stations;
         this.processSteps = processSteps;
         this.goodRate = goodRate;
+        this.planQty = planQty;
     }
 
     /**
@@ -51,7 +53,7 @@ public class LineSimulator {
             int finished = ws.getFinishedCount() == null ? 0 : ws.getFinishedCount();
             int ng = ws.getNgCount() == null ? 0 : ws.getNgCount();
 
-            if ("运行中".equals(ws.getDeviceStatus()) && sn > i) {
+            if ("运行中".equals(ws.getDeviceStatus()) && sn > i && processed < planQty) {
                 processed++;
                 raw++;
                 boolean isGood = ThreadLocalRandom.current().nextDouble() <= goodRate;

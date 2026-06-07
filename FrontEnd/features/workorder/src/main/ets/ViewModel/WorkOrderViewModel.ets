@@ -125,22 +125,18 @@ export class WorkOrderViewModel {
       .filter((id: number | null) => id !== null) as number[];
     if (routeStationIds.length === 0) return;
 
-    // 最后工序步骤工站 finishedCount = 总良品
+    // 最后工序步骤工站：总产出=finished+ng
     const lastStationId = routeStationIds[routeStationIds.length - 1];
     const lastStation = stationData.find(
       (s: Object) => (s as Record<string, Object>)['stationId'] === lastStationId
     ) as Record<string, Object> | undefined;
     if (lastStation) {
-      this.stationTotalOutput = (lastStation['finishedCount'] as number) ?? this.stationTotalOutput;
+      const lastFinished = (lastStation['finishedCount'] as number) ?? 0;
+      const lastNg = (lastStation['ngCount'] as number) ?? 0;
+      this.stationTotalOutput = lastFinished + lastNg;
+      this.stationTotalNg = lastNg;
       this.stationProcessedCount = (lastStation['processedCount'] as number) ?? this.stationProcessedCount;
     }
-
-    // 所有工站 ngCount 求和
-    let totalNg = 0;
-    for (const s of stationData) {
-      totalNg += (s as Record<string, Object>)['ngCount'] as number ?? 0;
-    }
-    this.stationTotalNg = totalNg;
 
     // 回填各工序步骤的工站数据
     for (const step of this.currentWorkOrder.routeSteps) {
@@ -248,10 +244,15 @@ export class WorkOrderViewModel {
       this.stationTotalNg = wo.stationTotalNg;
       this.stationProcessedCount = wo.stationProcessedCount;
       this.startElapsedTimer(wo);
-      // 报工默认值：优先用实际产出
-      const actualGood = wo.stationTotalOutput > 0 ? wo.stationTotalOutput : wo.planQty;
-      this.reportFormGood = actualGood;
-      this.reportFormNg = wo.stationTotalNg;
+      // 报工默认值：总产出=良品+NG，分离良品预填
+      const totalOutput = wo.stationTotalOutput;
+      if (totalOutput > 0) {
+        this.reportFormGood = totalOutput - wo.stationTotalNg;
+        this.reportFormNg = wo.stationTotalNg;
+      } else {
+        this.reportFormGood = wo.planQty;
+        this.reportFormNg = 0;
+      }
       this.currentWorkOrder = wo;
     } catch (e) {
       this.errorMessage = (e as Error).message;

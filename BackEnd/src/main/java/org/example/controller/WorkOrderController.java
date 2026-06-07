@@ -366,14 +366,7 @@ public class WorkOrderController {
             Map<Long, Workstation> stationMap = workstations.stream()
                     .collect(Collectors.toMap(Workstation::getId, w -> w));
 
-            int totalNg = 0;
-            for (Workstation ws : workstations) {
-                if (ws.getNgCount() != null) {
-                    totalNg += ws.getNgCount();
-                }
-            }
-
-            // 最后工序步骤对应的工站数据作为总产出
+            // 最后工序步骤对应的工站数据：总产出=良品+NG
             WorkOrderRouteStepVO lastStep = null;
             for (WorkOrderRouteStepVO sv : stepVOs) {
                 if (lastStep == null || sv.getSeqNo() > lastStep.getSeqNo()) {
@@ -383,11 +376,13 @@ public class WorkOrderController {
             if (lastStep != null && lastStep.getStationId() != null) {
                 Workstation lastStation = stationMap.get(lastStep.getStationId());
                 if (lastStation != null) {
-                    vo.setStationTotalOutput(lastStation.getFinishedCount());
+                    int lastFinished = lastStation.getFinishedCount() != null ? lastStation.getFinishedCount() : 0;
+                    int lastNg = lastStation.getNgCount() != null ? lastStation.getNgCount() : 0;
+                    vo.setStationTotalOutput(lastFinished + lastNg);
                     vo.setStationProcessedCount(lastStation.getProcessedCount());
+                    vo.setStationTotalNg(lastNg);
                 }
             }
-            vo.setStationTotalNg(totalNg);
 
             // 回填每个工序步骤的工站数据
             for (WorkOrderRouteStepVO sv : stepVOs) {
