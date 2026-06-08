@@ -338,6 +338,10 @@ export class WorkOrderViewModel {
   }
 
   async startWorkOrder(workOrderId: number): Promise<boolean> {
+    if (this.stationTotalOutput > 0 || this.stationProcessedCount > 0) {
+      this.errorMessage = '产线未复位，上轮生产数据残留。请先前往产线详情页复位产线';
+      return false;
+    }
     this.isSubmitting = true;
     this.errorMessage = '';
     try {
