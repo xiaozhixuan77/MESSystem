@@ -41,7 +41,8 @@ public class DashboardServiceImpl implements DashboardService {
         LocalDateTime todayEnd = today.plusDays(1).atStartOfDay();
 
         List<WorkOrder> todayOrders = workOrderService.lambdaQuery()
-                .between(WorkOrder::getActualStartTime, todayStart, todayEnd)
+                .ge(WorkOrder::getActualStartTime, todayStart)
+                .lt(WorkOrder::getActualStartTime, todayEnd)
                 .eq(WorkOrder::getIsDeleted, 0)
                 .list();
 
@@ -91,7 +92,8 @@ public class DashboardServiceImpl implements DashboardService {
             LocalDateTime monthEndDt = monthEnd.plusDays(1).atStartOfDay();
 
             List<WorkOrder> monthOrders = workOrderService.lambdaQuery()
-                    .between(WorkOrder::getActualStartTime, monthStartDt, monthEndDt)
+                    .ge(WorkOrder::getActualStartTime, monthStartDt)
+                    .lt(WorkOrder::getActualStartTime, monthEndDt)
                     .eq(WorkOrder::getIsDeleted, 0)
                     .list();
 

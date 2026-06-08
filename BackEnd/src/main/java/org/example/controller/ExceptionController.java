@@ -1,5 +1,7 @@
 package org.example.controller;
 
+import org.example.dto.request.ExceptionHandleRequest;
+import org.example.dto.request.ExceptionReportRequest;
 import org.example.dto.response.R;
 import org.example.entity.ProductionException;
 import org.example.entity.ProductionLine;
@@ -12,9 +14,8 @@ import org.example.service.ProductionLineService;
 import org.example.service.UserService;
 import org.example.service.WorkOrderService;
 import org.example.service.WorkstationService;
+import org.example.util.ControllerUtils;
 import org.example.vo.ProductionExceptionVO;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +23,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -53,23 +57,9 @@ public class ExceptionController {
 
     @PostMapping("/exceptions")
     @RequiresPermission("exception.report")
-    public R<ProductionExceptionVO> report(@RequestBody Map<String, Object> body) {
-        Long workOrderId = toLong(body.get("workOrderId"));
-        if (workOrderId == null) {
-            return R.error(400, "workOrderId 不能为空");
-        }
-        Long lineId = toLong(body.get("lineId"));
-        if (lineId == null) {
-            return R.error(400, "lineId 不能为空");
-        }
-        Long stationId = toLong(body.get("stationId"));
-        String description = body.get("description") != null ? body.get("description").toString().trim() : null;
-        if (description == null || description.isEmpty()) {
-            return R.error(400, "异常描述不能为空");
-        }
-
+    public R<ProductionExceptionVO> report(@Valid @RequestBody ExceptionReportRequest request) {
         WorkOrder wo = workOrderService.lambdaQuery()
-                .eq(WorkOrder::getId, workOrderId)
+                .eq(WorkOrder::getId, request.getWorkOrderId())
                 .eq(WorkOrder::getIsDeleted, 0)
                 .one();
         if (wo == null) {
@@ -80,16 +70,17 @@ public class ExceptionController {
         }
 
         ProductionLine line = productionLineService.lambdaQuery()
-                .eq(ProductionLine::getId, lineId)
+                .eq(ProductionLine::getId, request.getLineId())
                 .eq(ProductionLine::getIsDeleted, 0)
                 .one();
         if (line == null) {
             return R.error(400, "产线不存在");
         }
 
-        Long reporterId = getCurrentUserId();
+        Long reporterId = ControllerUtils.getCurrentUserId();
         ProductionException ex = productionExceptionService.reportException(
-                workOrderId, lineId, stationId, description, reporterId);
+                request.getWorkOrderId(), request.getLineId(), request.getStationId(),
+                request.getDescription(), reporterId);
 
         return R.ok(buildVO(ex, Map.of(wo.getId(), wo.getCode()),
                 Map.of(line.getId(), line.getName()), Collections.emptyMap(),
@@ -115,7 +106,7 @@ public class ExceptionController {
         List<Long> stationIds = list.stream().map(ProductionException::getStationId)
                 .filter(id -> id != null).distinct().collect(Collectors.toList());
         List<Long> userIds = list.stream().flatMap(e -> {
-            java.util.List<Long> ids = new java.util.ArrayList<>();
+            List<Long> ids = new ArrayList<>();
             if (e.getReporterId() != null) ids.add(e.getReporterId());
             if (e.getHandledBy() != null) ids.add(e.getHandledBy());
             return ids.stream();
@@ -154,7 +145,7 @@ public class ExceptionController {
                 .eq(ProductionException::getIsDeleted, 0)
                 .one();
         if (ex == null) {
-            return R.error(400, "异常记录不存在");
+            return R.error(404, "异常记录不存在");
         }
 
         Map<Long, String> woCodes = fetchWorkOrderCode(ex.getWorkOrderId());
@@ -168,19 +159,9 @@ public class ExceptionController {
     @PostMapping("/exceptions/{id}/handle")
     @RequiresPermission("exception.handle")
     public R<ProductionExceptionVO> handle(@PathVariable Long id,
-                                           @RequestBody Map<String, String> body) {
-        String action = body != null ? body.get("action") : null;
-        if (action == null || (!"恢复".equals(action) && !"关闭".equals(action))) {
-            return R.error(400, "处理动作必须为\"恢复\"或\"关闭\"");
-        }
-
-        Long handlerId = getCurrentUserId();
-        productionExceptionService.handleException(id, action, handlerId);
-
-        ProductionException ex = productionExceptionService.lambdaQuery()
-                .eq(ProductionException::getId, id)
-                .eq(ProductionException::getIsDeleted, 0)
-                .one();
+                                           @Valid @RequestBody ExceptionHandleRequest request) {
+        Long handlerId = ControllerUtils.getCurrentUserId();
+        ProductionException ex = productionExceptionService.handleException(id, request.getAction(), handlerId);
 
         Map<Long, String> woCodes = fetchWorkOrderCode(ex.getWorkOrderId());
         Map<Long, String> lineNames = fetchLineName(ex.getLineId());
@@ -189,8 +170,6 @@ public class ExceptionController {
 
         return R.ok(buildVO(ex, woCodes, lineNames, stationNames, userNames, userNames));
     }
-
-    // ---- private helpers ----
 
     private ProductionExceptionVO buildVO(ProductionException e,
                                            Map<Long, String> woCodes,
@@ -244,7 +223,7 @@ public class ExceptionController {
     }
 
     private Map<Long, String> fetchUserNames(Long... userIds) {
-        java.util.List<Long> ids = new java.util.ArrayList<>();
+        List<Long> ids = new ArrayList<>();
         for (Long id : userIds) {
             if (id != null) ids.add(id);
         }
@@ -253,23 +232,5 @@ public class ExceptionController {
                 .in(User::getId, ids)
                 .list().stream()
                 .collect(Collectors.toMap(User::getId, u -> u.getName() != null ? u.getName() : ""));
-    }
-
-    private Long getCurrentUserId() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return null;
-        }
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof UserDetails userDetails) {
-            return Long.valueOf(userDetails.getUsername());
-        }
-        return null;
-    }
-
-    private Long toLong(Object value) {
-        if (value instanceof Number n) return n.longValue();
-        if (value instanceof String s) return Long.parseLong(s);
-        return null;
     }
 }

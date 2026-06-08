@@ -49,13 +49,20 @@ public class ProductionExceptionServiceImpl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void handleException(Long exceptionId, String action, Long handlerId) {
-        ProductionException ex = getById(exceptionId);
-        if (ex == null || ex.getIsDeleted() == 1) {
+    public ProductionException handleException(Long exceptionId, String action, Long handlerId) {
+        ProductionException ex = lambdaQuery()
+                .eq(ProductionException::getId, exceptionId)
+                .eq(ProductionException::getIsDeleted, 0)
+                .last("FOR UPDATE")
+                .one();
+        if (ex == null) {
             throw new BusinessException(400, "异常记录不存在");
         }
         if (ex.getResolved() == 1) {
             throw new BusinessException(400, "该异常已处理");
+        }
+        if (!"恢复".equals(action) && !"关闭".equals(action)) {
+            throw new BusinessException(400, "处理动作必须为\"恢复\"或\"关闭\"");
         }
 
         ex.setHandledBy(handlerId);
@@ -69,5 +76,7 @@ public class ProductionExceptionServiceImpl
         }
 
         lineBroadcaster.broadcastExceptionHandled(ex);
+
+        return ex;
     }
 }
