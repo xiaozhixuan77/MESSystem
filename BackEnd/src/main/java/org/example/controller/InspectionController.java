@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Slf4j
 @RestController
 public class InspectionController {
 
@@ -62,7 +60,6 @@ public class InspectionController {
     @GetMapping("/inspections")
     @RequiresPermission("inspection.create")
     public R<List<InspectionRecordVO>> list(@RequestParam(required = false) Long workOrderId) {
-        log.info("[test:Controller] GET /inspections called, workOrderId={}", workOrderId);
         var query = inspectionRecordService.lambdaQuery()
                 .eq(InspectionRecord::getIsDeleted, 0);
         if (workOrderId != null) {
@@ -71,14 +68,8 @@ public class InspectionController {
         List<InspectionRecord> records = query.orderByDesc(InspectionRecord::getInspectTime)
                 .orderByDesc(InspectionRecord::getId)
                 .list();
-        log.info("[test:Controller] Found {} inspection records", records.size());
-        for (InspectionRecord r : records) {
-            log.info("[test:Controller] Record: id={}, workOrderId={}, status={}, conclusion={}",
-                    r.getId(), r.getWorkOrderId(), r.getStatus(), r.getConclusion());
-        }
 
         if (records.isEmpty()) {
-            log.info("[test:Controller] No records, returning empty list");
             return R.ok(Collections.emptyList());
         }
 

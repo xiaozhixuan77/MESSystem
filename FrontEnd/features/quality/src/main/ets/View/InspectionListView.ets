@@ -5,16 +5,10 @@ import { QualityViewModel } from '../ViewModel/QualityViewModel';
 export struct InspectionListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Local viewModel: QualityViewModel = new QualityViewModel();
+  private hasAppeared: boolean = false;
 
   aboutToAppear(): void {
-    console.log('[test:ListView] aboutToAppear, loading inspections');
-    this.viewModel.loadInspections();
     this.viewModel.subscribeInspections();
-  }
-
-  aboutToDisappear(): void {
-    console.log('[test:ListView] aboutToDisappear');
-    this.viewModel.unsubscribeInspections();
   }
 
   @Builder
@@ -172,6 +166,10 @@ export struct InspectionListView {
       .onRefreshing(() => { this.viewModel.loadInspections(); });
     }
     .width('100%').height('100%')
-    .backgroundColor('#F5F7FA');
+    .backgroundColor('#F5F7FA')
+    .onAppear(() => {
+      this.viewModel.loadInspections();
+      this.hasAppeared = true;
+    });
   }
 }

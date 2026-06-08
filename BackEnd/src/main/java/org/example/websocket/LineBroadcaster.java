@@ -171,7 +171,6 @@ public class LineBroadcaster {
         message.put("data", data);
 
         messagingTemplate.convertAndSend("/topic/inspections", message);
-        log.info("[test:Broadcaster] Inspection broadcast sent to /topic/inspections: id={}, status={}, workOrderId={}",
-                record.getId(), record.getStatus(), record.getWorkOrderId());
+        log.info("抽检记录已广播: id={}, status={}", record.getId(), record.getStatus());
     }
 }

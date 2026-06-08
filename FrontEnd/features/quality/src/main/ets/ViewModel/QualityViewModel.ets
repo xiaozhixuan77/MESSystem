@@ -11,34 +11,21 @@ export class QualityViewModel {
   @Trace isLoading: boolean = false;
   @Trace submitLoading: boolean = false;
   @Trace errorMessage: string = '';
+  private subscribed: boolean = false;
 
   private onInspectionUpdate: Function = () => {
-    console.log('[test:VM] WebSocket inspection update received, reloading list');
     this.loadInspections();
   };
 
   async loadInspections(filters?: object): Promise<void> {
-    console.log('[test:VM] loadInspections called, filters:', JSON.stringify(filters));
     this.isLoading = true;
     this.errorMessage = '';
     try {
-      const raw = await QualityApi.getInspections(filters);
-      console.log('[test:VM] API raw response type:', typeof raw, 'isArray:', Array.isArray(raw));
-      if (Array.isArray(raw)) {
-        console.log('[test:VM] API returned', raw.length, 'items');
-        if (raw.length > 0) {
-          console.log('[test:VM] First item keys:', Object.keys(raw[0]));
-          console.log('[test:VM] First item:', JSON.stringify(raw[0]));
-        }
-      }
-      this.inspectionList = raw as InspectionModel[];
-      console.log('[test:VM] inspectionList assigned, length:', this.inspectionList.length);
+      this.inspectionList = await QualityApi.getInspections(filters) as InspectionModel[];
     } catch (e) {
       this.errorMessage = (e as Error).message || '加载失败';
-      console.log('[test:VM] loadInspections error:', this.errorMessage);
     } finally {
       this.isLoading = false;
-      console.log('[test:VM] isLoading set to false');
     }
   }
 
@@ -64,11 +51,23 @@ export class QualityViewModel {
   }
 
   subscribeInspections(): void {
+    if (this.subscribed) {
+      return;
+    }
+    this.subscribed = true;
+    const ws = WebSocketService.getInstance();
+    ws.subscribe(INSPECTION_TOPIC);
     WebSocketService.addListener(INSPECTION_TOPIC, this.onInspectionUpdate);
   }
 
   unsubscribeInspections(): void {
+    if (!this.subscribed) {
+      return;
+    }
+    this.subscribed = false;
     WebSocketService.removeListener(INSPECTION_TOPIC, this.onInspectionUpdate);
+    const ws = WebSocketService.getInstance();
+    ws.unsubscribe(INSPECTION_TOPIC);
   }
 
   async loadDashboard(params?: object): Promise<void> {
