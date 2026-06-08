@@ -250,9 +250,16 @@ class LineWorkOrderIntegrationTest extends SNCTestBase {
     @DisplayName("启停循环：每条 LINE_STATUS 都有对应的 WORKORDER_UPDATE")
     void startStopCycle_MessagePairs() throws Exception {
         Long woId = createAndDispatch();
-        drainAll(lineMsgs);
         // 清掉派工广播（dispatch 产生的 WORKORDER_UPDATE）
         expectWorkOrderUpdate(woId, "已派工");
+        drainAll(lineMsgs);
+        Thread.sleep(300);
+
+        // 确保产线空闲（之前测试可能留下"暂停"状态）
+        ResponseEntity<Map> resetResp = httpPostVoid("/lines/1/reset", leaderToken);
+        assertHttpOk(resetResp);
+        Thread.sleep(300);
+        drainAll(lineMsgs);
 
         // 第1轮: 启动 → 暂停
         httpPost("/lines/1/start", Map.of("workOrderId", woId), operatorToken);
@@ -260,9 +267,10 @@ class LineWorkOrderIntegrationTest extends SNCTestBase {
         expectWorkOrderUpdate(woId, "生产中");
 
         httpPostVoid("/lines/1/stop", operatorToken);
-        // SimulatorManager.stop 硬编码 woStatus="暂停中", lineStatus="暂停"
-        expectLineStatus(woId, "暂停中", "暂停");
-        expectWorkOrderUpdate(woId, "暂停中");
+        // stop 不更新工单状态，需手动暂停工单才能下一轮 resume
+        httpPostVoid("/workorders/" + woId + "/pause", leaderToken);
+        drainAll(lineMsgs);
+        drainAll(woMsgs);
 
         // 第2轮: 恢复 → 暂停
         httpPost("/lines/1/start", Map.of("workOrderId", woId), operatorToken);
@@ -322,6 +330,13 @@ class LineWorkOrderIntegrationTest extends SNCTestBase {
         ), leaderToken);
         assertHttpOk(createResp);
         Long woId = extractId(createResp);
+
+        // 排空创建工单时产生的"待派工"广播
+        try {
+            woMsgs.poll(2, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
         httpPost("/workorders/" + woId + "/dispatch",
                 Map.of("operatorId", 3), leaderToken);

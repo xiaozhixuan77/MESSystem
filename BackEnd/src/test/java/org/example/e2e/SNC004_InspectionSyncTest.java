@@ -121,7 +121,7 @@ class SNC004_InspectionSyncTest extends SNCTestBase {
                 "workshopId", 2,
                 "lineId", 1,
                 "productId", 1,
-                "planQty", 10
+                "planQty", 100
         );
         ResponseEntity<Map> createResp = httpPost("/workorders", createReq, leaderToken);
         assertHttpOk(createResp);
