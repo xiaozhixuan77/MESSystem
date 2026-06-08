@@ -125,6 +125,95 @@ class E2E002_ExceptionHandlingTest extends E2ETestBase {
         assertError(result, 403);
     }
 
+    // ================================================================
+    // P5-2: 新异常接口测试
+    // ================================================================
+
+    @Test
+    @DisplayName("P5-2 新异常接口：上报异常 → 列表查询验证记录存在")
+    void newExceptionReportAndList() throws Exception {
+        Long woId = createDispatchAndStart();
+
+        MvcResult reportResult = mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                                .post("/exceptions")
+                                .header("Authorization", "Bearer " + operatorToken)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(
+                                        Map.of("workOrderId", woId, "lineId", 1L,
+                                                "description", "相机定位偏移"))))
+                .andReturn();
+        assertOk(reportResult);
+
+        MvcResult detail = performGet("/workorders/" + woId, leaderToken);
+        assertDataFieldEquals(detail, "status", "暂停中");
+
+        MvcResult listResult = performGet("/exceptions?resolved=false", leaderToken);
+        assertOk(listResult);
+    }
+
+    @Test
+    @DisplayName("P5-2 新异常接口：上报 → 恢复异常 → 工单恢复生产")
+    void newExceptionHandleResume() throws Exception {
+        Long woId = createDispatchAndStart();
+
+        MvcResult reportResult = mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                                .post("/exceptions")
+                                .header("Authorization", "Bearer " + operatorToken)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(
+                                        Map.of("workOrderId", woId, "lineId", 1L,
+                                                "description", "设备过热报警"))))
+                .andReturn();
+        assertOk(reportResult);
+        Long exceptionId = dataNode(reportResult).get("id").asLong();
+
+        MvcResult handleResult = mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                                .post("/exceptions/" + exceptionId + "/handle")
+                                .header("Authorization", "Bearer " + leaderToken)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(
+                                        Map.of("action", "恢复"))))
+                .andReturn();
+        assertOk(handleResult);
+
+        MvcResult detail = performGet("/workorders/" + woId, leaderToken);
+        assertDataFieldEquals(detail, "status", "生产中");
+    }
+
+    @Test
+    @DisplayName("P5-2 新异常接口：上报 → 关闭异常 → 工单仍暂停")
+    void newExceptionHandleClose() throws Exception {
+        Long woId = createDispatchAndStart();
+
+        MvcResult reportResult = mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                                .post("/exceptions")
+                                .header("Authorization", "Bearer " + operatorToken)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(
+                                        Map.of("workOrderId", woId, "lineId", 1L,
+                                                "description", "传感器故障"))))
+                .andReturn();
+        assertOk(reportResult);
+        Long exceptionId = dataNode(reportResult).get("id").asLong();
+
+        MvcResult handleResult = mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                                .post("/exceptions/" + exceptionId + "/handle")
+                                .header("Authorization", "Bearer " + leaderToken)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(
+                                        Map.of("action", "关闭"))))
+                .andReturn();
+        assertOk(handleResult);
+
+        MvcResult detail = performGet("/workorders/" + woId, leaderToken);
+        assertDataFieldEquals(detail, "status", "暂停中");
+    }
+
     // ---- 辅助方法 ----
 
     private Long createDispatchAndStart() throws Exception {

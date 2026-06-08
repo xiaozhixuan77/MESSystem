@@ -3,14 +3,10 @@ package org.example.service;
 import org.example.entity.ProductionException;
 import com.baomidou.mybatisplus.extension.service.IService;
 
-/**
- * <p>
- * 生产异常表 服务类
- * </p>
- *
- * @author MES Developer
- * @since 2026-05-22
- */
 public interface ProductionExceptionService extends IService<ProductionException> {
 
+    ProductionException reportException(Long workOrderId, Long lineId, Long stationId,
+                                        String description, Long reporterId);
+
+    void handleException(Long exceptionId, String action, Long handlerId);
 }

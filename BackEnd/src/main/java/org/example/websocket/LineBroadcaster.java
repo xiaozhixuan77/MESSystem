@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import org.example.simulator.StationState;
 
+import org.example.entity.ProductionException;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,5 +101,52 @@ public class LineBroadcaster {
         message.put("data", payload);
         messagingTemplate.convertAndSendToUser(userId.toString(), destination, message);
         log.debug("私有消息已发送: userId={}, destination={}", userId, destination);
+    }
+
+    /**
+     * 异常上报广播 → /topic/exceptions。
+     */
+    public void broadcastExceptionReported(ProductionException ex) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("exceptionId", ex.getId());
+        data.put("workOrderId", ex.getWorkOrderId());
+        data.put("lineId", ex.getLineId());
+        data.put("stationId", ex.getStationId());
+        data.put("reporterId", ex.getReporterId());
+        data.put("reportTime", ex.getReportTime() != null ? ex.getReportTime().toString() : null);
+        data.put("description", ex.getDescription());
+        data.put("resolved", ex.getResolved());
+
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "EXCEPTION_REPORTED");
+        message.put("lineId", ex.getLineId());
+        message.put("timestamp", System.currentTimeMillis());
+        message.put("data", data);
+
+        messagingTemplate.convertAndSend("/topic/exceptions", message);
+        log.info("异常上报已广播: exceptionId={}, lineId={}", ex.getId(), ex.getLineId());
+    }
+
+    /**
+     * 异常处理广播 → /topic/exceptions。
+     */
+    public void broadcastExceptionHandled(ProductionException ex) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("exceptionId", ex.getId());
+        data.put("workOrderId", ex.getWorkOrderId());
+        data.put("lineId", ex.getLineId());
+        data.put("handledBy", ex.getHandledBy());
+        data.put("handleTime", ex.getHandleTime() != null ? ex.getHandleTime().toString() : null);
+        data.put("handleAction", ex.getHandleAction());
+        data.put("resolved", ex.getResolved());
+
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "EXCEPTION_HANDLED");
+        message.put("lineId", ex.getLineId());
+        message.put("timestamp", System.currentTimeMillis());
+        message.put("data", data);
+
+        messagingTemplate.convertAndSend("/topic/exceptions", message);
+        log.info("异常处理已广播: exceptionId={}, action={}", ex.getId(), ex.getHandleAction());
     }
 }
