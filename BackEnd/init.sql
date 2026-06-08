@@ -332,14 +332,15 @@ ALTER TABLE production_exception
 CREATE TABLE IF NOT EXISTS inspection_record (
     id                  BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
     work_order_id       BIGINT NOT NULL COMMENT '关联工单ID',
-    inspector_id        BIGINT NOT NULL COMMENT '质检员ID',
-    inspect_time        DATETIME NOT NULL COMMENT '抽检时间',
+    inspector_id        BIGINT NULL COMMENT '质检员ID',
+    inspect_time        DATETIME NULL COMMENT '抽检时间',
     sample_qty          INT NOT NULL COMMENT '抽检数量',
     sample_good         INT NOT NULL COMMENT '抽检良品数',
     sample_ng           INT NOT NULL COMMENT '抽检NG数',
     defect_types        VARCHAR(255) NULL COMMENT '缺陷类型JSON：外观缺陷/尺寸偏差/功能失效/装配不良',
     defect_description  VARCHAR(500) NULL COMMENT '不良描述',
-    conclusion          VARCHAR(16) NOT NULL COMMENT '结论：通过/不通过',
+    status              VARCHAR(16) NOT NULL DEFAULT '已抽检' COMMENT '状态：待抽检/已抽检',
+    conclusion          VARCHAR(16) NULL COMMENT '结论：通过/不通过',
     created_at          DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     version             INT DEFAULT 0 COMMENT '乐观锁版本号',
@@ -407,20 +408,10 @@ PARTITION BY RANGE (YEAR(event_time) * 100 + MONTH(event_time)) (
     PARTITION pmax VALUES LESS THAN MAXVALUE
 );
 
-ALTER TABLE production_log
-    ADD CONSTRAINT fk_pl_line
-    FOREIGN KEY (line_id) REFERENCES production_line(id)
-    ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE production_log
-    ADD CONSTRAINT fk_pl_station
-    FOREIGN KEY (station_id) REFERENCES workstation(id)
-    ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE production_log
-    ADD CONSTRAINT fk_pl_wo
-    FOREIGN KEY (work_order_id) REFERENCES work_order(id)
-    ON DELETE SET NULL ON UPDATE CASCADE;
+-- FK replaced with indexes: MySQL does not support foreign keys on partitioned tables
+ALTER TABLE production_log ADD INDEX idx_pl_line (line_id);
+ALTER TABLE production_log ADD INDEX idx_pl_station (station_id);
+ALTER TABLE production_log ADD INDEX idx_pl_wo (work_order_id);
 
 -- --------------------------------------------------------
 -- 13. role_permission（角色权限表）
@@ -531,10 +522,29 @@ INSERT IGNORE INTO user (id, employee_no, name, role, team_id, workshop_id, stat
 -- 8. role_permission（角色权限）
 -- --------------------------------------------------------
 INSERT IGNORE INTO role_permission (role, permission) VALUES
+-- admin: 通配符 + 全部显式权限兜底
 ('admin', '*'),
+('admin', 'dashboard.view'),
+('admin', 'exception.report'),
+('admin', 'exception.view'),
+('admin', 'exception.handle'),
+('admin', 'inspection.create'),
+('admin', 'line.operate'),
+('admin', 'workorder.create'),
+('admin', 'workorder.dispatch'),
+('admin', 'workorder.start'),
+('admin', 'workorder.complete'),
+('admin', 'workorder.pause'),
+('admin', 'workorder.resume'),
+('admin', 'workorder.report'),
+('admin', 'workorder.confirm'),
+('admin', 'workorder.scrap'),
+('admin', 'workorder.delete'),
+-- leader: 班组管理
 ('leader', 'workorder.view_team'),
 ('leader', 'workorder.create'),
 ('leader', 'workorder.dispatch'),
+('leader', 'workorder.delete'),
 ('leader', 'workorder.pause'),
 ('leader', 'workorder.resume'),
 ('leader', 'workorder.confirm'),
@@ -546,6 +556,7 @@ INSERT IGNORE INTO role_permission (role, permission) VALUES
 ('leader', 'exception.view'),
 ('leader', 'exception.handle'),
 ('leader', 'dashboard.view'),
+-- operator: 一线操作
 ('operator', 'workorder.view_own'),
 ('operator', 'workorder.start'),
 ('operator', 'workorder.complete'),
@@ -557,6 +568,7 @@ INSERT IGNORE INTO role_permission (role, permission) VALUES
 ('operator', 'station.operate'),
 ('operator', 'exception.report'),
 ('operator', 'dashboard.view'),
+-- inspector: 质检抽检
 ('inspector', 'inspection.create'),
 ('inspector', 'workorder.view_inspection'),
 ('inspector', 'line.view'),
