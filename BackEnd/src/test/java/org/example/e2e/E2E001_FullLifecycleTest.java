@@ -162,16 +162,13 @@ class E2E001_FullLifecycleTest extends E2ETestBase {
         }
 
         @Test
-        @DisplayName("管理员可启动任何工单（权限绕过操作员限制）")
-        void adminCanStartAnyWorkOrder() throws Exception {
+        @DisplayName("非指派操作员启动 → 403")
+        void startByWrongOperator() throws Exception {
             Long woId = createAndDispatchWorkOrder();
 
-            // admin 有 * 通配符，可绕过操作员身份限制
-            // 验证不会收到 403（权限校验通过）
-            MvcResult result = performPost("/workorders/" + woId + "/start", adminToken);
-            int status = result.getResponse().getStatus();
-            assertTrue(status != 403,
-                    "管理员不应收到 403 权限错误，实际状态: " + status);
+            // 用 admin（非指派操作员）尝试启动
+            MvcResult result = performPostWithBodyExpectAny("/workorders/" + woId + "/start", null, adminToken);
+            assertError(result, 403);
         }
 
         @Test

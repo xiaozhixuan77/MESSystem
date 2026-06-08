@@ -289,6 +289,12 @@ export class ProductionViewModel {
           line.workOrderCode = '';
         }
       }
+      if (data['finishedCount'] !== undefined) {
+        line.finishedCount = data['finishedCount'] as number;
+      }
+      if (data['ngCount'] !== undefined) {
+        line.ngCount = data['ngCount'] as number;
+      }
     }
     this.lines = [...this.lines];
     this.refreshKey++;

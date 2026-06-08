@@ -333,29 +333,10 @@ INSERT INTO `user` (id, employee_no, name, role, team_id, workshop_id, status, a
 (4, 'INS001', '陈静', 'inspector', NULL, 3, '在岗', NULL, '$2a$10$9LLHytJcuDv3q13pyQyftuk/Wttx400E1e5Q/ui3lF0Kroob/tSva');
 
 INSERT INTO role_permission (role, permission) VALUES
--- admin: 通配符 + 全部显式权限兜底
 ('admin', '*'),
-('admin', 'dashboard.view'),
-('admin', 'exception.report'),
-('admin', 'exception.view'),
-('admin', 'exception.handle'),
-('admin', 'inspection.create'),
-('admin', 'line.operate'),
-('admin', 'workorder.create'),
-('admin', 'workorder.dispatch'),
-('admin', 'workorder.start'),
-('admin', 'workorder.complete'),
-('admin', 'workorder.pause'),
-('admin', 'workorder.resume'),
-('admin', 'workorder.report'),
-('admin', 'workorder.confirm'),
-('admin', 'workorder.scrap'),
-('admin', 'workorder.delete'),
--- leader: 班组管理
 ('leader', 'workorder.view_team'),
 ('leader', 'workorder.create'),
 ('leader', 'workorder.dispatch'),
-('leader', 'workorder.delete'),
 ('leader', 'workorder.pause'),
 ('leader', 'workorder.resume'),
 ('leader', 'workorder.confirm'),
@@ -367,7 +348,6 @@ INSERT INTO role_permission (role, permission) VALUES
 ('leader', 'exception.view'),
 ('leader', 'exception.handle'),
 ('leader', 'dashboard.view'),
--- operator: 一线操作
 ('operator', 'workorder.view_own'),
 ('operator', 'workorder.start'),
 ('operator', 'workorder.complete'),
@@ -379,7 +359,6 @@ INSERT INTO role_permission (role, permission) VALUES
 ('operator', 'station.operate'),
 ('operator', 'exception.report'),
 ('operator', 'dashboard.view'),
--- inspector: 质检抽检
 ('inspector', 'inspection.create'),
 ('inspector', 'workorder.view_inspection'),
 ('inspector', 'line.view'),

@@ -195,6 +195,12 @@ public class WorkOrderController {
     @RequiresPermission("workorder.resume")
     public R<Void> resume(@PathVariable Long id) {
         workOrderService.resume(id);
+
+        WorkOrder wo = workOrderService.getById(id);
+        if (wo != null && wo.getLineId() != null) {
+            simulatorManager.start(wo.getLineId(), id);
+        }
+
         return R.ok();
     }
 

@@ -155,14 +155,12 @@ public class ProductionLineController {
                         return ca.compareTo(cb);
                     })
                     .orElse(null);
-            int finished = lastStation != null && lastStation.getFinishedCount() != null
+            int lastFinished = lastStation != null && lastStation.getFinishedCount() != null
                     ? lastStation.getFinishedCount() : 0;
-            // NG 汇总所有工位（与详情页 yieldRate 口径一致）
-            int ng = lineStations.stream()
-                    .mapToInt(ws -> ws.getNgCount() != null ? ws.getNgCount() : 0)
-                    .sum();
-            vo.setFinishedCount(finished);
-            vo.setNgCount(ng);
+            int lastNg = lastStation != null && lastStation.getNgCount() != null
+                    ? lastStation.getNgCount() : 0;
+            vo.setFinishedCount(lastFinished + lastNg);
+            vo.setNgCount(lastNg);
 
             WorkOrder activeWo = finalActiveOrders.get(line.getId());
             if (activeWo != null) {

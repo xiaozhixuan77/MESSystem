@@ -522,29 +522,10 @@ INSERT IGNORE INTO user (id, employee_no, name, role, team_id, workshop_id, stat
 -- 8. role_permission（角色权限）
 -- --------------------------------------------------------
 INSERT IGNORE INTO role_permission (role, permission) VALUES
--- admin: 通配符 + 全部显式权限兜底
 ('admin', '*'),
-('admin', 'dashboard.view'),
-('admin', 'exception.report'),
-('admin', 'exception.view'),
-('admin', 'exception.handle'),
-('admin', 'inspection.create'),
-('admin', 'line.operate'),
-('admin', 'workorder.create'),
-('admin', 'workorder.dispatch'),
-('admin', 'workorder.start'),
-('admin', 'workorder.complete'),
-('admin', 'workorder.pause'),
-('admin', 'workorder.resume'),
-('admin', 'workorder.report'),
-('admin', 'workorder.confirm'),
-('admin', 'workorder.scrap'),
-('admin', 'workorder.delete'),
--- leader: 班组管理
 ('leader', 'workorder.view_team'),
 ('leader', 'workorder.create'),
 ('leader', 'workorder.dispatch'),
-('leader', 'workorder.delete'),
 ('leader', 'workorder.pause'),
 ('leader', 'workorder.resume'),
 ('leader', 'workorder.confirm'),
@@ -556,7 +537,6 @@ INSERT IGNORE INTO role_permission (role, permission) VALUES
 ('leader', 'exception.view'),
 ('leader', 'exception.handle'),
 ('leader', 'dashboard.view'),
--- operator: 一线操作
 ('operator', 'workorder.view_own'),
 ('operator', 'workorder.start'),
 ('operator', 'workorder.complete'),
@@ -568,7 +548,6 @@ INSERT IGNORE INTO role_permission (role, permission) VALUES
 ('operator', 'station.operate'),
 ('operator', 'exception.report'),
 ('operator', 'dashboard.view'),
--- inspector: 质检抽检
 ('inspector', 'inspection.create'),
 ('inspector', 'workorder.view_inspection'),
 ('inspector', 'line.view'),

@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -175,8 +176,15 @@ public class SimulatorManager {
             log.warn("产线 {} 不存在，无法更新状态", lineId);
         }
 
-        int finished = stations.stream().mapToInt(ws -> ws.getFinishedCount() != null ? ws.getFinishedCount() : 0).sum();
-        int ng = stations.stream().mapToInt(ws -> ws.getNgCount() != null ? ws.getNgCount() : 0).sum();
+        Workstation lastStation = stations.stream()
+                .max(Comparator.comparing(Workstation::getCode))
+                .orElse(null);
+        int lastFin = lastStation != null && lastStation.getFinishedCount() != null
+                ? lastStation.getFinishedCount() : 0;
+        int lastNg = lastStation != null && lastStation.getNgCount() != null
+                ? lastStation.getNgCount() : 0;
+        int finished = lastFin + lastNg;
+        int ng = lastNg;
         Long woId = line != null ? line.getCurrentWorkorderId() : null;
         String woCode = null;
         Integer planQty = null;
@@ -352,8 +360,15 @@ public class SimulatorManager {
             productionLineService.updateById(line);
         }
 
-        int finished = stations.stream().mapToInt(ws -> ws.getFinishedCount() != null ? ws.getFinishedCount() : 0).sum();
-        int ng = stations.stream().mapToInt(ws -> ws.getNgCount() != null ? ws.getNgCount() : 0).sum();
+        Workstation lastStation = stations.stream()
+                .max(Comparator.comparing(Workstation::getCode))
+                .orElse(null);
+        int lastFin = lastStation != null && lastStation.getFinishedCount() != null
+                ? lastStation.getFinishedCount() : 0;
+        int lastNg = lastStation != null && lastStation.getNgCount() != null
+                ? lastStation.getNgCount() : 0;
+        int finished = lastFin + lastNg;
+        int ng = lastNg;
         Long woId = simulator.getWorkOrderId();
         String woCode = null;
         Integer planQty = null;

@@ -15,7 +15,6 @@ import org.example.service.InspectionRecordService;
 import org.example.service.ProcessStepService;
 import org.example.service.ProductService;
 import org.example.service.ProductionLineService;
-import org.example.service.UserService;
 import org.example.service.WorkOrderRouteStepService;
 import org.example.service.WorkOrderService;
 import org.example.simulator.SimulatorManager;
@@ -50,11 +49,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final TransactionTemplate transactionTemplate;
     private final SimulatorManager simulatorManager;
     private final LineBroadcaster lineBroadcaster;
-    private final UserService userService;
     private final InspectionRecordService inspectionRecordService;
 
     public WorkOrderServiceImpl(ProductService productService,
-                                UserService userService,
                                 ProcessStepService processStepService,
                                 WorkOrderRouteStepService workOrderRouteStepService,
                                 ProductionLineService productionLineService,
@@ -63,7 +60,6 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                                 LineBroadcaster lineBroadcaster,
                                 @Lazy InspectionRecordService inspectionRecordService) {
         this.productService = productService;
-        this.userService = userService;
         this.processStepService = processStepService;
         this.workOrderRouteStepService = workOrderRouteStepService;
         this.productionLineService = productionLineService;
@@ -301,7 +297,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
 
         Long currentUserId = getCurrentUserId();
-        if (!canOverrideOperatorCheck() && (currentUserId == null || !wo.getOperatorId().equals(currentUserId))) {
+        if (currentUserId == null || !wo.getOperatorId().equals(currentUserId)) {
             throw new BusinessException(403, "只有被指派的操作员才能开工");
         }
 
@@ -350,7 +346,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
 
         Long currentUserId = getCurrentUserId();
-        if (!canOverrideOperatorCheck() && (currentUserId == null || !wo.getOperatorId().equals(currentUserId))) {
+        if (currentUserId == null || !wo.getOperatorId().equals(currentUserId)) {
             throw new BusinessException(403, "只有被指派的操作员才能完成生产");
         }
 
@@ -470,9 +466,6 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 .last("FOR UPDATE")
                 .one();
         if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
-            if (!simulatorManager.isRunning(line.getId())) {
-                simulatorManager.start(line.getId(), wo.getId());
-            }
             line.setStatus("生产中");
             productionLineService.updateById(line);
         }
@@ -632,19 +625,6 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         return null;
     }
 
-    /**
-     * 权限校验：管理员（持有 * 通配符）可绕过操作员身份限制。
-     * 非管理员仍需满足 workorder.start / workorder.complete 的 @RequiresPermission 权限，
-     * 且必须是工单指派的操员。
-     */
-    private boolean canOverrideOperatorCheck() {
-        Long userId = getCurrentUserId();
-        if (userId == null) {
-            return false;
-        }
-        return userService.getUserPermissions(userId).contains("*");
-    }
-
     private WorkOrder doCreateWorkOrder(WorkOrderCreateRequest request, Long createdBy) {
         if (!VALID_TYPES.contains(request.getType())) {
             throw new BusinessException(400, "工单类型必须为: 试产/量产/返工");
@@ -691,12 +671,15 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     }
 
     private String generateWorkOrderCode() {
-        // 查最大号含已删除记录，避免逻辑删除导致工单号重复
-        String maxCode = ((WorkOrderMapper) baseMapper).selectMaxCode();
-        if (maxCode == null) {
+        WorkOrder last = lambdaQuery()
+                .likeRight(WorkOrder::getCode, "MO")
+                .orderByDesc(WorkOrder::getCode)
+                .last("LIMIT 1")
+                .one();
+        if (last == null) {
             return "MO000001";
         }
-        String numStr = maxCode.substring(2);
+        String numStr = last.getCode().substring(2);
         int nextNum = Integer.parseInt(numStr) + 1;
         return String.format("MO%06d", nextNum);
     }
