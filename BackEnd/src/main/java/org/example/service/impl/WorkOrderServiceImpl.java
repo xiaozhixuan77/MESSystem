@@ -691,15 +691,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     }
 
     private String generateWorkOrderCode() {
-        WorkOrder last = lambdaQuery()
-                .likeRight(WorkOrder::getCode, "MO")
-                .orderByDesc(WorkOrder::getCode)
-                .last("LIMIT 1")
-                .one();
-        if (last == null) {
+        // 查最大号含已删除记录，避免逻辑删除导致工单号重复
+        String maxCode = ((WorkOrderMapper) baseMapper).selectMaxCode();
+        if (maxCode == null) {
             return "MO000001";
         }
-        String numStr = last.getCode().substring(2);
+        String numStr = maxCode.substring(2);
         int nextNum = Integer.parseInt(numStr) + 1;
         return String.format("MO%06d", nextNum);
     }
