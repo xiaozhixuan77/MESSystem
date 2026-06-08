@@ -758,8 +758,8 @@ export struct LineDetailView {
 
                 GridItem() {
                   KpiCard({
-                    title: '异常次数',
-                    value: `${this.viewModel.exceptionCount}`,
+                    title: 'NG数',
+                    value: `${this.viewModel.ngCount}`,
                     color: '#f5222d'
                   });
                 }

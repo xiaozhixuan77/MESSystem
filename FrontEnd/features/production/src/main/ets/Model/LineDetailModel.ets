@@ -35,13 +35,17 @@ export class LineDetailModel {
   }
 
   get runtime(): string {
-    if (this.status === '生产中') {
-      return '运行中';
-    }
-    return '--';
+    if (this.stations.length === 0) return '0分钟';
+    const minutes = this.stations[0].processedCount;
+    if (minutes <= 0) return '0分钟';
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h > 0) return `${h}小时${m}分钟`;
+    return `${m}分钟`;
   }
 
-  get exceptionCount(): number {
-    return this.stations.filter(s => s.deviceStatus === '异常' || s.deviceStatus === '故障').length;
+  get ngCount(): number {
+    if (this.stations.length === 0) return 0;
+    return this.stations[this.stations.length - 1].ngCount;
   }
 }

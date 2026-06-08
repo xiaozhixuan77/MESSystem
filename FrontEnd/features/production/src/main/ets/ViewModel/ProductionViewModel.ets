@@ -375,7 +375,7 @@ export class ProductionViewModel {
     return this.lineDetail.runtime;
   }
 
-  get exceptionCount(): number {
-    return this.lineDetail.exceptionCount;
+  get ngCount(): number {
+    return this.lineDetail.ngCount;
   }
 }
