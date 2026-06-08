@@ -77,4 +77,55 @@ public class InspectionRecordServiceImpl
 
         return record;
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public InspectionRecord submitInspection(Long id, InspectionCreateRequest request, Long inspectorId) {
+        InspectionRecord record = lambdaQuery()
+                .eq(InspectionRecord::getId, id)
+                .eq(InspectionRecord::getIsDeleted, 0)
+                .last("FOR UPDATE")
+                .one();
+        if (record == null) {
+            throw new BusinessException(404, "抽检记录不存在");
+        }
+        if (!"待抽检".equals(record.getStatus())) {
+            throw new BusinessException(400, "该记录已抽检，不能重复提交");
+        }
+
+        WorkOrder wo = workOrderService.getById(record.getWorkOrderId());
+        if (wo == null) {
+            throw new BusinessException(404, "关联工单不存在");
+        }
+
+        int sampleGood = request.getSampleGood() != null ? request.getSampleGood() : 0;
+        int sampleNg = request.getSampleNg() != null ? request.getSampleNg() : 0;
+        int sampleQty = request.getSampleQty();
+
+        if (sampleGood + sampleNg != sampleQty) {
+            throw new BusinessException(400, "良品数+不良品数必须等于抽检数量");
+        }
+
+        int minQty = Math.max(1, (int) Math.ceil(wo.getPlanQty() * 0.05));
+        int maxQty = Math.max(1, (int) Math.floor(wo.getPlanQty() * 0.10));
+        if (sampleQty < minQty || sampleQty > maxQty) {
+            throw new BusinessException(400,
+                    "抽检数量必须在批次量的5%-10%之间（" + minQty + "-" + maxQty + "）");
+        }
+
+        record.setInspectorId(inspectorId);
+        record.setInspectTime(LocalDateTime.now());
+        record.setSampleQty(sampleQty);
+        record.setSampleGood(sampleGood);
+        record.setSampleNg(sampleNg);
+        record.setDefectTypes(request.getDefectTypes());
+        record.setDefectDescription(request.getDefectDescription());
+        record.setConclusion(sampleNg > 0 ? "不合格" : "合格");
+        record.setStatus("已抽检");
+        updateById(record);
+
+        lineBroadcaster.broadcastInspectionUpdate(record);
+
+        return record;
+    }
 }

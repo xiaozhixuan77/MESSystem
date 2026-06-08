@@ -3,6 +3,7 @@ package org.example.service.impl;
 import org.example.dto.request.WorkOrderCreateRequest;
 import org.example.dto.request.WorkOrderUpdateRequest;
 import org.example.dto.request.WorkOrderReportRequest;
+import org.example.entity.InspectionRecord;
 import org.example.entity.ProcessStep;
 import org.example.entity.Product;
 import org.example.entity.ProductionLine;
@@ -10,9 +11,11 @@ import org.example.entity.WorkOrder;
 import org.example.entity.WorkOrderRouteStep;
 import org.example.exception.BusinessException;
 import org.example.mapper.WorkOrderMapper;
+import org.example.service.InspectionRecordService;
 import org.example.service.ProcessStepService;
 import org.example.service.ProductService;
 import org.example.service.ProductionLineService;
+import org.example.service.UserService;
 import org.example.service.WorkOrderRouteStepService;
 import org.example.service.WorkOrderService;
 import org.example.simulator.SimulatorManager;
@@ -25,6 +28,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -46,21 +50,27 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final TransactionTemplate transactionTemplate;
     private final SimulatorManager simulatorManager;
     private final LineBroadcaster lineBroadcaster;
+    private final UserService userService;
+    private final InspectionRecordService inspectionRecordService;
 
     public WorkOrderServiceImpl(ProductService productService,
+                                UserService userService,
                                 ProcessStepService processStepService,
                                 WorkOrderRouteStepService workOrderRouteStepService,
                                 ProductionLineService productionLineService,
                                 TransactionTemplate transactionTemplate,
                                 SimulatorManager simulatorManager,
-                                LineBroadcaster lineBroadcaster) {
+                                LineBroadcaster lineBroadcaster,
+                                @Lazy InspectionRecordService inspectionRecordService) {
         this.productService = productService;
+        this.userService = userService;
         this.processStepService = processStepService;
         this.workOrderRouteStepService = workOrderRouteStepService;
         this.productionLineService = productionLineService;
         this.transactionTemplate = transactionTemplate;
         this.simulatorManager = simulatorManager;
         this.lineBroadcaster = lineBroadcaster;
+        this.inspectionRecordService = inspectionRecordService;
     }
 
     @Override
@@ -291,7 +301,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
 
         Long currentUserId = getCurrentUserId();
-        if (currentUserId == null || !wo.getOperatorId().equals(currentUserId)) {
+        if (!canOverrideOperatorCheck() && (currentUserId == null || !wo.getOperatorId().equals(currentUserId))) {
             throw new BusinessException(403, "只有被指派的操作员才能开工");
         }
 
@@ -340,7 +350,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
 
         Long currentUserId = getCurrentUserId();
-        if (currentUserId == null || !wo.getOperatorId().equals(currentUserId)) {
+        if (!canOverrideOperatorCheck() && (currentUserId == null || !wo.getOperatorId().equals(currentUserId))) {
             throw new BusinessException(403, "只有被指派的操作员才能完成生产");
         }
 
@@ -501,6 +511,17 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "已报工", Map.of("good", request.getGood(), "ng", request.getNg(),
                         "hours", request.getHours()));
+
+        InspectionRecord pending = new InspectionRecord();
+        pending.setWorkOrderId(workOrderId);
+        pending.setInspectTime(LocalDateTime.now());
+        pending.setStatus("待抽检");
+        pending.setSampleQty(Math.max(1, (int) Math.floor(wo.getPlanQty() * 0.07)));
+        pending.setSampleGood(0);
+        pending.setSampleNg(0);
+        pending.setConclusion("");
+        inspectionRecordService.save(pending);
+        lineBroadcaster.broadcastInspectionUpdate(pending);
     }
 
     @Override
@@ -609,6 +630,19 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             return Long.valueOf(userDetails.getUsername());
         }
         return null;
+    }
+
+    /**
+     * 权限校验：管理员（持有 * 通配符）可绕过操作员身份限制。
+     * 非管理员仍需满足 workorder.start / workorder.complete 的 @RequiresPermission 权限，
+     * 且必须是工单指派的操员。
+     */
+    private boolean canOverrideOperatorCheck() {
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return false;
+        }
+        return userService.getUserPermissions(userId).contains("*");
     }
 
     private WorkOrder doCreateWorkOrder(WorkOrderCreateRequest request, Long createdBy) {

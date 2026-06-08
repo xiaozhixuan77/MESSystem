@@ -7,4 +7,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface InspectionRecordService extends IService<InspectionRecord> {
 
     InspectionRecord inspect(InspectionCreateRequest request, Long inspectorId);
+
+    InspectionRecord submitInspection(Long id, InspectionCreateRequest request, Long inspectorId);
 }

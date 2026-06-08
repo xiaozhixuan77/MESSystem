@@ -14,4 +14,11 @@ public class InspectionRecordVO {
     private String defectTypes;
     private String defectDescription;
     private String conclusion;
+    private String status;
+    private String workOrderCode;
+    private String productName;
+    private String processName;
+    private Integer reportedQtyGood;
+    private Integer reportedQtyNg;
+    private Integer planQty;
 }

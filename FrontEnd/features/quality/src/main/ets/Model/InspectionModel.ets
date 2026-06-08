@@ -7,8 +7,14 @@ export class InspectionModel {
   sampleGood: number = 0;
   sampleNg: number = 0;
   defectTypes: string = '';
+  defectDescription: string = '';
   conclusion: string = '';
+  status: string = '';
   workOrderCode: string = '';
-  inspectorName: string = '';
+  productName: string = '';
+  processName: string = '';
+  reportedQtyGood: number = 0;
+  reportedQtyNg: number = 0;
+  planQty: number = 0;
   createdAt: string = '';
 }

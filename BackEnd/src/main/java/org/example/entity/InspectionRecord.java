@@ -72,6 +72,11 @@ public class InspectionRecord implements Serializable {
     private String defectDescription;
 
     /**
+     * 状态：待抽检/已抽检
+     */
+    private String status;
+
+    /**
      * 结论：通过/不通过
      */
     private String conclusion;

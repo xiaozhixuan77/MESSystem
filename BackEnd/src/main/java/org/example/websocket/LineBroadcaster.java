@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import org.example.simulator.StationState;
 
+import org.example.entity.InspectionRecord;
 import org.example.entity.ProductionException;
 
 import java.util.HashMap;
@@ -148,5 +149,29 @@ public class LineBroadcaster {
 
         messagingTemplate.convertAndSend("/topic/exceptions", message);
         log.info("异常处理已广播: exceptionId={}, action={}", ex.getId(), ex.getHandleAction());
+    }
+
+    /**
+     * 抽检记录变更广播 → /topic/inspections。
+     */
+    public void broadcastInspectionUpdate(InspectionRecord record) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", record.getId());
+        data.put("workOrderId", record.getWorkOrderId());
+        data.put("status", record.getStatus());
+        data.put("sampleQty", record.getSampleQty());
+        data.put("sampleGood", record.getSampleGood());
+        data.put("sampleNg", record.getSampleNg());
+        data.put("conclusion", record.getConclusion());
+        data.put("inspectTime", record.getInspectTime() != null ? record.getInspectTime().toString() : null);
+
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "INSPECTION_UPDATE");
+        message.put("timestamp", System.currentTimeMillis());
+        message.put("data", data);
+
+        messagingTemplate.convertAndSend("/topic/inspections", message);
+        log.info("[test:Broadcaster] Inspection broadcast sent to /topic/inspections: id={}, status={}, workOrderId={}",
+                record.getId(), record.getStatus(), record.getWorkOrderId());
     }
 }
