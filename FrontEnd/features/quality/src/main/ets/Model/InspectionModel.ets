@@ -17,4 +17,5 @@ export class InspectionModel {
   reportedQtyNg: number = 0;
   planQty: number = 0;
   createdAt: string = '';
+  inspectorName: string = '';
 }

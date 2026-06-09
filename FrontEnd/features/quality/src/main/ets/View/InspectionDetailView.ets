@@ -7,6 +7,11 @@ interface DefectTypeState {
   count: number;
 }
 
+interface ParsedDefect {
+  name: string;
+  count: number;
+}
+
 const DEFECT_TYPES: string[] = ['外观缺陷', '尺寸偏差', '功能失效', '装配不良'];
 
 @ComponentV2
@@ -93,6 +98,38 @@ export struct InspectionDetailView {
 
   private onSampleNgChange(v: string): void {
     this.sampleNg = parseInt(v) || 0;
+  }
+
+  private parseDefectTypes(raw: string): ParsedDefect[] {
+    if (!raw || raw.trim() === '') return [];
+    const result: ParsedDefect[] = [];
+    const parts = raw.split(',');
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (trimmed === '') continue;
+      const colonIdx = trimmed.lastIndexOf(':');
+      if (colonIdx > 0) {
+        const name = trimmed.substring(0, colonIdx).trim();
+        const count = parseInt(trimmed.substring(colonIdx + 1).trim()) || 0;
+        result.push({ name: name, count: count } as ParsedDefect);
+      } else {
+        result.push({ name: trimmed, count: 0 } as ParsedDefect);
+      }
+    }
+    return result;
+  }
+
+  private getPassRate(): number {
+    const qty = this.viewModel.currentInspection.sampleQty;
+    if (!qty || qty <= 0) return 0;
+    return (this.viewModel.currentInspection.sampleGood || 0) / qty;
+  }
+
+  private getInspectorLabel(): string {
+    const item = this.viewModel.currentInspection;
+    if (item.inspectorName) return item.inspectorName;
+    if (item.inspectorId > 0) return `质检员 #${item.inspectorId}`;
+    return '—';
   }
 
   @Builder
@@ -390,87 +427,180 @@ export struct InspectionDetailView {
   }
 
   @Builder
-  ViewOnlyContent() {
-    Column({ space: 16 }) {
-      // 工单信息卡片
-      Column() {
-        Row() {
-          Text(this.viewModel.currentInspection.workOrderCode || `工单 #${this.viewModel.currentInspection.workOrderId}`)
-            .fontSize(15).fontWeight(700).fontColor('#1A1A2E');
-          this.ConclusionBadge(this.viewModel.currentInspection.conclusion);
-        }
-        .width('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
-        .margin({ bottom: 12 });
+  WorkOrderContextCard() {
+    Column() {
+      Row() {
+        Text(this.viewModel.currentInspection.workOrderCode || `工单 #${this.viewModel.currentInspection.workOrderId}`)
+          .fontSize(16).fontWeight(700).fontColor('#1A1A2E');
+        this.ConclusionBadge(this.viewModel.currentInspection.conclusion);
+      }
+      .width('100%').justifyContent(FlexAlign.SpaceBetween).margin({ bottom: 10 });
 
-        if (this.viewModel.currentInspection.productName) {
-          Text(`${this.viewModel.currentInspection.productName}${this.viewModel.currentInspection.processName ? ' · ' + this.viewModel.currentInspection.processName : ''}`)
-            .fontSize(13).fontColor('#5A5A6E')
-            .margin({ bottom: 12 });
-        }
+      if (this.viewModel.currentInspection.productName) {
+        Text(`${this.viewModel.currentInspection.productName}${this.viewModel.currentInspection.processName ? ' · ' + this.viewModel.currentInspection.processName : ''}`)
+          .fontSize(13).fontColor('#5A5A6E').margin({ bottom: 14 });
+      }
 
-        Row({ space: 8 }) {
-          this.DetailStatItem('抽检数量', `${this.viewModel.currentInspection.sampleQty} 件`);
-          this.DetailStatItem('良品', `${this.viewModel.currentInspection.sampleGood} 件`);
-          this.DetailStatItem('不良', `${this.viewModel.currentInspection.sampleNg} 件`);
+      Row({ space: 0 }) {
+        Column() {
+          Text(`${this.viewModel.currentInspection.planQty || 0}`)
+            .fontSize(18).fontWeight(700).fontColor('#1A1A2E').margin({ bottom: 4 });
+          Text('计划产量').fontSize(11).fontColor('#9A9AA8');
         }
-        .width('100%')
-        .padding(12)
-        .backgroundColor('#F5F7FA')
-        .borderRadius(12)
-        .margin({ bottom: 12 });
+        .layoutWeight(1).alignItems(HorizontalAlign.Center);
+        Column() {
+          Text(`${this.viewModel.currentInspection.reportedQtyGood || 0}`)
+            .fontSize(18).fontWeight(700).fontColor('#4CAF50').margin({ bottom: 4 });
+          Text('申报良品').fontSize(11).fontColor('#9A9AA8');
+        }
+        .layoutWeight(1).alignItems(HorizontalAlign.Center);
+        Column() {
+          Text(`${this.viewModel.currentInspection.reportedQtyNg || 0}`)
+            .fontSize(18).fontWeight(700).fontColor('#F44336').margin({ bottom: 4 });
+          Text('申报不良').fontSize(11).fontColor('#9A9AA8');
+        }
+        .layoutWeight(1).alignItems(HorizontalAlign.Center);
+      }
+      .width('100%').padding({ top: 12, bottom: 12, left: 8, right: 8 })
+      .backgroundColor('#F5F7FA').borderRadius(12);
+    }
+    .width('100%').padding(16).backgroundColor(Color.White).borderRadius(16)
+    .shadow({ radius: 8, color: 'rgba(0,0,0,0.04)', offsetY: 2 });
+  }
 
-        if (this.viewModel.currentInspection.defectTypes) {
-          Row() {
-            Text('缺陷类型：')
-              .fontSize(12).fontColor('#5A5A6E');
-            Text(this.viewModel.currentInspection.defectTypes)
-              .fontSize(12).fontColor('#FF9800').fontWeight(500);
-          }
-          .margin({ bottom: 8 });
+  @Builder
+  ConclusionBanner() {
+    Column() {
+      Stack() {
+        Progress({ value: this.getPassRate() * 100, total: 100, type: ProgressType.Ring })
+          .width(64).height(64)
+          .color(this.viewModel.currentInspection.conclusion === '合格' ? '#4CAF50' : '#F44336')
+          .backgroundColor(this.viewModel.currentInspection.conclusion === '合格' ? '#C8E6C9' : '#FFCDD2');
+        Text(`${(this.getPassRate() * 100).toFixed(1)}%`)
+          .fontSize(16).fontWeight(700)
+          .fontColor(this.viewModel.currentInspection.conclusion === '合格' ? '#2E7D32' : '#C62828');
+      }
+      .margin({ bottom: 12 });
+
+      Text(this.viewModel.currentInspection.conclusion === '合格' ? '合格' : '不合格')
+        .fontSize(20).fontWeight(700)
+        .fontColor(this.viewModel.currentInspection.conclusion === '合格' ? '#2E7D32' : '#C62828')
+        .margin({ bottom: 8 });
+
+      Text(`抽检时间：${this.viewModel.currentInspection.inspectTime || '—'}`)
+        .fontSize(12).fontColor('#5A5A6E').margin({ bottom: 4 });
+      Text(`质检员：${this.getInspectorLabel()}`)
+        .fontSize(12).fontColor('#5A5A6E');
+    }
+    .width('100%').padding(20).alignItems(HorizontalAlign.Center)
+    .backgroundColor(this.viewModel.currentInspection.conclusion === '合格' ? '#E8F5E9' : '#FFEBEE')
+    .borderRadius(16)
+    .shadow({ radius: 8, color: 'rgba(0,0,0,0.04)', offsetY: 2 });
+  }
+
+  @Builder
+  SampleStatsCard() {
+    Column() {
+      Text('抽检结果')
+        .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
+        .margin({ bottom: 14 }).alignSelf(ItemAlign.Start);
+
+      Row({ space: 0 }) {
+        Column() {
+          Text(`${this.viewModel.currentInspection.sampleQty || 0}`)
+            .fontSize(22).fontWeight(700).fontColor('#1565C0').margin({ bottom: 4 });
+          Text('抽检数量').fontSize(11).fontColor('#9A9AA8');
         }
+        .layoutWeight(1).alignItems(HorizontalAlign.Center);
+        Column() {
+          Text(`${this.viewModel.currentInspection.sampleGood || 0}`)
+            .fontSize(22).fontWeight(700).fontColor('#4CAF50').margin({ bottom: 4 });
+          Text('良品数').fontSize(11).fontColor('#9A9AA8');
+        }
+        .layoutWeight(1).alignItems(HorizontalAlign.Center);
+        Column() {
+          Text(`${this.viewModel.currentInspection.sampleNg || 0}`)
+            .fontSize(22).fontWeight(700).fontColor('#F44336').margin({ bottom: 4 });
+          Text('不良品数').fontSize(11).fontColor('#9A9AA8');
+        }
+        .layoutWeight(1).alignItems(HorizontalAlign.Center);
+      }
+      .width('100%');
+    }
+    .width('100%').padding(16).backgroundColor(Color.White).borderRadius(16)
+    .shadow({ radius: 8, color: 'rgba(0,0,0,0.04)', offsetY: 2 });
+  }
+
+  @Builder
+  DefectAnalysisCard() {
+    Column() {
+      Text('不良分析')
+        .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
+        .margin({ bottom: 14 }).alignSelf(ItemAlign.Start);
+
+      if (this.viewModel.currentInspection.defectTypes &&
+          this.viewModel.currentInspection.defectTypes.trim() !== '') {
+        Column({ space: 0 }) {
+          ForEach(this.parseDefectTypes(this.viewModel.currentInspection.defectTypes),
+            (item: ParsedDefect, index: number) => {
+              this.DefectAnalysisItem(index + 1, item.name, item.count, this.viewModel.currentInspection.sampleNg || 1);
+            }, (item: ParsedDefect) => item.name);
+        }
+        .width('100%').padding(12).backgroundColor('#F5F7FA').borderRadius(12);
 
         if (this.viewModel.currentInspection.defectDescription) {
-          Text(`备注：${this.viewModel.currentInspection.defectDescription}`)
-            .fontSize(12).fontColor('#5A5A6E')
-            .maxLines(3);
+          Text(this.viewModel.currentInspection.defectDescription)
+            .fontSize(13).fontColor('#5A5A6E').padding(12).margin({ top: 8 })
+            .width('100%').backgroundColor('#FFF8E1').borderRadius(10);
         }
+      } else {
+        Row() {
+          Text('✓ 无不良品记录')
+            .fontSize(13).fontColor('#4CAF50').fontWeight(500);
+        }
+        .width('100%').padding(16).justifyContent(FlexAlign.Center)
+        .backgroundColor('#F5F7FA').borderRadius(12);
       }
-      .width('100%')
-      .padding(16)
-      .backgroundColor(Color.White)
-      .borderRadius(16)
-      .shadow({ radius: 8, color: 'rgba(0,0,0,0.04)', offsetY: 2 });
+    }
+    .width('100%').padding(16).backgroundColor(Color.White).borderRadius(16)
+    .shadow({ radius: 8, color: 'rgba(0,0,0,0.04)', offsetY: 2 });
+  }
 
-      // 时间信息
-      Column() {
-        if (this.viewModel.currentInspection.inspectTime) {
-          Row() {
-            Text('抽检时间')
-              .fontSize(12).fontColor('#9A9AA8');
-            Text(this.viewModel.currentInspection.inspectTime)
-              .fontSize(12).fontColor('#1A1A2E');
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.SpaceBetween)
-          .margin({ bottom: 8 });
-        }
-        if (this.viewModel.currentInspection.inspectorId > 0) {
-          Row() {
-            Text('质检员ID')
-              .fontSize(12).fontColor('#9A9AA8');
-            Text(`${this.viewModel.currentInspection.inspectorId}`)
-              .fontSize(12).fontColor('#1A1A2E');
-          }
-          .width('100%')
-          .justifyContent(FlexAlign.SpaceBetween);
-        }
+  @Builder
+  DefectAnalysisItem(rank: number, name: string, count: number, maxCount: number) {
+    Row() {
+      Row() {
+        Text(`${rank}`)
+          .fontSize(11).fontWeight(700)
+          .fontColor(rank <= 2 ? Color.White : '#5A5A6E');
       }
-      .width('100%')
-      .padding(16)
-      .backgroundColor(Color.White)
-      .borderRadius(16)
-      .shadow({ radius: 8, color: 'rgba(0,0,0,0.04)', offsetY: 2 });
+      .width(24).height(24)
+      .backgroundColor(rank <= 2 ? '#F44336' : '#F5F7FA')
+      .borderRadius(12).justifyContent(FlexAlign.Center);
+
+      Column() {
+        Text(name).fontSize(13).fontWeight(600).fontColor('#1A1A2E').margin({ bottom: 2 });
+        Row() {
+          Row() {}.layoutWeight(count).height('100%')
+            .backgroundColor('#F44336').borderRadius(3);
+          Row() {}.layoutWeight(Math.max(1, maxCount - count)).height('100%');
+        }
+        .width('100%').height(6).backgroundColor('#F5F7FA').borderRadius(3);
+      }
+      .layoutWeight(1).margin({ left: 10 });
+
+      Text(`${count}`).fontSize(13).fontWeight(600).fontColor('#5A5A6E');
+    }
+    .width('100%').padding({ top: 10, bottom: 10 });
+  }
+
+  @Builder
+  ViewOnlyContent() {
+    Column({ space: 16 }) {
+      this.WorkOrderContextCard();
+      this.ConclusionBanner();
+      this.SampleStatsCard();
+      this.DefectAnalysisCard();
     }
     .width('100%');
   }
@@ -531,7 +661,8 @@ export struct InspectionDetailView {
         }
         .width('100%').layoutWeight(1)
         .padding(16)
-        .scrollBar(BarState.Off);
+        .scrollBar(BarState.Off)
+        .backgroundColor('#F5F7FA');
       }
 
       // 底部提交按钮（仅待抽检模式）

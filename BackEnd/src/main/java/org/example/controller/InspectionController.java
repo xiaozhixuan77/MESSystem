@@ -5,11 +5,13 @@ import org.example.dto.response.R;
 import org.example.entity.InspectionRecord;
 import org.example.entity.Process;
 import org.example.entity.Product;
+import org.example.entity.User;
 import org.example.entity.WorkOrder;
 import org.example.security.RequiresPermission;
 import org.example.service.InspectionRecordService;
 import org.example.service.ProcessService;
 import org.example.service.ProductService;
+import org.example.service.UserService;
 import org.example.service.WorkOrderService;
 import org.example.util.ControllerUtils;
 import org.example.vo.InspectionRecordVO;
@@ -38,15 +40,18 @@ public class InspectionController {
     private final WorkOrderService workOrderService;
     private final ProductService productService;
     private final ProcessService processService;
+    private final UserService userService;
 
     public InspectionController(InspectionRecordService inspectionRecordService,
                                 WorkOrderService workOrderService,
                                 ProductService productService,
-                                ProcessService processService) {
+                                ProcessService processService,
+                                UserService userService) {
         this.inspectionRecordService = inspectionRecordService;
         this.workOrderService = workOrderService;
         this.productService = productService;
         this.processService = processService;
+        this.userService = userService;
     }
 
     @PostMapping("/inspections")
@@ -93,8 +98,15 @@ public class InspectionController {
                 processService.lambdaQuery().in(Process::getId, processIds).list().stream()
                         .collect(Collectors.toMap(Process::getId, p -> p.getName() != null ? p.getName() : ""));
 
+        // 批量查质检员
+        List<Long> inspectorIds = records.stream().map(InspectionRecord::getInspectorId)
+                .filter(id -> id != null && id > 0).distinct().collect(Collectors.toList());
+        Map<Long, String> inspectorNames = inspectorIds.isEmpty() ? Collections.emptyMap() :
+                userService.lambdaQuery().in(User::getId, inspectorIds).list().stream()
+                        .collect(Collectors.toMap(User::getId, u -> u.getName() != null ? u.getName() : ""));
+
         List<InspectionRecordVO> vos = records.stream()
-                .map(r -> enrichVO(r, woMap, productNames, processNames))
+                .map(r -> enrichVO(r, woMap, productNames, processNames, inspectorNames))
                 .collect(Collectors.toList());
         return R.ok(vos);
     }
@@ -135,11 +147,18 @@ public class InspectionController {
                 if (process != null) processNames = Map.of(process.getId(), process.getName() != null ? process.getName() : "");
             }
         }
-        return enrichVO(r, woMap, productNames, processNames);
+        Map<Long, String> inspectorNames = Collections.emptyMap();
+        if (r.getInspectorId() != null && r.getInspectorId() > 0) {
+            User inspector = userService.getById(r.getInspectorId());
+            String name = (inspector != null && inspector.getName() != null) ? inspector.getName() : "";
+            inspectorNames = Map.of(r.getInspectorId(), name);
+        }
+        return enrichVO(r, woMap, productNames, processNames, inspectorNames);
     }
 
     private InspectionRecordVO enrichVO(InspectionRecord r, Map<Long, WorkOrder> woMap,
-                                         Map<Long, String> productNames, Map<Long, String> processNames) {
+                                         Map<Long, String> productNames, Map<Long, String> processNames,
+                                         Map<Long, String> inspectorNames) {
         InspectionRecordVO vo = new InspectionRecordVO();
         vo.setId(r.getId());
         vo.setWorkOrderId(r.getWorkOrderId());
@@ -166,6 +185,7 @@ public class InspectionController {
                 vo.setProcessName(processNames.getOrDefault(wo.getProcessId(), ""));
             }
         }
+        vo.setInspectorName(inspectorNames.getOrDefault(r.getInspectorId(), ""));
         return vo;
     }
 }

@@ -21,4 +21,5 @@ public class InspectionRecordVO {
     private Integer reportedQtyGood;
     private Integer reportedQtyNg;
     private Integer planQty;
+    private String inspectorName;
 }
