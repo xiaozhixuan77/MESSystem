@@ -10,11 +10,13 @@ import {
   ReportedDetailView,
   PausedDetailView
 } from '@ohos/workorder';
+import { DeepLinkInfo } from '@ohos/utils';
 
 @ComponentV2
 export struct WorkOrderTabDestination {
   @Provider('pageStack') workOrderStack: NavPathStack = new NavPathStack();
   @Consumer('currentRole') currentRole: string = '';
+  @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
 
   @Builder
   PageMap(name: string) {
@@ -51,6 +53,12 @@ export struct WorkOrderTabDestination {
       }
       .navDestination(this.PageMap)
       .hideTitleBar(true)
+      .onAppear(() => {
+        if (this.deepLink && this.deepLink.targetTab === 'WorkOrderTab') {
+          this.workOrderStack.pushPathByName(this.deepLink.targetPage, this.deepLink.params);
+          this.deepLink = null;
+        }
+      })
     }
     .hideTitleBar(true)
   }

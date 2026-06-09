@@ -1,10 +1,12 @@
 import { LineListView, LineDetailView, StationDetailView, ProductionViewModel } from '@ohos/production';
 import { InspectionListView, InspectionDetailView, DashboardView, ExceptionListView, ExceptionDetailView } from '@ohos/quality';
+import { DeepLinkInfo } from '@ohos/utils';
 
 @ComponentV2
 export struct DataTabDestination {
   @Provider('pageStack') dataStack: NavPathStack = new NavPathStack();
   @Provider('sharedVm') lineListVm: ProductionViewModel = new ProductionViewModel();
+  @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
   @Local currentView: string = 'LineList';
 
   aboutToAppear(): void {
@@ -138,6 +140,21 @@ export struct DataTabDestination {
         .onAppear(() => {
           if (this.dataStack.size() === 0) {
             this.dataStack.replacePath({ name: 'LineList' });
+          }
+          if (this.deepLink && this.deepLink.targetTab === 'DataTab') {
+            const page = this.deepLink.targetPage;
+            const params = this.deepLink.params;
+            this.dataStack.replacePathByName(page, params);
+            if (page === 'ExceptionList' || page === 'ExceptionDetail') {
+              this.currentView = 'ExceptionList';
+            } else if (page === 'InspectionList' || page === 'InspectionDetail') {
+              this.currentView = 'InspectionList';
+            } else if (page === 'Dashboard') {
+              this.currentView = 'Dashboard';
+            } else if (page === 'LineList' || page === 'LineDetail' || page === 'StationDetail') {
+              this.currentView = 'LineList';
+            }
+            this.deepLink = null;
           }
         });
       }

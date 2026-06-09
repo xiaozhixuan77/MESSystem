@@ -1,6 +1,6 @@
 import { preferencesUtil, LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT } from '@ohos/datastore';
 import { httpClient, WebSocketService } from '@ohos/network';
-import { ApiConstants, BreakpointUtil, NetworkConfig } from '@ohos/utils';
+import { ApiConstants, BreakpointUtil, DeepLinkInfo, NetworkConfig } from '@ohos/utils';
 import { UserModel } from '@ohos/user';
 import { emitter } from '@kit.BasicServicesKit';
 import { window } from '@kit.ArkUI';
@@ -21,6 +21,7 @@ struct Index {
   @Local targetPage: string = '';
   @Local isReady: boolean = false;
   @Provider('activeTab') activeTab: string = 'HomeTab';
+  @Provider('deepLink') deepLink: DeepLinkInfo | null = null;
   private windowChangeCallback?: (size: window.Size) => void;
 
   switchTab(tab: string): void {

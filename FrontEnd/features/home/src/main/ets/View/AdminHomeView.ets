@@ -1,12 +1,14 @@
 import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
 import { ExceptionItemModel } from '../Model/HomeSummaryModel';
+import { DeepLinkInfo } from '@ohos/utils';
 
 @ComponentV2
 export struct AdminHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
+  @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
   @Local vm: HomeViewModel = new HomeViewModel();
 
   aboutToAppear(): void {
@@ -27,6 +29,12 @@ export struct AdminHomeView {
 
   get pendingExceptions(): string {
     return this.vm.summary ? `${this.vm.summary.pendingExceptionCount}` : '0';
+  }
+
+  navigateTo(tab: string, page: string, params: Record<string, Object>): void {
+    this.deepLink = { targetTab: tab, targetPage: page, params: params };
+    this.activeTab = tab;
+    this.pageStack.replacePath({ name: tab });
   }
 
   @Builder
@@ -150,9 +158,68 @@ export struct AdminHomeView {
             this.pageStack.replacePath({ name: 'WorkOrderTab' });
           })
 
-          this.QuickItem($r('app.media.tab_profile_active'), '人员管理');
-          this.QuickItem($r('app.media.tab_data_active'), '产线工艺');
-          this.QuickItem($r('app.media.icon_image_blue'), '质检看板');
+          Column() {
+            Column() {
+              Image($r('app.media.tab_profile_active')).width(16).height(16);
+            }
+            .width(32).height(32)
+            .backgroundColor('rgba(255,255,255,0.95)')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center);
+            Text('人员管理')
+              .fontSize(10).fontColor(Color.White).fontWeight(500).margin({ top: 6 });
+          }
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 10, bottom: 10, left: 4, right: 4 })
+          .backgroundColor('rgba(255,255,255,0.1)')
+          .borderRadius(12)
+          .layoutWeight(1)
+          .onClick(() => {
+            this.navigateTo('ProfileTab', 'EmployeeList', {});
+          })
+
+          Column() {
+            Column() {
+              Image($r('app.media.tab_data_active')).width(16).height(16);
+            }
+            .width(32).height(32)
+            .backgroundColor('rgba(255,255,255,0.95)')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center);
+            Text('产线工艺')
+              .fontSize(10).fontColor(Color.White).fontWeight(500).margin({ top: 6 });
+          }
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 10, bottom: 10, left: 4, right: 4 })
+          .backgroundColor('rgba(255,255,255,0.1)')
+          .borderRadius(12)
+          .layoutWeight(1)
+          .onClick(() => {
+            this.navigateTo('DataTab', 'LineList', {});
+          })
+
+          Column() {
+            Column() {
+              Image($r('app.media.icon_image_blue')).width(16).height(16);
+            }
+            .width(32).height(32)
+            .backgroundColor('rgba(255,255,255,0.95)')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center);
+            Text('质检看板')
+              .fontSize(10).fontColor(Color.White).fontWeight(500).margin({ top: 6 });
+          }
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 10, bottom: 10, left: 4, right: 4 })
+          .backgroundColor('rgba(255,255,255,0.1)')
+          .borderRadius(12)
+          .layoutWeight(1)
+          .onClick(() => {
+            this.navigateTo('DataTab', 'Dashboard', {});
+          })
         }
         .width('100%');
       }
@@ -168,7 +235,10 @@ export struct AdminHomeView {
             Column() {
               Row() {
                 Text('异常告警').fontSize(15).fontWeight(600).fontColor('#1A1A2E');
-                Text('全部告警').fontSize(12).fontColor('#1565C0').fontWeight(500);
+                Text('全部告警').fontSize(12).fontColor('#1565C0').fontWeight(500)
+                  .onClick(() => {
+                    this.navigateTo('DataTab', 'ExceptionList', {});
+                  });
               }
               .width('100%')
               .justifyContent(FlexAlign.SpaceBetween)
@@ -205,7 +275,10 @@ export struct AdminHomeView {
                   .borderRadius(16)
                   .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
                   .width('100%')
-                  .margin({ bottom: 10 });
+                  .margin({ bottom: 10 })
+                  .onClick(() => {
+                    this.navigateTo('DataTab', 'ExceptionDetail', { 'exceptionId': ex.id });
+                  });
                 }, (ex: ExceptionItemModel) => `alert_${ex.id}`);
               } else {
                 Text('暂无异常告警')
@@ -220,7 +293,10 @@ export struct AdminHomeView {
             Column() {
               Row() {
                 Text('今日概览').fontSize(15).fontWeight(600).fontColor('#1A1A2E');
-                Text('查看报表').fontSize(12).fontColor('#1565C0').fontWeight(500);
+                Text('查看报表').fontSize(12).fontColor('#1565C0').fontWeight(500)
+                  .onClick(() => {
+                    this.navigateTo('DataTab', 'Dashboard', {});
+                  });
               }
               .width('100%')
               .justifyContent(FlexAlign.SpaceBetween)

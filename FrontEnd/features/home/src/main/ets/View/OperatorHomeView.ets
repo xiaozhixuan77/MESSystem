@@ -1,16 +1,25 @@
 import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
 import { TaskItemModel } from '../Model/HomeSummaryModel';
+import { DeepLinkInfo } from '@ohos/utils';
+import { promptAction } from '@kit.ArkUI';
 
 @ComponentV2
 export struct OperatorHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
+  @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
   @Local vm: HomeViewModel = new HomeViewModel();
 
   aboutToAppear(): void {
     this.vm.loadHomeData();
+  }
+
+  navigateTo(tab: string, page: string, params: Record<string, Object>): void {
+    this.deepLink = { targetTab: tab, targetPage: page, params: params };
+    this.activeTab = tab;
+    this.pageStack.replacePath({ name: tab });
   }
 
   get activeTaskCode(): string {
@@ -137,11 +146,40 @@ export struct OperatorHomeView {
         .backgroundColor('rgba(255,255,255,0.12)')
         .borderRadius(16)
         .border({ width: 1, color: 'rgba(255,255,255,0.15)' })
-        .width('100%');
+        .width('100%')
+        .onClick(() => {
+          const t = this.vm.summary?.operatorActiveTask;
+          if (t) {
+            this.navigateTo('WorkOrderTab', 'RunningDetail', { 'workOrderId': t.id });
+          }
+        });
 
         // 快捷操作
         Row({ space: 10 }) {
-          this.ActionButton($r('app.media.icon_activity_blue'), '报工');
+          Column() {
+            Column() {
+              Image($r('app.media.icon_activity_blue')).width(14).height(14);
+            }
+            .width(28).height(28)
+            .backgroundColor('rgba(255,255,255,0.95)')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center);
+
+            Text('报工')
+              .fontSize(11)
+              .fontColor(Color.White)
+              .fontWeight(500)
+              .margin({ top: 6 });
+          }
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 14, bottom: 14, left: 8, right: 8 })
+          .backgroundColor('rgba(255,255,255,0.1)')
+          .borderRadius(12)
+          .layoutWeight(1)
+          .onClick(() => {
+            this.navigateTo('WorkOrderTab', 'WorkOrderList', {});
+          })
           Column() {
             Column() {
               Image($r('app.media.icon_alert_red')).width(14).height(14);
@@ -167,7 +205,32 @@ export struct OperatorHomeView {
             this.activeTab = 'DataTab';
             this.pageStack.replacePath({ name: 'DataTab' });
           })
-          this.ActionButton($r('app.media.icon_stop_blue'), 'SOP查看');
+          Column() {
+            Column() {
+              Image($r('app.media.icon_stop_blue')).width(14).height(14);
+            }
+            .width(28).height(28)
+            .backgroundColor('rgba(255,255,255,0.95)')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center);
+
+            Text('SOP查看')
+              .fontSize(11)
+              .fontColor(Color.White)
+              .fontWeight(500)
+              .margin({ top: 6 });
+          }
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 14, bottom: 14, left: 8, right: 8 })
+          .backgroundColor('rgba(255,255,255,0.1)')
+          .borderRadius(12)
+          .layoutWeight(1)
+          .onClick(() => {
+            try {
+              promptAction.showToast({ message: '功能开发中', duration: 2000 });
+            } catch (e) {}
+          })
         }
         .width('100%')
         .margin({ top: 16 });
@@ -184,7 +247,10 @@ export struct OperatorHomeView {
             Column() {
               Row() {
                 Text('我的任务').fontSize(15).fontWeight(600).fontColor('#1A1A2E');
-                Text('全部任务').fontSize(12).fontColor('#1565C0').fontWeight(500);
+                Text('全部任务').fontSize(12).fontColor('#1565C0').fontWeight(500)
+                  .onClick(() => {
+                    this.navigateTo('WorkOrderTab', 'WorkOrderList', {});
+                  });
               }
               .width('100%')
               .justifyContent(FlexAlign.SpaceBetween)
@@ -228,7 +294,10 @@ export struct OperatorHomeView {
                   .backgroundColor(Color.White)
                   .borderRadius(16)
                   .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
-                  .margin({ bottom: 10 });
+                  .margin({ bottom: 10 })
+                  .onClick(() => {
+                    this.navigateTo('WorkOrderTab', 'AssignedDetail', { 'workOrderId': t.id });
+                  });
                 }, (t: TaskItemModel) => `start_${t.id}`);
 
                 ForEach(this.vm.summary.operatorPendingReportTasks, (t: TaskItemModel) => {
@@ -268,8 +337,11 @@ export struct OperatorHomeView {
                   .backgroundColor(Color.White)
                   .borderRadius(16)
                   .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
-                  .margin({ bottom: 10 });
-                }, (t: TaskItemModel) => `report_${t.id}`);
+                  .margin({ bottom: 10 })
+                  .onClick(() => {
+                    this.navigateTo('WorkOrderTab', 'CompletedDetail', { 'workOrderId': t.id });
+                  });
+              }, (t: TaskItemModel) => `report_${t.id}`);
               }
 
               if (this.vm.summary !== null &&
@@ -287,7 +359,10 @@ export struct OperatorHomeView {
             Column() {
               Row() {
                 Text('产线动态').fontSize(15).fontWeight(600).fontColor('#1A1A2E');
-                Text('查看详情').fontSize(12).fontColor('#1565C0').fontWeight(500);
+                Text('查看详情').fontSize(12).fontColor('#1565C0').fontWeight(500)
+                  .onClick(() => {
+                    this.navigateTo('DataTab', 'LineList', {});
+                  });
               }
               .width('100%')
               .justifyContent(FlexAlign.SpaceBetween)

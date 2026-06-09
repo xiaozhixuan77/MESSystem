@@ -1,16 +1,24 @@
 import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
 import { ExceptionItemModel, DispatchItemModel } from '../Model/HomeSummaryModel';
+import { DeepLinkInfo } from '@ohos/utils';
 
 @ComponentV2
 export struct LeaderHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
+  @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
   @Local vm: HomeViewModel = new HomeViewModel();
 
   aboutToAppear(): void {
     this.vm.loadHomeData();
+  }
+
+  navigateTo(tab: string, page: string, params: Record<string, Object>): void {
+    this.deepLink = { targetTab: tab, targetPage: page, params: params };
+    this.activeTab = tab;
+    this.pageStack.replacePath({ name: tab });
   }
 
   @Builder
@@ -67,7 +75,26 @@ export struct LeaderHomeView {
 
         // 快捷入口
         Row({ space: 8 }) {
-          this.QuickItem($r('app.media.tab_data_active'), '基础数据');
+          Column() {
+            Column() {
+              Image($r('app.media.tab_data_active')).width(16).height(16);
+            }
+            .width(32).height(32)
+            .backgroundColor('rgba(255,255,255,0.95)')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center);
+            Text('基础数据')
+              .fontSize(11).fontColor(Color.White).fontWeight(500).margin({ top: 6 });
+          }
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 12, bottom: 12, left: 4, right: 4 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .layoutWeight(1)
+          .onClick(() => {
+            this.navigateTo('DataTab', 'LineList', {});
+          })
 
           Column() {
             Column() {
@@ -91,8 +118,47 @@ export struct LeaderHomeView {
             this.pageStack.replacePath({ name: 'WorkOrderTab' });
           })
 
-          this.QuickItem($r('app.media.icon_image_blue'), '质检看板');
-          this.QuickItem($r('app.media.icon_clock_blue'), '历史记录');
+          Column() {
+            Column() {
+              Image($r('app.media.icon_image_blue')).width(16).height(16);
+            }
+            .width(32).height(32)
+            .backgroundColor('rgba(255,255,255,0.95)')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center);
+            Text('质检看板')
+              .fontSize(11).fontColor(Color.White).fontWeight(500).margin({ top: 6 });
+          }
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 12, bottom: 12, left: 4, right: 4 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .layoutWeight(1)
+          .onClick(() => {
+            this.navigateTo('DataTab', 'Dashboard', {});
+          })
+
+          Column() {
+            Column() {
+              Image($r('app.media.icon_clock_blue')).width(16).height(16);
+            }
+            .width(32).height(32)
+            .backgroundColor('rgba(255,255,255,0.95)')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center);
+            Text('历史记录')
+              .fontSize(11).fontColor(Color.White).fontWeight(500).margin({ top: 6 });
+          }
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 12, bottom: 12, left: 4, right: 4 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .layoutWeight(1)
+          .onClick(() => {
+            this.navigateTo('DataTab', 'InspectionList', {});
+          })
         }
         .width('100%');
       }
@@ -108,7 +174,10 @@ export struct LeaderHomeView {
           Column() {
             Row() {
               Text('待办事项').fontSize(15).fontWeight(600).fontColor('#1A1A2E');
-              Text('查看全部').fontSize(12).fontColor('#1565C0').fontWeight(500);
+              Text('查看全部').fontSize(12).fontColor('#1565C0').fontWeight(500)
+                .onClick(() => {
+                  this.navigateTo('DataTab', 'ExceptionList', {});
+                });
             }
             .width('100%')
             .justifyContent(FlexAlign.SpaceBetween)
@@ -158,7 +227,10 @@ export struct LeaderHomeView {
                 .borderRadius(16)
                 .border({ width: { left: 3 }, color: '#F44336' })
                 .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
-                .margin({ bottom: 10 });
+                .margin({ bottom: 10 })
+                .onClick(() => {
+                  this.navigateTo('DataTab', 'ExceptionDetail', { 'exceptionId': ex.id });
+                });
               }, (ex: ExceptionItemModel) => `ex_${ex.id}`);
 
               ForEach(this.vm.summary.pendingDispatchItems, (wo: DispatchItemModel) => {
@@ -200,7 +272,10 @@ export struct LeaderHomeView {
                 .borderRadius(16)
                 .border({ width: { left: 3 }, color: '#1565C0' })
                 .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
-                .margin({ bottom: 10 });
+                .margin({ bottom: 10 })
+                .onClick(() => {
+                  this.navigateTo('WorkOrderTab', 'PendingDetail', { 'workOrderId': wo.id });
+                });
               }, (wo: DispatchItemModel) => `dp_${wo.id}`);
             }
 
@@ -219,7 +294,10 @@ export struct LeaderHomeView {
           Column() {
             Row() {
               Text('产线状态').fontSize(15).fontWeight(600).fontColor('#1A1A2E');
-              Text('全部产线').fontSize(12).fontColor('#1565C0').fontWeight(500);
+              Text('全部产线').fontSize(12).fontColor('#1565C0').fontWeight(500)
+                .onClick(() => {
+                  this.navigateTo('DataTab', 'LineList', {});
+                });
             }
             .width('100%')
             .justifyContent(FlexAlign.SpaceBetween)
