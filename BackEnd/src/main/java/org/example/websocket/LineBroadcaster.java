@@ -173,4 +173,21 @@ public class LineBroadcaster {
         messagingTemplate.convertAndSend("/topic/inspections", message);
         log.info("抽检记录已广播: id={}, status={}", record.getId(), record.getStatus());
     }
+
+    /**
+     * 主页摘要刷新信号 → /topic/home。
+     * 当工单状态、异常、抽检等影响主页待办卡片的数据变更时调用。
+     */
+    public void broadcastHomeRefresh(String trigger) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("trigger", trigger);
+
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "HOME_REFRESH");
+        message.put("timestamp", System.currentTimeMillis());
+        message.put("data", data);
+
+        messagingTemplate.convertAndSend("/topic/home", message);
+        log.debug("HOME_REFRESH 已广播: trigger={}", trigger);
+    }
 }

@@ -74,6 +74,7 @@ public class InspectionRecordServiceImpl
         );
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "已报工", extra);
+        lineBroadcaster.broadcastHomeRefresh("inspection");
 
         return record;
     }
@@ -125,6 +126,7 @@ public class InspectionRecordServiceImpl
         updateById(record);
 
         lineBroadcaster.broadcastInspectionUpdate(record);
+        lineBroadcaster.broadcastHomeRefresh("inspection");
 
         return record;
     }

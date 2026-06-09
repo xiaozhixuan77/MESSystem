@@ -14,6 +14,11 @@ export struct InspectorHomeView {
 
   aboutToAppear(): void {
     this.vm.loadHomeData();
+    this.vm.subscribeHome();
+  }
+
+  aboutToDisappear(): void {
+    this.vm.unsubscribeHome();
   }
 
   navigateTo(tab: string, page: string, params: Record<string, Object>): void {

@@ -43,6 +43,7 @@ public class ProductionExceptionServiceImpl
         workOrderService.pause(workOrderId, description);
 
         lineBroadcaster.broadcastExceptionReported(ex);
+        lineBroadcaster.broadcastHomeRefresh("exception");
 
         return ex;
     }
@@ -76,6 +77,7 @@ public class ProductionExceptionServiceImpl
         }
 
         lineBroadcaster.broadcastExceptionHandled(ex);
+        lineBroadcaster.broadcastHomeRefresh("exception");
 
         return ex;
     }

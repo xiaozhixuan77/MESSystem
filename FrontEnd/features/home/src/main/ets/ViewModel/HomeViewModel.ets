@@ -1,4 +1,4 @@
-import { HomeApi } from '@ohos/network';
+import { HomeApi, WebSocketService } from '@ohos/network';
 import {
   HomeSummaryModel,
   ExceptionItemModel,
@@ -107,6 +107,51 @@ export class HomeViewModel {
     item.reportedQtyGood = (t['reportedQtyGood'] as number) ?? 0;
     item.reportedQtyNg = (t['reportedQtyNg'] as number) ?? 0;
     return item;
+  }
+
+  private subscribed: boolean = false;
+  private debounceTimer: number = -1;
+  private readonly DEBOUNCE_MS: number = 1000;
+  private readonly HOME_TOPIC: string = '/topic/home';
+
+  private onHomeRefresh = (msg: Object): void => {
+    console.info('[HomeVM] /topic/home 收到刷新信号');
+    this.debouncedReload();
+  };
+
+  private debouncedReload(): void {
+    if (this.debounceTimer !== -1) {
+      clearTimeout(this.debounceTimer);
+    }
+    this.debounceTimer = setTimeout(() => {
+      this.debounceTimer = -1;
+      this.loadHomeData();
+    }, this.DEBOUNCE_MS);
+  }
+
+  subscribeHome(): void {
+    if (this.subscribed) {
+      return;
+    }
+    this.subscribed = true;
+    const ws = WebSocketService.getInstance();
+    ws.subscribe(this.HOME_TOPIC);
+    WebSocketService.addListener(this.HOME_TOPIC, this.onHomeRefresh);
+    console.info('[HomeVM] 已订阅 /topic/home');
+  }
+
+  unsubscribeHome(): void {
+    if (!this.subscribed) {
+      return;
+    }
+    this.subscribed = false;
+    WebSocketService.removeListener(this.HOME_TOPIC, this.onHomeRefresh);
+    WebSocketService.getInstance().unsubscribe(this.HOME_TOPIC);
+    if (this.debounceTimer !== -1) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = -1;
+    }
+    console.info('[HomeVM] 已取消订阅 /topic/home');
   }
 
   get hasPendingExceptions(): boolean {

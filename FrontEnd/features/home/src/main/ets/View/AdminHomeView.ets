@@ -13,6 +13,11 @@ export struct AdminHomeView {
 
   aboutToAppear(): void {
     this.vm.loadHomeData();
+    this.vm.subscribeHome();
+  }
+
+  aboutToDisappear(): void {
+    this.vm.unsubscribeHome();
   }
 
   get totalLines(): string {

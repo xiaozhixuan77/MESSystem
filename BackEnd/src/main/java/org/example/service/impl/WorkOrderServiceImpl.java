@@ -152,6 +152,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             public void afterCommit() {
                 lineBroadcaster.broadcastWorkOrderUpdate(copyLineId, copyWoId, copyWoCode,
                         "待派工", null);
+                lineBroadcaster.broadcastHomeRefresh("workorder");
             }
         });
 
@@ -238,6 +239,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             public void afterCommit() {
                 lineBroadcaster.broadcastWorkOrderUpdate(updateLineId, updateWoId, updateWoCode,
                         "待派工", null);
+                lineBroadcaster.broadcastHomeRefresh("workorder");
             }
         });
 
@@ -277,6 +279,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "已派工", Map.of("operatorId", operatorId));
+        lineBroadcaster.broadcastHomeRefresh("workorder");
     }
 
     @Override
@@ -333,6 +336,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "生产中", null);
+        lineBroadcaster.broadcastHomeRefresh("workorder");
     }
 
     @Override
@@ -360,6 +364,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "生产完成", null);
+        lineBroadcaster.broadcastHomeRefresh("workorder");
 
         ProductionLine line = productionLineService.lambdaQuery()
                 .eq(ProductionLine::getId, wo.getLineId())
@@ -397,6 +402,10 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         wo.setStatus("生产完成");
         wo.setActualEndTime(LocalDateTime.now());
         updateById(wo);
+
+        lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
+                "生产完成", null);
+        lineBroadcaster.broadcastHomeRefresh("workorder");
 
         ProductionLine line = productionLineService.lambdaQuery()
                 .eq(ProductionLine::getId, wo.getLineId())
@@ -445,6 +454,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "暂停中", null);
+        lineBroadcaster.broadcastHomeRefresh("workorder");
     }
 
     @Override
@@ -478,6 +488,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "生产中", null);
+        lineBroadcaster.broadcastHomeRefresh("workorder");
     }
 
     @Override
@@ -510,6 +521,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "已报工", Map.of("good", request.getGood(), "ng", request.getNg(),
                         "hours", request.getHours()));
+        lineBroadcaster.broadcastHomeRefresh("workorder");
 
         InspectionRecord pending = new InspectionRecord();
         pending.setWorkOrderId(workOrderId);
@@ -555,6 +567,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "完工", null);
+        lineBroadcaster.broadcastHomeRefresh("workorder");
     }
 
     @Override
@@ -593,6 +606,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
                 "报废", reason != null ? Map.of("reason", reason) : null);
+        lineBroadcaster.broadcastHomeRefresh("workorder");
     }
 
     @Override
@@ -670,6 +684,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             public void afterCommit() {
                 lineBroadcaster.broadcastWorkOrderUpdate(createLineId, createWoId, createWoCode,
                         "待派工", null);
+                lineBroadcaster.broadcastHomeRefresh("workorder");
             }
         });
 
