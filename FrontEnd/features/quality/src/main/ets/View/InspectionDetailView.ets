@@ -64,6 +64,22 @@ export struct InspectionDetailView {
       promptAction.showToast({ message: '良品数+不良品数必须等于抽检数量' });
       return false;
     }
+    if (this.sampleNg > 0) {
+      let defectTotal: number = 0;
+      for (const d of this.defectStates) {
+        if (d.selected && d.count > 0) {
+          defectTotal += d.count;
+        }
+      }
+      if (defectTotal === 0) {
+        promptAction.showToast({ message: '存在不良品时，请至少选择一项不良类型' });
+        return false;
+      }
+      if (defectTotal !== this.sampleNg) {
+        promptAction.showToast({ message: `不良类型数量之和(${defectTotal})必须等于不良品数(${this.sampleNg})` });
+        return false;
+      }
+    }
     return true;
   }
 
