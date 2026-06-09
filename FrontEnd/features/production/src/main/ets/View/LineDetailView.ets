@@ -156,7 +156,8 @@ export struct LineDetailView {
       return;
     }
     this.viewModel.showExceptionDialog = false;
-    const ok = await this.viewModel.reportException(this.lineId, desc);
+    const woId = this.viewModel.lineDetail.activeWorkOrder?.id ?? 0;
+    const ok = await this.viewModel.reportException(this.lineId, woId, desc);
     if (ok) {
       this.showToast('异常已上报');
       await this.viewModel.loadLineDetail(this.lineId);

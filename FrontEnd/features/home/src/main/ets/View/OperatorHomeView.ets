@@ -14,6 +14,7 @@ class OperatorTaskItem {
 @ComponentV2
 export struct OperatorHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
   @Local currentTaskTitle: string = '控制器主板组装 - SMT贴片工序';
   @Local currentTaskCode: string = 'WO-2024-0116';
@@ -147,7 +148,31 @@ export struct OperatorHomeView {
           // 快捷操作
           Row({ space: 10 }) {
             this.ActionButton($r('app.media.icon_activity_blue'), '报工');
-            this.ActionButton($r('app.media.icon_alert_blue'), '异常上报');
+            Column() {
+              Column() {
+                Image($r('app.media.icon_alert_red')).width(14).height(14);
+              }
+              .width(28).height(28)
+              .backgroundColor('rgba(255,255,255,0.95)')
+              .borderRadius(8)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center);
+
+              Text('异常上报')
+                .fontSize(11)
+                .fontColor(Color.White)
+                .fontWeight(500)
+                .margin({ top: 6 });
+            }
+            .alignItems(HorizontalAlign.Center)
+            .padding({ top: 14, bottom: 14, left: 8, right: 8 })
+            .backgroundColor('rgba(255,255,255,0.1)')
+            .borderRadius(12)
+            .layoutWeight(1)
+            .onClick(() => {
+              this.activeTab = 'DataTab';
+              this.pageStack.replacePath({ name: 'DataTab' });
+            })
             this.ActionButton($r('app.media.icon_stop_blue'), 'SOP查看');
           }
           .width('100%')

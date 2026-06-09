@@ -1,6 +1,10 @@
 export { InspectionListView } from './src/main/ets/View/InspectionListView';
 export { InspectionDetailView } from './src/main/ets/View/InspectionDetailView';
 export { DashboardView } from './src/main/ets/View/DashboardView';
+export { ExceptionListView } from './src/main/ets/View/ExceptionListView';
+export { ExceptionDetailView } from './src/main/ets/View/ExceptionDetailView';
 export { QualityViewModel } from './src/main/ets/ViewModel/QualityViewModel';
+export { ExceptionViewModel } from './src/main/ets/ViewModel/ExceptionViewModel';
 export { InspectionModel } from './src/main/ets/Model/InspectionModel';
 export { DashboardModel, DailyRateModel, TopDefectModel } from './src/main/ets/Model/DashboardModel';
+export { ExceptionModel } from './src/main/ets/Model/ExceptionModel';

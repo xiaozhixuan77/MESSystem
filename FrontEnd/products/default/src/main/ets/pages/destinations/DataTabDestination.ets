@@ -1,5 +1,5 @@
 import { LineListView, LineDetailView, StationDetailView, ProductionViewModel } from '@ohos/production';
-import { InspectionListView, InspectionDetailView, DashboardView } from '@ohos/quality';
+import { InspectionListView, InspectionDetailView, DashboardView, ExceptionListView, ExceptionDetailView } from '@ohos/quality';
 
 @ComponentV2
 export struct DataTabDestination {
@@ -30,6 +30,10 @@ export struct DataTabDestination {
         InspectionDetailView()
       } else if (name === 'Dashboard') {
         DashboardView()
+      } else if (name === 'ExceptionList') {
+        ExceptionListView()
+      } else if (name === 'ExceptionDetail') {
+        ExceptionDetailView()
       }
     }
     .hideTitleBar(true)
@@ -88,6 +92,21 @@ export struct DataTabDestination {
         if (this.currentView !== 'Dashboard') {
           this.currentView = 'Dashboard';
           this.dataStack.replacePathByName('Dashboard', undefined);
+        }
+      });
+
+      Row() {
+        Text('异常')
+          .fontSize(14).fontWeight(this.currentView === 'ExceptionList' ? 600 : 400)
+          .fontColor(this.currentView === 'ExceptionList' ? Color.White : '#5A5A6E')
+          .padding({ left: 16, right: 16, top: 6, bottom: 6 });
+      }
+      .borderRadius(8)
+      .backgroundColor(this.currentView === 'ExceptionList' ? '#1565C0' : Color.Transparent)
+      .onClick(() => {
+        if (this.currentView !== 'ExceptionList') {
+          this.currentView = 'ExceptionList';
+          this.dataStack.replacePathByName('ExceptionList', undefined);
         }
       });
     }

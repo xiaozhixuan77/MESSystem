@@ -1,4 +1,4 @@
-import { LineApi } from '@ohos/network';
+import { LineApi, ExceptionApi } from '@ohos/network';
 import { WebSocketService } from '@ohos/network';
 import { LineModel } from '../Model/LineModel';
 import { StationModel } from '../Model/StationModel';
@@ -178,11 +178,12 @@ export class ProductionViewModel {
     }
   }
 
-  async reportException(lineId: number, description: string): Promise<boolean> {
+  async reportException(lineId: number, workOrderId: number,
+                        description: string, stationId?: number): Promise<boolean> {
     this.isSubmitting = true;
     this.errorMessage = '';
     try {
-      await LineApi.reportException(lineId, description);
+      await ExceptionApi.reportException(workOrderId, lineId, description, stationId);
       const line = this.lines.find(l => l.id === lineId);
       if (line) {
         line.status = '异常';

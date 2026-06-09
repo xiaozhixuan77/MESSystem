@@ -1,4 +1,4 @@
-import { WebSocketService } from '@ohos/network';
+import { WebSocketService, ExceptionApi } from '@ohos/network';
 import { LineApi } from '@ohos/network';
 import { StationModel } from '../Model/StationModel';
 import { promptAction } from '@kit.ArkUI';
@@ -11,6 +11,7 @@ export struct StationDetailView {
   @Local station: StationModel = new StationModel();
   @Local lineName: string = '';
   @Local isLoading: boolean = true;
+  @Local workOrderId: number = 0;
   @Local showExceptionDialog: boolean = false;
   @Local exceptionDescription: string = '';
 
@@ -33,6 +34,11 @@ export struct StationDetailView {
     try {
       const data = await LineApi.getLineDetail(this.lineId) as Record<string, Object>;
       this.lineName = data['name'] as string ?? '';
+
+      const woRaw = data['activeWorkOrder'] as Record<string, Object> | null;
+      if (woRaw) {
+        this.workOrderId = woRaw['id'] as number ?? 0;
+      }
 
       const stationsRaw = data['stations'] as Object[];
       if (stationsRaw) {
@@ -143,9 +149,17 @@ export struct StationDetailView {
             .borderRadius(8).layoutWeight(1)
             .enabled(this.exceptionDescription.trim().length > 0)
             .opacity(this.exceptionDescription.trim().length > 0 ? 1.0 : 0.4)
-            .onClick(() => {
+            .onClick(async () => {
               this.showExceptionDialog = false;
-              this.showToast('异常已上报');
+              const desc = this.exceptionDescription.trim();
+              if (desc.length === 0) { return; }
+              try {
+                await ExceptionApi.reportException(
+                  this.workOrderId, this.lineId, desc, this.stationId);
+                this.showToast('异常已上报');
+              } catch (_e) {
+                this.showToast('异常上报失败');
+              }
             });
         }
         .width('100%').margin({ top: 16 });
