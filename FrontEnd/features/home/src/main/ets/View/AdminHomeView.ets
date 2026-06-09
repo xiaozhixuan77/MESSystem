@@ -1,6 +1,6 @@
 import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
-import { ExceptionItemModel } from '../Model/HomeSummaryModel';
+import { HomeSummaryModel, ExceptionItemModel } from '../Model/HomeSummaryModel';
 import { DeepLinkInfo } from '@ohos/utils';
 
 @ComponentV2
@@ -9,64 +9,32 @@ export struct AdminHomeView {
   @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
   @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
-  @Local vm: HomeViewModel = new HomeViewModel();
+  @Local summary: HomeSummaryModel | null = null;
+  private vm: HomeViewModel = new HomeViewModel();
 
   aboutToAppear(): void {
-    this.vm.loadHomeData();
-    this.vm.subscribeHome();
+    this.vm.subscribeHome(() => {
+      this.vm.loadHomeData().then((data) => {
+        if (data) {
+          this.summary = data;
+        }
+      });
+    });
+    this.vm.loadHomeData().then((data) => {
+      if (data) {
+        this.summary = data;
+      }
+    });
   }
 
   aboutToDisappear(): void {
     this.vm.unsubscribeHome();
   }
 
-  get totalLines(): string {
-    return this.vm.summary ? `${this.vm.summary.totalLineCount}` : '0';
-  }
-
-  get totalUsers(): string {
-    return this.vm.summary ? `${this.vm.summary.totalUserCount}` : '0';
-  }
-
-  get activeOrders(): string {
-    return this.vm.summary ? `${this.vm.summary.activeWorkOrderCount}` : '0';
-  }
-
-  get pendingExceptions(): string {
-    return this.vm.summary ? `${this.vm.summary.pendingExceptionCount}` : '0';
-  }
-
   navigateTo(tab: string, page: string, params: Record<string, Object>): void {
     this.deepLink = { targetTab: tab, targetPage: page, params: params };
     this.activeTab = tab;
     this.pageStack.replacePath({ name: tab });
-  }
-
-  @Builder
-  KpiCard(icon: ResourceStr, label: string, value: string, trend: string, valueColor: ResourceColor) {
-    Column() {
-      Row({ space: 6 }) {
-        Column() {
-          Image(icon).width(14).height(14);
-        }
-        .width(28).height(28)
-        .backgroundColor('rgba(255,255,255,0.2)')
-        .borderRadius(8)
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center);
-
-        Text(label).fontSize(11).fontColor('rgba(255,255,255,0.85)');
-      }
-      .margin({ bottom: 8 });
-
-      Text(value).fontSize(26).fontWeight(700).fontColor(valueColor);
-      Text(trend).fontSize(10).fontColor('rgba(255,255,255,0.7)').margin({ top: 2 });
-    }
-    .padding({ top: 16, bottom: 16, left: 12, right: 12 })
-    .backgroundColor('rgba(255,255,255,0.12)')
-    .borderRadius(12)
-    .alignItems(HorizontalAlign.Start)
-    .layoutWeight(1);
   }
 
   @Builder
@@ -120,21 +88,106 @@ export struct AdminHomeView {
 
         // 2×2 KPI Grid
         Row({ space: 10 }) {
-          this.KpiCard($r('app.media.icon_dashboard_white'), '产线总数', this.totalLines,
-            `${this.vm.summary?.totalLineCount || 0}条产线`, Color.White);
-          this.KpiCard($r('app.media.icon_person_white'), '人员总数', this.totalUsers,
-            `${this.vm.summary?.totalUserCount || 0}人`, Color.White);
+          Column() {
+            Row({ space: 6 }) {
+              Column() {
+                Image($r('app.media.icon_dashboard_white')).width(14).height(14);
+              }
+              .width(28).height(28)
+              .backgroundColor('rgba(255,255,255,0.2)')
+              .borderRadius(8)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center);
+              Text('产线总数').fontSize(11).fontColor('rgba(255,255,255,0.85)');
+            }
+            .margin({ bottom: 8 });
+            Text(`${this.summary?.totalLineCount ?? 0}`)
+              .fontSize(26).fontWeight(700).fontColor(Color.White);
+            Text(`${this.summary?.totalLineCount ?? 0}条产线`)
+              .fontSize(10).fontColor('rgba(255,255,255,0.7)').margin({ top: 2 });
+          }
+          .padding({ top: 16, bottom: 16, left: 12, right: 12 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .alignItems(HorizontalAlign.Start)
+          .layoutWeight(1);
+
+          Column() {
+            Row({ space: 6 }) {
+              Column() {
+                Image($r('app.media.icon_person_white')).width(14).height(14);
+              }
+              .width(28).height(28)
+              .backgroundColor('rgba(255,255,255,0.2)')
+              .borderRadius(8)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center);
+              Text('人员总数').fontSize(11).fontColor('rgba(255,255,255,0.85)');
+            }
+            .margin({ bottom: 8 });
+            Text(`${this.summary?.totalUserCount ?? 0}`)
+              .fontSize(26).fontWeight(700).fontColor(Color.White);
+            Text(`${this.summary?.totalUserCount ?? 0}人`)
+              .fontSize(10).fontColor('rgba(255,255,255,0.7)').margin({ top: 2 });
+          }
+          .padding({ top: 16, bottom: 16, left: 12, right: 12 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .alignItems(HorizontalAlign.Start)
+          .layoutWeight(1);
         }
         .width('100%')
         .margin({ bottom: 10 });
 
         Row({ space: 10 }) {
-          this.KpiCard($r('app.media.icon_document_white'), '活跃工单', this.activeOrders,
-            `${this.vm.summary?.pendingDispatchCount || 0}待派工`, Color.White);
-          this.KpiCard($r('app.media.icon_alert_white'), '待处理异常', this.pendingExceptions,
-            this.vm.summary?.pendingExceptionCount !== undefined && this.vm.summary.pendingExceptionCount > 0 ?
-              '需关注' : '无异常', this.vm.summary?.pendingExceptionCount !== undefined && this.vm.summary.pendingExceptionCount > 0 ?
-              '#FF8A80' : Color.White);
+          Column() {
+            Row({ space: 6 }) {
+              Column() {
+                Image($r('app.media.icon_document_white')).width(14).height(14);
+              }
+              .width(28).height(28)
+              .backgroundColor('rgba(255,255,255,0.2)')
+              .borderRadius(8)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center);
+              Text('活跃工单').fontSize(11).fontColor('rgba(255,255,255,0.85)');
+            }
+            .margin({ bottom: 8 });
+            Text(`${this.summary?.activeWorkOrderCount ?? 0}`)
+              .fontSize(26).fontWeight(700).fontColor(Color.White);
+            Text(`${this.summary?.pendingDispatchCount ?? 0}待派工`)
+              .fontSize(10).fontColor('rgba(255,255,255,0.7)').margin({ top: 2 });
+          }
+          .padding({ top: 16, bottom: 16, left: 12, right: 12 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .alignItems(HorizontalAlign.Start)
+          .layoutWeight(1);
+
+          Column() {
+            Row({ space: 6 }) {
+              Column() {
+                Image($r('app.media.icon_alert_white')).width(14).height(14);
+              }
+              .width(28).height(28)
+              .backgroundColor('rgba(255,255,255,0.2)')
+              .borderRadius(8)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center);
+              Text('待处理异常').fontSize(11).fontColor('rgba(255,255,255,0.85)');
+            }
+            .margin({ bottom: 8 });
+            Text(`${this.summary?.pendingExceptionCount ?? 0}`)
+              .fontSize(26).fontWeight(700)
+              .fontColor((this.summary?.pendingExceptionCount ?? 0) > 0 ? '#FF8A80' : Color.White);
+            Text((this.summary?.pendingExceptionCount ?? 0) > 0 ? '需关注' : '无异常')
+              .fontSize(10).fontColor('rgba(255,255,255,0.7)').margin({ top: 2 });
+          }
+          .padding({ top: 16, bottom: 16, left: 12, right: 12 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .alignItems(HorizontalAlign.Start)
+          .layoutWeight(1);
         }
         .width('100%')
         .margin({ bottom: 16 });
@@ -249,8 +302,8 @@ export struct AdminHomeView {
               .justifyContent(FlexAlign.SpaceBetween)
               .margin({ bottom: 12 });
 
-              if (this.vm.summary !== null && this.vm.summary.recentExceptions.length > 0) {
-                ForEach(this.vm.summary.recentExceptions, (ex: ExceptionItemModel) => {
+              if (this.summary !== null && this.summary.recentExceptions.length > 0) {
+                ForEach(this.summary.recentExceptions, (ex: ExceptionItemModel) => {
                   Row({ space: 12 }) {
                     Column() {
                       Image($r('app.media.icon_alert_red')).width(20).height(20);

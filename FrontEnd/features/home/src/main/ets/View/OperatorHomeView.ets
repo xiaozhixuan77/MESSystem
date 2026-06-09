@@ -1,6 +1,6 @@
 import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
-import { TaskItemModel } from '../Model/HomeSummaryModel';
+import { HomeSummaryModel, TaskItemModel } from '../Model/HomeSummaryModel';
 import { DeepLinkInfo } from '@ohos/utils';
 import { promptAction } from '@kit.ArkUI';
 
@@ -10,11 +10,22 @@ export struct OperatorHomeView {
   @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
   @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
-  @Local vm: HomeViewModel = new HomeViewModel();
+  @Local summary: HomeSummaryModel | null = null;
+  private vm: HomeViewModel = new HomeViewModel();
 
   aboutToAppear(): void {
-    this.vm.loadHomeData();
-    this.vm.subscribeHome();
+    this.vm.subscribeHome(() => {
+      this.vm.loadHomeData().then((data) => {
+        if (data) {
+          this.summary = data;
+        }
+      });
+    });
+    this.vm.loadHomeData().then((data) => {
+      if (data) {
+        this.summary = data;
+      }
+    });
   }
 
   aboutToDisappear(): void {
@@ -25,32 +36,6 @@ export struct OperatorHomeView {
     this.deepLink = { targetTab: tab, targetPage: page, params: params };
     this.activeTab = tab;
     this.pageStack.replacePath({ name: tab });
-  }
-
-  get activeTaskCode(): string {
-    if (this.vm.summary?.operatorActiveTask) {
-      return this.vm.summary.operatorActiveTask.code;
-    }
-    return '—';
-  }
-
-  get activeTaskTitle(): string {
-    if (this.vm.summary?.operatorActiveTask) {
-      const t = this.vm.summary.operatorActiveTask;
-      return `${t.type || ''} ${t.code || ''}`;
-    }
-    return '暂无进行中任务';
-  }
-
-  get activeTaskProgress(): number {
-    if (this.vm.summary?.operatorActiveTask) {
-      const t = this.vm.summary.operatorActiveTask;
-      if (t.planQty > 0) {
-        const done = (t.reportedQtyGood || 0) + (t.reportedQtyNg || 0);
-        return Math.round(done / t.planQty * 100);
-      }
-    }
-    return 0;
   }
 
   @Builder
@@ -107,31 +92,36 @@ export struct OperatorHomeView {
           Row() {
             Row() {
               Circle().width(8).height(8)
-                .fill(this.vm.summary?.operatorActiveTask ? '#81C784' : '#9A9AA8');
-              Text(this.vm.summary?.operatorActiveTask ? '进行中' : '待机')
+                .fill(this.summary?.operatorActiveTask ? '#81C784' : '#9A9AA8');
+              Text(this.summary?.operatorActiveTask ? '进行中' : '待机')
                 .fontSize(11).fontWeight(500)
-                .fontColor(this.vm.summary?.operatorActiveTask ? '#81C784' : '#9A9AA8');
+                .fontColor(this.summary?.operatorActiveTask ? '#81C784' : '#9A9AA8');
             }
             .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-            .backgroundColor(this.vm.summary?.operatorActiveTask ?
+            .backgroundColor(this.summary?.operatorActiveTask ?
               'rgba(76,175,80,0.2)' : 'rgba(158,158,158,0.15)')
             .borderRadius(12);
 
-            Text(this.activeTaskCode)
+            Text(this.summary?.operatorActiveTask?.code || '—')
               .fontSize(12).fontColor('rgba(255,255,255,0.7)');
           }
           .width('100%')
           .justifyContent(FlexAlign.SpaceBetween)
           .margin({ bottom: 12 });
 
-          Text(this.activeTaskTitle)
+          Text(this.summary?.operatorActiveTask
+            ? `${this.summary.operatorActiveTask.type || ''} ${this.summary.operatorActiveTask.code || ''}`
+            : '暂无进行中任务')
             .fontSize(15).fontWeight(600).fontColor(Color.White)
             .margin({ bottom: 12 });
 
           Row({ space: 10 }) {
             Row() {
               Row()
-                .width(`${this.activeTaskProgress}%`)
+                .width(`${this.summary?.operatorActiveTask && this.summary.operatorActiveTask.planQty > 0
+                  ? Math.round(((this.summary.operatorActiveTask.reportedQtyGood || 0) +
+                    (this.summary.operatorActiveTask.reportedQtyNg || 0)) /
+                    this.summary.operatorActiveTask.planQty * 100) : 0}%`)
                 .height(6)
                 .borderRadius(3)
                 .backgroundColor('#4CAF50');
@@ -142,7 +132,10 @@ export struct OperatorHomeView {
             .borderRadius(3)
             .layoutWeight(1);
 
-            Text(`${this.activeTaskProgress}%`)
+            Text(`${this.summary?.operatorActiveTask && this.summary.operatorActiveTask.planQty > 0
+              ? Math.round(((this.summary.operatorActiveTask.reportedQtyGood || 0) +
+                (this.summary.operatorActiveTask.reportedQtyNg || 0)) /
+                this.summary.operatorActiveTask.planQty * 100) : 0}%`)
               .fontSize(13).fontWeight(600).fontColor(Color.White);
           }
           .width('100%');
@@ -153,7 +146,7 @@ export struct OperatorHomeView {
         .border({ width: 1, color: 'rgba(255,255,255,0.15)' })
         .width('100%')
         .onClick(() => {
-          const t = this.vm.summary?.operatorActiveTask;
+          const t = this.summary?.operatorActiveTask;
           if (t) {
             this.navigateTo('WorkOrderTab', 'RunningDetail', { 'workOrderId': t.id });
           }
@@ -261,8 +254,8 @@ export struct OperatorHomeView {
               .justifyContent(FlexAlign.SpaceBetween)
               .margin({ bottom: 12 });
 
-              if (this.vm.summary !== null) {
-                ForEach(this.vm.summary.operatorPendingStartTasks, (t: TaskItemModel) => {
+              if (this.summary !== null) {
+                ForEach(this.summary.operatorPendingStartTasks, (t: TaskItemModel) => {
                   Column() {
                     Row() {
                       Text('待执行')
@@ -305,7 +298,7 @@ export struct OperatorHomeView {
                   });
                 }, (t: TaskItemModel) => `start_${t.id}`);
 
-                ForEach(this.vm.summary.operatorPendingReportTasks, (t: TaskItemModel) => {
+                ForEach(this.summary.operatorPendingReportTasks, (t: TaskItemModel) => {
                   Column() {
                     Row() {
                       Text('待报工')
@@ -349,9 +342,9 @@ export struct OperatorHomeView {
               }, (t: TaskItemModel) => `report_${t.id}`);
               }
 
-              if (this.vm.summary !== null &&
-                  this.vm.summary.operatorPendingStartTasks.length === 0 &&
-                  this.vm.summary.operatorPendingReportTasks.length === 0) {
+              if (this.summary !== null &&
+                  this.summary.operatorPendingStartTasks.length === 0 &&
+                  this.summary.operatorPendingReportTasks.length === 0) {
                 Text('暂无待处理任务')
                   .fontSize(13).fontColor('#9A9AA8')
                   .padding(16).width('100%').textAlign(TextAlign.Center);

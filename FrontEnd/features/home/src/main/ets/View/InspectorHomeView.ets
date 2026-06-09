@@ -1,6 +1,6 @@
 import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
-import { InspectionItemModel } from '../Model/HomeSummaryModel';
+import { HomeSummaryModel, InspectionItemModel } from '../Model/HomeSummaryModel';
 import { DeepLinkInfo, FormatUtil } from '@ohos/utils';
 import { promptAction } from '@kit.ArkUI';
 
@@ -10,11 +10,22 @@ export struct InspectorHomeView {
   @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
   @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
-  @Local vm: HomeViewModel = new HomeViewModel();
+  @Local summary: HomeSummaryModel | null = null;
+  private vm: HomeViewModel = new HomeViewModel();
 
   aboutToAppear(): void {
-    this.vm.loadHomeData();
-    this.vm.subscribeHome();
+    this.vm.subscribeHome(() => {
+      this.vm.loadHomeData().then((data) => {
+        if (data) {
+          this.summary = data;
+        }
+      });
+    });
+    this.vm.loadHomeData().then((data) => {
+      if (data) {
+        this.summary = data;
+      }
+    });
   }
 
   aboutToDisappear(): void {
@@ -25,31 +36,6 @@ export struct InspectorHomeView {
     this.deepLink = { targetTab: tab, targetPage: page, params: params };
     this.activeTab = tab;
     this.pageStack.replacePath({ name: tab });
-  }
-
-  get pendingCount(): string {
-    return this.vm.summary ? `${this.vm.summary.pendingInspectionCount}` : '0';
-  }
-
-  get todayDone(): string {
-    return this.vm.summary ? `${this.vm.summary.todayInspectionDone}` : '0';
-  }
-
-  get passRate(): string {
-    return this.vm.summary ? FormatUtil.formatPercent(this.vm.summary.todayInspectionPassRate) : '0%';
-  }
-
-  @Builder
-  KpiCard(value: string, label: string) {
-    Column() {
-      Text(value).fontSize(22).fontWeight(700).fontColor(Color.White).margin({ bottom: 2 });
-      Text(label).fontSize(10).fontColor('rgba(255,255,255,0.8)');
-    }
-    .padding({ top: 14, bottom: 14, left: 8, right: 8 })
-    .backgroundColor('rgba(255,255,255,0.12)')
-    .borderRadius(12)
-    .alignItems(HorizontalAlign.Center)
-    .layoutWeight(1);
   }
 
   @Builder
@@ -106,12 +92,48 @@ export struct InspectorHomeView {
 
         // KPI 指标
         Row({ space: 10 }) {
-          this.KpiCard(this.pendingCount, '待抽检');
-          this.KpiCard(this.todayDone, '今日完成');
-          this.KpiCard(this.passRate, '合格率');
+          Column() {
+            Text(`${this.summary?.pendingInspectionCount ?? 0}`)
+              .fontSize(22).fontWeight(700).fontColor(Color.White).margin({ bottom: 2 });
+            Text('待抽检').fontSize(10).fontColor('rgba(255,255,255,0.8)');
+          }
+          .padding({ top: 14, bottom: 14, left: 8, right: 8 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .alignItems(HorizontalAlign.Center)
+          .layoutWeight(1);
+
+          Column() {
+            Text(`${this.summary?.todayInspectionDone ?? 0}`)
+              .fontSize(22).fontWeight(700).fontColor(Color.White).margin({ bottom: 2 });
+            Text('今日完成').fontSize(10).fontColor('rgba(255,255,255,0.8)');
+          }
+          .padding({ top: 14, bottom: 14, left: 8, right: 8 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .alignItems(HorizontalAlign.Center)
+          .layoutWeight(1);
+
+          Column() {
+            Text(this.summary !== null
+              ? FormatUtil.formatPercent(this.summary.todayInspectionPassRate) : '0%')
+              .fontSize(22).fontWeight(700).fontColor(Color.White).margin({ bottom: 2 });
+            Text('合格率').fontSize(10).fontColor('rgba(255,255,255,0.8)');
+          }
+          .padding({ top: 14, bottom: 14, left: 8, right: 8 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .alignItems(HorizontalAlign.Center)
+          .layoutWeight(1);
         }
         .width('100%')
-        .margin({ bottom: 16 });
+        .margin({ bottom: 16 })
+        .onAppear(() => {
+          console.info('[test:InspectorHomeView] KPI行渲染',
+            `pendingInspectionCount=${this.summary?.pendingInspectionCount}`,
+            `todayInspectionDone=${this.summary?.todayInspectionDone}`,
+            `todayInspectionPassRate=${this.summary?.todayInspectionPassRate}`);
+        });
 
         // 快捷入口
         Row({ space: 8 }) {
@@ -224,8 +246,8 @@ export struct InspectorHomeView {
               .justifyContent(FlexAlign.SpaceBetween)
               .margin({ bottom: 12 });
 
-              if (this.vm.summary !== null) {
-                ForEach(this.vm.summary.pendingInspectionItems, (item: InspectionItemModel) => {
+              if (this.summary !== null) {
+                ForEach(this.summary.pendingInspectionItems, (item: InspectionItemModel) => {
                   Column() {
                     Row() {
                       Text('待抽检')
@@ -274,8 +296,8 @@ export struct InspectorHomeView {
                 }, (item: InspectionItemModel) => `insp_${item.id}`);
               }
 
-              if (this.vm.summary !== null &&
-                  this.vm.summary.pendingInspectionItems.length === 0) {
+              if (this.summary !== null &&
+                  this.summary.pendingInspectionItems.length === 0) {
                 Text('暂无待抽检工单')
                   .fontSize(13).fontColor('#9A9AA8')
                   .padding(16).width('100%').textAlign(TextAlign.Center);

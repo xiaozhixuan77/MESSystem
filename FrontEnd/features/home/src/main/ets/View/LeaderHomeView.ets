@@ -1,6 +1,6 @@
 import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
-import { ExceptionItemModel, DispatchItemModel } from '../Model/HomeSummaryModel';
+import { HomeSummaryModel, ExceptionItemModel, DispatchItemModel } from '../Model/HomeSummaryModel';
 import { DeepLinkInfo } from '@ohos/utils';
 
 @ComponentV2
@@ -9,11 +9,22 @@ export struct LeaderHomeView {
   @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
   @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
-  @Local vm: HomeViewModel = new HomeViewModel();
+  @Local summary: HomeSummaryModel | null = null;
+  private vm: HomeViewModel = new HomeViewModel();
 
   aboutToAppear(): void {
-    this.vm.loadHomeData();
-    this.vm.subscribeHome();
+    this.vm.subscribeHome(() => {
+      this.vm.loadHomeData().then((data) => {
+        if (data) {
+          this.summary = data;
+        }
+      });
+    });
+    this.vm.loadHomeData().then((data) => {
+      if (data) {
+        this.summary = data;
+      }
+    });
   }
 
   aboutToDisappear(): void {
@@ -188,8 +199,8 @@ export struct LeaderHomeView {
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 12 });
 
-            if (this.vm.summary !== null) {
-              ForEach(this.vm.summary.recentExceptions, (ex: ExceptionItemModel) => {
+            if (this.summary !== null) {
+              ForEach(this.summary.recentExceptions, (ex: ExceptionItemModel) => {
                 Column() {
                   Row() {
                     Row() {
@@ -238,7 +249,7 @@ export struct LeaderHomeView {
                 });
               }, (ex: ExceptionItemModel) => `ex_${ex.id}`);
 
-              ForEach(this.vm.summary.pendingDispatchItems, (wo: DispatchItemModel) => {
+              ForEach(this.summary.pendingDispatchItems, (wo: DispatchItemModel) => {
                 Column() {
                   Row() {
                     Row() {
@@ -284,9 +295,9 @@ export struct LeaderHomeView {
               }, (wo: DispatchItemModel) => `dp_${wo.id}`);
             }
 
-            if (this.vm.summary !== null &&
-                this.vm.summary.recentExceptions.length === 0 &&
-                this.vm.summary.pendingDispatchItems.length === 0) {
+            if (this.summary !== null &&
+                this.summary.recentExceptions.length === 0 &&
+                this.summary.pendingDispatchItems.length === 0) {
               Text('暂无待办事项')
                 .fontSize(13).fontColor('#9A9AA8')
                 .padding(16).width('100%').textAlign(TextAlign.Center);

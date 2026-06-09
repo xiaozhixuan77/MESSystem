@@ -7,20 +7,21 @@ import {
   TaskItemModel
 } from '../Model/HomeSummaryModel';
 
-@ObservedV2
 export class HomeViewModel {
-  @Trace isLoading: boolean = false;
-  @Trace errorMessage: string = '';
-  @Trace summary: HomeSummaryModel | null = null;
+  isLoading: boolean = false;
+  errorMessage: string = '';
+  summary: HomeSummaryModel | null = null;
 
-  async loadHomeData(): Promise<void> {
+  async loadHomeData(): Promise<HomeSummaryModel | null> {
     this.isLoading = true;
     this.errorMessage = '';
     try {
       const raw = await HomeApi.getSummary() as Record<string, Object>;
       this.summary = this.parseSummary(raw);
+      return this.summary;
     } catch (e) {
       this.errorMessage = (e as Error).message || '加载失败';
+      return null;
     } finally {
       this.isLoading = false;
     }
@@ -113,27 +114,14 @@ export class HomeViewModel {
   private debounceTimer: number = -1;
   private readonly DEBOUNCE_MS: number = 1000;
   private readonly HOME_TOPIC: string = '/topic/home';
+  private refreshCallback: (() => void) | null = null;
 
-  private onHomeRefresh = (msg: Object): void => {
-    console.info('[HomeVM] /topic/home 收到刷新信号');
-    this.debouncedReload();
-  };
-
-  private debouncedReload(): void {
-    if (this.debounceTimer !== -1) {
-      clearTimeout(this.debounceTimer);
-    }
-    this.debounceTimer = setTimeout(() => {
-      this.debounceTimer = -1;
-      this.loadHomeData();
-    }, this.DEBOUNCE_MS);
-  }
-
-  subscribeHome(): void {
+  subscribeHome(onRefresh: () => void): void {
     if (this.subscribed) {
       return;
     }
     this.subscribed = true;
+    this.refreshCallback = onRefresh;
     const ws = WebSocketService.getInstance();
     ws.subscribe(this.HOME_TOPIC);
     WebSocketService.addListener(this.HOME_TOPIC, this.onHomeRefresh);
@@ -145,6 +133,7 @@ export class HomeViewModel {
       return;
     }
     this.subscribed = false;
+    this.refreshCallback = null;
     WebSocketService.removeListener(this.HOME_TOPIC, this.onHomeRefresh);
     WebSocketService.getInstance().unsubscribe(this.HOME_TOPIC);
     if (this.debounceTimer !== -1) {
@@ -152,6 +141,22 @@ export class HomeViewModel {
       this.debounceTimer = -1;
     }
     console.info('[HomeVM] 已取消订阅 /topic/home');
+  }
+
+  private onHomeRefresh = (msg: Object): void => {
+    console.info('[HomeVM] /topic/home 收到刷新信号');
+    this.debouncedReload();
+  };
+
+  private debouncedReload(): void {
+    if (this.debounceTimer !== -1) {
+      clearTimeout(this.debounceTimer);
+    }
+    this.debounceTimer = setTimeout(async () => {
+      this.debounceTimer = -1;
+      await this.loadHomeData();
+      this.refreshCallback?.();
+    }, this.DEBOUNCE_MS);
   }
 
   get hasPendingExceptions(): boolean {
