@@ -7,7 +7,7 @@ function drawChart(
   rates: DailyRateModel[]
 ): void {
   if (!rates || rates.length === 0) {
-    ctx.font = '14px sans-serif';
+    ctx.font = '24px sans-serif';
     ctx.fillStyle = '#9A9AA8';
     ctx.textAlign = 'center';
     ctx.fillText('暂无月度数据', width / 2, height / 2);
@@ -38,7 +38,7 @@ function drawChart(
       ctx.stroke();
     }
 
-    ctx.font = '10px sans-serif';
+    ctx.font = '48px sans-serif';
     ctx.fillStyle = '#9A9AA8';
     ctx.textAlign = 'right';
     ctx.fillText(`${i * 20}%`, padLeft - 6, y + 3);
@@ -51,7 +51,7 @@ function drawChart(
   for (let i: number = 0; i < barCount; i++) {
     const x: number = padLeft + i * gapX + gapX / 2;
     if (i % labelInterval === 0 || i === barCount - 1) {
-      ctx.font = '10px sans-serif';
+      ctx.font = '48px sans-serif';
       ctx.fillText(`${rates[i].day}日`, x, height - padBottom + 16);
     }
   }
