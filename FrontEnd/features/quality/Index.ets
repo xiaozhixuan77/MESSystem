@@ -3,3 +3,4 @@ export { InspectionDetailView } from './src/main/ets/View/InspectionDetailView';
 export { DashboardView } from './src/main/ets/View/DashboardView';
 export { QualityViewModel } from './src/main/ets/ViewModel/QualityViewModel';
 export { InspectionModel } from './src/main/ets/Model/InspectionModel';
+export { DashboardModel, DailyRateModel } from './src/main/ets/Model/DashboardModel';

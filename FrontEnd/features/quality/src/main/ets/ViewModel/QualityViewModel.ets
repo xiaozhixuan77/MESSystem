@@ -1,5 +1,6 @@
 import { QualityApi, WebSocketService } from '@ohos/network';
 import { InspectionModel } from '../Model/InspectionModel';
+import { DashboardModel, DailyRateModel } from '../Model/DashboardModel';
 
 const INSPECTION_TOPIC = '/topic/inspections';
 
@@ -7,7 +8,9 @@ const INSPECTION_TOPIC = '/topic/inspections';
 export class QualityViewModel {
   @Trace inspectionList: InspectionModel[] = [];
   @Trace currentInspection: InspectionModel = new InspectionModel();
-  @Trace dashboardData: Record<string, Object> = {};
+  @Trace dashboardData: DashboardModel | null = null;
+  @Trace dashboardLoading: boolean = false;
+  @Trace dashboardError: string = '';
   @Trace isLoading: boolean = false;
   @Trace submitLoading: boolean = false;
   @Trace errorMessage: string = '';
@@ -70,15 +73,43 @@ export class QualityViewModel {
     ws.unsubscribe(INSPECTION_TOPIC);
   }
 
-  async loadDashboard(params?: object): Promise<void> {
-    this.isLoading = true;
-    this.errorMessage = '';
+  async loadDashboard(scope: string = 'today'): Promise<void> {
+    this.dashboardLoading = true;
+    this.dashboardError = '';
     try {
-      this.dashboardData = await QualityApi.getDashboard(params) as Record<string, Object>;
+      const results = await Promise.all([
+        QualityApi.getDashboard(scope) as Promise<Record<string, Object>>,
+        QualityApi.getInspections() as Promise<InspectionModel[]>
+      ]);
+      const raw = results[0] as Record<string, Object>;
+      const inspections = results[1] as InspectionModel[];
+
+      const model = new DashboardModel();
+      model.todayPlanRate = (raw['todayPlanRate'] as number) ?? 0;
+      model.totalInput = (raw['totalInput'] as number) ?? 0;
+      model.totalOutput = (raw['totalOutput'] as number) ?? 0;
+      model.totalNg = (raw['totalNg'] as number) ?? 0;
+      model.productCompletionRate = (raw['productCompletionRate'] as number) ?? 0;
+      model.stationCompletionRate = (raw['stationCompletionRate'] as number) ?? 0;
+      const rawRates = (raw['monthlyRates'] as Array<Record<string, Object>>) ?? [];
+      model.monthlyRates = rawRates.map((r: Record<string, Object>) => {
+        const dr = new DailyRateModel();
+        dr.day = (r['day'] as number) ?? 0;
+        dr.rate = (r['rate'] as number) ?? 0;
+        return dr;
+      });
+
+      // 从抽检列表计算质检KPI
+      model.totalInspections = inspections.length;
+      const passed = inspections.filter((i: InspectionModel) => i.conclusion === '合格').length;
+      model.passRate = inspections.length > 0 ? passed / inspections.length : 0;
+      model.pendingCount = inspections.filter((i: InspectionModel) => i.status === '待抽检').length;
+
+      this.dashboardData = model;
     } catch (e) {
-      this.errorMessage = (e as Error).message || '加载失败';
+      this.dashboardError = (e as Error).message || '加载失败';
     } finally {
-      this.isLoading = false;
+      this.dashboardLoading = false;
     }
   }
 }

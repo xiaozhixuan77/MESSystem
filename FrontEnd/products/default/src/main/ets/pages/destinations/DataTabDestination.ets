@@ -75,6 +75,21 @@ export struct DataTabDestination {
           this.dataStack.replacePathByName('InspectionList', undefined);
         }
       });
+
+      Row() {
+        Text('看板')
+          .fontSize(14).fontWeight(this.currentView === 'Dashboard' ? 600 : 400)
+          .fontColor(this.currentView === 'Dashboard' ? Color.White : '#5A5A6E')
+          .padding({ left: 16, right: 16, top: 6, bottom: 6 });
+      }
+      .borderRadius(8)
+      .backgroundColor(this.currentView === 'Dashboard' ? '#1565C0' : Color.Transparent)
+      .onClick(() => {
+        if (this.currentView !== 'Dashboard') {
+          this.currentView = 'Dashboard';
+          this.dataStack.replacePathByName('Dashboard', undefined);
+        }
+      });
     }
     .padding(4)
     .backgroundColor('#F5F7FA')
