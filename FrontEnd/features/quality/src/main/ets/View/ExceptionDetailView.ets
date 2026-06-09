@@ -1,4 +1,5 @@
 import { ExceptionViewModel } from '../ViewModel/ExceptionViewModel';
+import { LineApi } from '@ohos/network';
 import { promptAction } from '@kit.ArkUI';
 
 @ComponentV2
@@ -12,9 +13,11 @@ export struct ExceptionDetailView {
   aboutToAppear(): void {
     const navInfo = this.queryNavDestinationInfo();
     const param = navInfo?.param as Record<string, Object>;
+    console.info('[test:ExceptionDetail] 进入异常详情页', JSON.stringify({ param: param }));
     const id = param?.['exceptionId'] as number;
     if (id && id > 0) {
       this.exceptionId = id;
+      console.info('[test:ExceptionDetail] 加载异常', JSON.stringify({ exceptionId: id }));
       this.vm.loadExceptionDetail(id);
     }
   }
@@ -70,9 +73,25 @@ export struct ExceptionDetailView {
   }
 
   private async doHandle(): Promise<void> {
+    console.info('[test:ExceptionDetail] 开始处理异常', JSON.stringify({
+      exceptionId: this.exceptionId,
+      action: this.pendingAction
+    }));
     const ok = await this.vm.handleException(this.exceptionId, this.pendingAction);
+    console.info('[test:ExceptionDetail] 处理异常结果', JSON.stringify({ ok: ok }));
     if (ok) {
       promptAction.showToast({ message: '处理成功' });
+      if (this.pendingAction === '恢复') {
+        const lineId = this.vm.currentException.lineId;
+        const woId = this.vm.currentException.workOrderId;
+        console.info('[test:ExceptionDetail] 启动仿真器', JSON.stringify({ lineId: lineId, workOrderId: woId }));
+        try {
+          await LineApi.startLine(lineId, woId);
+          console.info('[test:ExceptionDetail] 仿真器启动成功');
+        } catch (e) {
+          console.error('[test:ExceptionDetail] 仿真器启动失败', JSON.stringify({ error: (e as Error).message }));
+        }
+      }
     }
   }
 

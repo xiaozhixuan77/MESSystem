@@ -292,8 +292,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
         boolean isDispatch = "已派工".equals(wo.getStatus());
         boolean isPaused = "暂停中".equals(wo.getStatus());
-        if (!isDispatch && !isPaused) {
+        boolean alreadyRunning = "生产中".equals(wo.getStatus());
+        if (!isDispatch && !isPaused && !alreadyRunning) {
             throw new BusinessException(400, "工单状态不支持启动，当前: " + wo.getStatus());
+        }
+        if (alreadyRunning) {
+            return;
         }
 
         Long currentUserId = getCurrentUserId();
@@ -468,6 +472,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
             line.setStatus("生产中");
             productionLineService.updateById(line);
+            lineBroadcaster.broadcastLineStatus(line.getId(), "生产中", wo.getId(),
+                    0, 0, "生产中", wo.getCode(), wo.getPlanQty());
         }
 
         lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),

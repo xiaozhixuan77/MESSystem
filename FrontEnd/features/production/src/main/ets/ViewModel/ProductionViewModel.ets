@@ -231,6 +231,7 @@ export class ProductionViewModel {
       }
       const lineTopic = `/topic/lines/${line.id}`;
       const stationTopic = `/topic/lines/${line.id}/stations`;
+      console.info('[test:ProductionVM] 订阅产线 topic', JSON.stringify({ lineId: line.id, lineTopic: lineTopic }));
       ws.subscribe(lineTopic);
       ws.subscribe(stationTopic);
       WebSocketService.addListener(lineTopic, this.onLineListStatusUpdate);
@@ -238,6 +239,7 @@ export class ProductionViewModel {
       this.subscribedLineIds.add(line.id);
       newCount++;
     }
+    console.info('[test:ProductionVM] subscribeLineList 完成', JSON.stringify({ newCount: newCount, skipCount: skipCount }));
   }
 
   unsubscribeLineList(): void {
@@ -256,6 +258,10 @@ export class ProductionViewModel {
   onLineListStatusUpdate = (payload: Object): void => {
     const envelope = payload as Record<string, Object>;
     const lineId = envelope['lineId'] as number | undefined;
+    console.info('[test:ProductionVM] 收到 LINE_STATUS WebSocket', JSON.stringify({
+      lineId: lineId,
+      type: envelope['type']
+    }));
     if (!lineId) {
       return;
     }
@@ -263,6 +269,11 @@ export class ProductionViewModel {
     if (!data) {
       return;
     }
+    console.info('[test:ProductionVM] LINE_STATUS data', JSON.stringify({
+      status: data['status'],
+      woStatus: data['woStatus'],
+      workOrderCode: data['workOrderCode']
+    }));
     const line = this.lines.find(l => l.id === lineId);
     if (line) {
       if (data['status'] !== undefined) {
@@ -327,6 +338,9 @@ export class ProductionViewModel {
   };
 
   onLineStatusUpdate = (payload: Object): void => {
+    console.info('[test:ProductionVM] LineDetail收到 LINE_STATUS', JSON.stringify({
+      status: (payload as Record<string, Object>)['data']
+    }));
     const envelope = payload as Record<string, Object>;
     const data = envelope['data'] as Record<string, Object> | undefined;
     if (data) {
