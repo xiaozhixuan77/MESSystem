@@ -5,6 +5,12 @@ export class DailyRateModel {
 }
 
 @ObservedV2
+export class TopDefectModel {
+  @Trace name: string = '';
+  @Trace count: number = 0;
+}
+
+@ObservedV2
 export class DashboardModel {
   @Trace todayPlanRate: number = 0;
   @Trace totalInput: number = 0;
@@ -16,4 +22,5 @@ export class DashboardModel {
   @Trace totalInspections: number = 0;
   @Trace passRate: number = 0;
   @Trace pendingCount: number = 0;
+  @Trace topDefects: TopDefectModel[] = [];
 }

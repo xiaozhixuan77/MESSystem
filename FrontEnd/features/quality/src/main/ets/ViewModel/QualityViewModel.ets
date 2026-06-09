@@ -1,6 +1,6 @@
 import { QualityApi, WebSocketService } from '@ohos/network';
 import { InspectionModel } from '../Model/InspectionModel';
-import { DashboardModel, DailyRateModel } from '../Model/DashboardModel';
+import { DashboardModel, DailyRateModel, TopDefectModel } from '../Model/DashboardModel';
 
 const INSPECTION_TOPIC = '/topic/inspections';
 
@@ -103,7 +103,43 @@ export class QualityViewModel {
       model.totalInspections = inspections.length;
       const passed = inspections.filter((i: InspectionModel) => i.conclusion === '合格').length;
       model.passRate = inspections.length > 0 ? passed / inspections.length : 0;
+      model.totalNg = inspections.reduce((sum: number, i: InspectionModel) => sum + (i.sampleNg || 0), 0);
       model.pendingCount = inspections.filter((i: InspectionModel) => i.status === '待抽检').length;
+
+      // 聚合不良类型 TOP5
+      const agg: TopDefectModel[] = [];
+      for (const insp of inspections) {
+        if (insp.defectTypes && insp.defectTypes.trim() !== '') {
+          const parts = insp.defectTypes.split(',');
+          for (const part of parts) {
+            const trimmed = part.trim();
+            if (trimmed === '') continue;
+            const colonIdx = trimmed.lastIndexOf(':');
+            let name = trimmed;
+            let count = 1;
+            if (colonIdx > 0) {
+              name = trimmed.substring(0, colonIdx).trim();
+              count = parseInt(trimmed.substring(colonIdx + 1).trim()) || 0;
+            }
+            let found = false;
+            for (const item of agg) {
+              if (item.name === name) {
+                item.count += count;
+                found = true;
+                break;
+              }
+            }
+            if (!found) {
+              const m = new TopDefectModel();
+              m.name = name;
+              m.count = count;
+              agg.push(m);
+            }
+          }
+        }
+      }
+      agg.sort((a: TopDefectModel, b: TopDefectModel) => b.count - a.count);
+      model.topDefects = agg.slice(0, 5);
 
       this.dashboardData = model;
     } catch (e) {

@@ -1,5 +1,6 @@
 import { QualityViewModel } from '../ViewModel/QualityViewModel';
 import { DashboardChart } from './DashboardChart';
+import { TopDefectModel } from '../Model/DashboardModel';
 import { FormatUtil } from '@ohos/utils';
 
 @ComponentV2
@@ -14,6 +15,14 @@ export struct DashboardView {
       this.hasLoaded = true;
       this.vm.loadDashboard('month');
     }
+  }
+
+  getMaxDefectCount(): number {
+    const d = this.vm.dashboardData;
+    if (d !== null && d.topDefects.length > 0) {
+      return d.topDefects[0].count;
+    }
+    return 0;
   }
 
   getKpiVal(field: string): string {
@@ -238,15 +247,22 @@ export struct DashboardView {
               .margin({ bottom: 12 });
 
             Column() {
-              this.DefectItem(1, '外观缺陷', 12, 12);
-              Row().width('100%').height(1).backgroundColor('#E8EBF0');
-              this.DefectItem(2, '尺寸偏差', 9, 12);
-              Row().width('100%').height(1).backgroundColor('#E8EBF0');
-              this.DefectItem(3, '功能失效', 6, 12);
-              Row().width('100%').height(1).backgroundColor('#E8EBF0');
-              this.DefectItem(4, '装配不良', 4, 12);
-              Row().width('100%').height(1).backgroundColor('#E8EBF0');
-              this.DefectItem(5, '焊接不良', 2, 12);
+              if (this.vm.dashboardData !== null &&
+                  this.vm.dashboardData.topDefects.length > 0) {
+                ForEach(this.vm.dashboardData.topDefects,
+                  (item: TopDefectModel, index: number) => {
+                    if (index > 0) {
+                      Row().width('100%').height(1).backgroundColor('#E8EBF0');
+                    }
+                    this.DefectItem(index + 1, item.name, item.count,
+                      this.getMaxDefectCount());
+                  },
+                  (item: TopDefectModel) => item.name);
+              } else {
+                Text('暂无不良数据')
+                  .fontSize(13).fontColor('#9A9AA8')
+                  .padding(16).width('100%').textAlign(TextAlign.Center);
+              }
             }
             .padding(12)
             .backgroundColor(Color.White)
