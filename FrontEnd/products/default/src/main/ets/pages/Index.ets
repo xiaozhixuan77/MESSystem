@@ -5,7 +5,7 @@ import { UserModel } from '@ohos/user';
 import { emitter } from '@kit.BasicServicesKit';
 import { window } from '@kit.ArkUI';
 import { LoginDestination } from './destinations/LoginDestination';
-import { HomeTabDestination } from './destinations/HomeTabDestination';
+import { AdminHomeView, LeaderHomeView, OperatorHomeView, InspectorHomeView } from '@ohos/home';
 import { DataTabDestination } from './destinations/DataTabDestination';
 import { WorkOrderTabDestination } from './destinations/WorkOrderTabDestination';
 import { ProfileTabDestination } from './destinations/ProfileTabDestination';
@@ -33,7 +33,18 @@ struct Index {
     if (name === 'LoginPage') {
       LoginDestination()
     } else if (name === 'HomeTab') {
-      HomeTabDestination()
+      NavDestination() {
+        if (this.currentRole === 'leader') {
+          LeaderHomeView()
+        } else if (this.currentRole === 'operator') {
+          OperatorHomeView()
+        } else if (this.currentRole === 'inspector') {
+          InspectorHomeView()
+        } else {
+          AdminHomeView()
+        }
+      }
+      .hideTitleBar(true)
     } else if (name === 'DataTab') {
       DataTabDestination()
     } else if (name === 'WorkOrderTab') {

@@ -2,11 +2,6 @@ import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
 import { ExceptionItemModel, DispatchItemModel } from '../Model/HomeSummaryModel';
 
-interface MetaItem {
-  label: string;
-  value: string;
-}
-
 @ComponentV2
 export struct LeaderHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
@@ -44,70 +39,72 @@ export struct LeaderHomeView {
   }
 
   build() {
-    Scroll() {
+    Column() {
+      // Header 蓝色区域
       Column() {
-        // Header 蓝色区域
-        Column() {
-          Row() {
-            Column() {
-              Text(this.currentUser.name || '张班长')
-                .fontSize(20).fontWeight(700).fontColor(Color.White);
-              Text('A班组组长 · 早班')
-                .fontSize(12).fontColor('rgba(255,255,255,0.85)').margin({ top: 2 });
-            }
-
-            Stack() {
-              Image($r('app.media.icon_bell_white')).width(18).height(18);
-              if (this.vm.hasPendingExceptions) {
-                Circle().width(8).height(8).fill('#F44336').position({ x: 14, y: 2 });
-              }
-            }
-            .width(36).height(36)
-            .backgroundColor('rgba(255,255,255,0.15)')
-            .borderRadius(12)
-            .alignContent(Alignment.Center);
+        Row() {
+          Column() {
+            Text(this.currentUser.name || '张班长')
+              .fontSize(20).fontWeight(700).fontColor(Color.White);
+            Text('A班组组长 · 早班')
+              .fontSize(12).fontColor('rgba(255,255,255,0.85)').margin({ top: 2 });
           }
-          .width('100%')
-          .justifyContent(FlexAlign.SpaceBetween)
-          .margin({ bottom: 20 });
 
-          // 快捷入口
-          Row({ space: 8 }) {
-            this.QuickItem($r('app.media.tab_data_active'), '基础数据');
-
-            Column() {
-              Column() {
-                Image($r('app.media.tab_workorder_active')).width(16).height(16);
-              }
-              .width(32).height(32)
-              .backgroundColor('rgba(255,255,255,0.95)')
-              .borderRadius(8)
-              .justifyContent(FlexAlign.Center)
-              .alignItems(HorizontalAlign.Center);
-              Text('工单')
-                .fontSize(11).fontColor(Color.White).fontWeight(500).margin({ top: 6 });
+          Stack() {
+            Image($r('app.media.icon_bell_white')).width(18).height(18);
+            if (this.vm.hasPendingExceptions) {
+              Circle().width(8).height(8).fill('#F44336').position({ x: 14, y: 2 });
             }
-            .alignItems(HorizontalAlign.Center)
-            .padding({ top: 12, bottom: 12, left: 4, right: 4 })
-            .backgroundColor('rgba(255,255,255,0.12)')
-            .borderRadius(12)
-            .layoutWeight(1)
-            .onClick(() => {
-              this.activeTab = 'WorkOrderTab';
-              this.pageStack.replacePath({ name: 'WorkOrderTab' });
-            })
-
-            this.QuickItem($r('app.media.icon_image_blue'), '质检看板');
-            this.QuickItem($r('app.media.icon_clock_blue'), '历史记录');
           }
-          .width('100%');
+          .width(36).height(36)
+          .backgroundColor('rgba(255,255,255,0.15)')
+          .borderRadius(12)
+          .alignContent(Alignment.Center);
         }
-        .padding({ left: 20, right: 20, top: 16, bottom: 20 })
-        .backgroundColor('#1565C0');
+        .width('100%')
+        .justifyContent(FlexAlign.SpaceBetween)
+        .margin({ bottom: 20 });
 
-        // 内容区域
-        Column() {
-          // 待办事项
+        // 快捷入口
+        Row({ space: 8 }) {
+          this.QuickItem($r('app.media.tab_data_active'), '基础数据');
+
+          Column() {
+            Column() {
+              Image($r('app.media.tab_workorder_active')).width(16).height(16);
+            }
+            .width(32).height(32)
+            .backgroundColor('rgba(255,255,255,0.95)')
+            .borderRadius(8)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center);
+            Text('工单')
+              .fontSize(11).fontColor(Color.White).fontWeight(500).margin({ top: 6 });
+          }
+          .alignItems(HorizontalAlign.Center)
+          .padding({ top: 12, bottom: 12, left: 4, right: 4 })
+          .backgroundColor('rgba(255,255,255,0.12)')
+          .borderRadius(12)
+          .layoutWeight(1)
+          .onClick(() => {
+            this.activeTab = 'WorkOrderTab';
+            this.pageStack.replacePath({ name: 'WorkOrderTab' });
+          })
+
+          this.QuickItem($r('app.media.icon_image_blue'), '质检看板');
+          this.QuickItem($r('app.media.icon_clock_blue'), '历史记录');
+        }
+        .width('100%');
+      }
+      .padding({ left: 20, right: 20, top: 16, bottom: 20 })
+      .backgroundColor('#1565C0')
+      .width('100%');
+
+      // 内容区域（可滚动）
+      Column() {
+        Scroll() {
+          Column() {
+            // 待办事项
           Column() {
             Row() {
               Text('待办事项').fontSize(15).fontWeight(600).fontColor('#1A1A2E');
@@ -118,7 +115,6 @@ export struct LeaderHomeView {
             .margin({ bottom: 12 });
 
             if (this.vm.summary !== null) {
-              // 异常待处理
               ForEach(this.vm.summary.recentExceptions, (ex: ExceptionItemModel) => {
                 Column() {
                   Row() {
@@ -165,7 +161,6 @@ export struct LeaderHomeView {
                 .margin({ bottom: 10 });
               }, (ex: ExceptionItemModel) => `ex_${ex.id}`);
 
-              // 待派工
               ForEach(this.vm.summary.pendingDispatchItems, (wo: DispatchItemModel) => {
                 Column() {
                   Row() {
@@ -235,15 +230,18 @@ export struct LeaderHomeView {
           }
           .width('100%');
         }
-        .padding(16)
+        .padding({ left: 16, right: 16, top: 12, bottom: 16 })
         .width('100%');
       }
-      .width('100%');
+      .width('100%').height('100%')
+      .backgroundColor('#F5F7FA')
+      .align(Alignment.Top)
+      .scrollable(ScrollDirection.Vertical)
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.None);
     }
-    .width('100%').height('100%')
-    .backgroundColor('#F5F7FA')
-    .scrollable(ScrollDirection.Vertical)
-    .scrollBar(BarState.Off)
-    .edgeEffect(EdgeEffect.None);
+    .layoutWeight(1);
+    }
+    .width('100%').height('100%');
   }
 }
