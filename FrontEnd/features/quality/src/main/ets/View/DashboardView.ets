@@ -15,6 +15,11 @@ export struct DashboardView {
       this.hasLoaded = true;
       this.vm.loadDashboard('month');
     }
+    this.vm.subscribeDashboard();
+  }
+
+  aboutToDisappear(): void {
+    this.vm.unsubscribeDashboard();
   }
 
   getMaxDefectCount(): number {

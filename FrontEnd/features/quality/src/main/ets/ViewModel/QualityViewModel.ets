@@ -3,6 +3,7 @@ import { InspectionModel } from '../Model/InspectionModel';
 import { DashboardModel, DailyRateModel, TopDefectModel } from '../Model/DashboardModel';
 
 const INSPECTION_TOPIC = '/topic/inspections';
+const EXCEPTIONS_TOPIC = '/topic/exceptions';
 
 @ObservedV2
 export class QualityViewModel {
@@ -15,9 +16,14 @@ export class QualityViewModel {
   @Trace submitLoading: boolean = false;
   @Trace errorMessage: string = '';
   private subscribed: boolean = false;
+  private dashboardSubscribed: boolean = false;
 
   private onInspectionUpdate: Function = () => {
     this.loadInspections();
+  };
+
+  private onDashboardUpdate: Function = (_msg: Object) => {
+    this.loadDashboard('month');
   };
 
   async loadInspections(filters?: object): Promise<void> {
@@ -71,6 +77,27 @@ export class QualityViewModel {
     WebSocketService.removeListener(INSPECTION_TOPIC, this.onInspectionUpdate);
     const ws = WebSocketService.getInstance();
     ws.unsubscribe(INSPECTION_TOPIC);
+  }
+
+  subscribeDashboard(): void {
+    if (this.dashboardSubscribed) {
+      return;
+    }
+    this.dashboardSubscribed = true;
+    const ws = WebSocketService.getInstance();
+    ws.subscribe(INSPECTION_TOPIC);
+    ws.subscribe(EXCEPTIONS_TOPIC);
+    WebSocketService.addListener(INSPECTION_TOPIC, this.onDashboardUpdate);
+    WebSocketService.addListener(EXCEPTIONS_TOPIC, this.onDashboardUpdate);
+  }
+
+  unsubscribeDashboard(): void {
+    if (!this.dashboardSubscribed) {
+      return;
+    }
+    this.dashboardSubscribed = false;
+    WebSocketService.removeListener(INSPECTION_TOPIC, this.onDashboardUpdate);
+    WebSocketService.removeListener(EXCEPTIONS_TOPIC, this.onDashboardUpdate);
   }
 
   async loadDashboard(scope: string = 'today'): Promise<void> {
