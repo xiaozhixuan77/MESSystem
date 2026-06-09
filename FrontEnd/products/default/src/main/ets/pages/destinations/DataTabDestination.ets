@@ -139,22 +139,33 @@ export struct DataTabDestination {
         .hideTitleBar(true)
         .onAppear(() => {
           if (this.dataStack.size() === 0) {
-            this.dataStack.replacePath({ name: 'LineList' });
-          }
-          if (this.deepLink && this.deepLink.targetTab === 'DataTab') {
-            const page = this.deepLink.targetPage;
-            const params = this.deepLink.params;
-            this.dataStack.replacePathByName(page, params);
-            if (page === 'ExceptionList' || page === 'ExceptionDetail') {
-              this.currentView = 'ExceptionList';
-            } else if (page === 'InspectionList' || page === 'InspectionDetail') {
-              this.currentView = 'InspectionList';
-            } else if (page === 'Dashboard') {
-              this.currentView = 'Dashboard';
-            } else if (page === 'LineList' || page === 'LineDetail' || page === 'StationDetail') {
-              this.currentView = 'LineList';
+            if (this.deepLink && this.deepLink.targetTab === 'DataTab') {
+              const page = this.deepLink.targetPage;
+              const params = this.deepLink.params;
+
+              let basePage = 'LineList';
+              if (page === 'InspectionList' || page === 'InspectionDetail') {
+                basePage = 'InspectionList';
+                this.currentView = 'InspectionList';
+              } else if (page === 'ExceptionList' || page === 'ExceptionDetail') {
+                basePage = 'ExceptionList';
+                this.currentView = 'ExceptionList';
+              } else if (page === 'Dashboard') {
+                basePage = 'Dashboard';
+                this.currentView = 'Dashboard';
+              } else if (page === 'LineList' || page === 'LineDetail' || page === 'StationDetail') {
+                basePage = 'LineList';
+                this.currentView = 'LineList';
+              }
+
+              this.dataStack.replacePath({ name: basePage });
+              if (page !== basePage) {
+                this.dataStack.pushPathByName(page, params);
+              }
+              this.deepLink = null;
+            } else {
+              this.dataStack.replacePath({ name: 'LineList' });
             }
-            this.deepLink = null;
           }
         });
       }
