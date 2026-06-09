@@ -5,7 +5,6 @@ import { FormatUtil } from '@ohos/utils';
 
 @ComponentV2
 export struct DashboardView {
-  @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Local vm: QualityViewModel = new QualityViewModel();
   @Local isRefreshing: boolean = false;
   private hasLoaded: boolean = false;
@@ -149,16 +148,6 @@ export struct DashboardView {
           Column() {
             // header-top
             Row() {
-              Row() {
-                Image($r('app.media.icon_arrow_left_white'))
-                  .width(20).height(20);
-              }
-              .width(36).height(36)
-              .backgroundColor('rgba(255,255,255,0.15)')
-              .borderRadius(12)
-              .justifyContent(FlexAlign.Center)
-              .onClick(() => { this.pageStack.pop(); });
-
               Text('质检看板')
                 .fontSize(18)
                 .fontWeight(700)
