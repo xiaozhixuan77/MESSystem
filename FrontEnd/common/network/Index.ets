@@ -7,4 +7,5 @@ export { UserApi } from './src/main/ets/network/UserApi';
 export { WorkshopApi } from './src/main/ets/network/WorkshopApi';
 export { ProductApi } from './src/main/ets/network/ProductApi';
 export { ExceptionApi } from './src/main/ets/network/ExceptionApi';
+export { HomeApi } from './src/main/ets/network/HomeApi';
 export { WebSocketService } from './src/main/ets/network/WebSocketService';

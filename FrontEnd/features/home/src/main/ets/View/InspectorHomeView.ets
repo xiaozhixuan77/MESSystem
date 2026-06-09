@@ -1,9 +1,29 @@
 import { UserModel } from '@ohos/user';
+import { HomeViewModel } from '../ViewModel/HomeViewModel';
+import { InspectionItemModel } from '../Model/HomeSummaryModel';
+import { FormatUtil } from '@ohos/utils';
 
 @ComponentV2
 export struct InspectorHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
+  @Local vm: HomeViewModel = new HomeViewModel();
+
+  aboutToAppear(): void {
+    this.vm.loadHomeData();
+  }
+
+  get pendingCount(): string {
+    return this.vm.summary ? `${this.vm.summary.pendingInspectionCount}` : '0';
+  }
+
+  get todayDone(): string {
+    return this.vm.summary ? `${this.vm.summary.todayInspectionDone}` : '0';
+  }
+
+  get passRate(): string {
+    return this.vm.summary ? FormatUtil.formatPercent(this.vm.summary.todayInspectionPassRate) : '0%';
+  }
 
   @Builder
   KpiCard(value: string, label: string) {
@@ -48,7 +68,6 @@ export struct InspectorHomeView {
       Column() {
         // Header 蓝色区域
         Column() {
-          // 用户问候 + 通知按钮
           Row() {
             Column() {
               Text(this.currentUser.name || '李质检员')
@@ -59,7 +78,9 @@ export struct InspectorHomeView {
 
             Stack() {
               Image($r('app.media.icon_bell_white')).width(18).height(18);
-              Circle().width(8).height(8).fill('#F44336').position({ x: 14, y: 2 });
+              if (this.vm.hasPendingInspections) {
+                Circle().width(8).height(8).fill('#F44336').position({ x: 14, y: 2 });
+              }
             }
             .width(36).height(36)
             .backgroundColor('rgba(255,255,255,0.15)')
@@ -72,9 +93,9 @@ export struct InspectorHomeView {
 
           // KPI 指标
           Row({ space: 10 }) {
-            this.KpiCard('12', '待抽检');
-            this.KpiCard('8', '今日完成');
-            this.KpiCard('98.2%', '合格率');
+            this.KpiCard(this.pendingCount, '待抽检');
+            this.KpiCard(this.todayDone, '今日完成');
+            this.KpiCard(this.passRate, '合格率');
           }
           .width('100%')
           .margin({ bottom: 16 });
@@ -103,89 +124,61 @@ export struct InspectorHomeView {
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 12 });
 
-            // 抽检卡片 1
-            Column() {
-              Row() {
-                Text('待抽检')
-                  .fontSize(10).fontWeight(500).fontColor('#FF9800')
-                  .padding({ left: 8, right: 8, top: 3, bottom: 3 })
-                  .borderRadius(10)
-                  .backgroundColor('#FFF3E0');
-                Text('报工 10分钟前').fontSize(11).fontColor('#9A9AA8');
-              }
-              .width('100%')
-              .justifyContent(FlexAlign.SpaceBetween)
-              .margin({ bottom: 8 });
+            if (this.vm.summary !== null) {
+              ForEach(this.vm.summary.pendingInspectionItems, (item: InspectionItemModel) => {
+                Column() {
+                  Row() {
+                    Text('待抽检')
+                      .fontSize(10).fontWeight(500).fontColor('#FF9800')
+                      .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+                      .borderRadius(10)
+                      .backgroundColor('#FFF3E0');
+                    Text(item.inspectTime ? `创建 ${item.inspectTime}` : '')
+                      .fontSize(11).fontColor('#9A9AA8');
+                  }
+                  .width('100%')
+                  .justifyContent(FlexAlign.SpaceBetween)
+                  .margin({ bottom: 8 });
 
-              Text('WO-2024-0116 控制器组装')
-                .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
-                .margin({ bottom: 4 });
+                  Text(item.workOrderCode || '未知工单')
+                    .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
+                    .margin({ bottom: 4 });
 
-              Text('申报：良品 136件 · NG 4件 · 建议抽检 14件')
-                .fontSize(12).fontColor('#5A5A6E')
-                .margin({ bottom: 12 });
+                  Text(`建议抽检 ${item.sampleQty || 0}件`)
+                    .fontSize(12).fontColor('#5A5A6E')
+                    .margin({ bottom: 12 });
 
-              Button() {
-                Row({ space: 6 }) {
-                  Image($r('app.media.icon_document_white')).width(14).height(14);
-                  Text('去抽检').fontSize(13).fontWeight(600).fontColor(Color.White);
+                  Button() {
+                    Row({ space: 6 }) {
+                      Image($r('app.media.icon_document_white')).width(14).height(14);
+                      Text('去抽检').fontSize(13).fontWeight(600).fontColor(Color.White);
+                    }
+                  }
+                  .width('100%').height(36)
+                  .backgroundColor('#FF9800')
+                  .borderRadius(12)
+                  .padding(0);
                 }
-              }
-              .width('100%').height(36)
-              .backgroundColor('#FF9800')
-              .borderRadius(12)
-              .padding(0);
+                .padding(14)
+                .backgroundColor(Color.White)
+                .borderRadius(16)
+                .border({ width: { left: 3 }, color: '#FF9800' })
+                .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+                .margin({ bottom: 10 });
+              }, (item: InspectionItemModel) => `insp_${item.id}`);
             }
-            .padding(14)
-            .backgroundColor(Color.White)
-            .borderRadius(16)
-            .border({ width: { left: 3 }, color: '#FF9800' })
-            .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
-            .margin({ bottom: 10 });
 
-            // 抽检卡片 2
-            Column() {
-              Row() {
-                Text('待抽检')
-                  .fontSize(10).fontWeight(500).fontColor('#FF9800')
-                  .padding({ left: 8, right: 8, top: 3, bottom: 3 })
-                  .borderRadius(10)
-                  .backgroundColor('#FFF3E0');
-                Text('报工 35分钟前').fontSize(11).fontColor('#9A9AA8');
-              }
-              .width('100%')
-              .justifyContent(FlexAlign.SpaceBetween)
-              .margin({ bottom: 8 });
-
-              Text('WO-2024-0115 电源模块')
-                .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
-                .margin({ bottom: 4 });
-
-              Text('申报：良品 96件 · NG 4件 · 建议抽检 10件')
-                .fontSize(12).fontColor('#5A5A6E')
-                .margin({ bottom: 12 });
-
-              Button() {
-                Row({ space: 6 }) {
-                  Image($r('app.media.icon_document_white')).width(14).height(14);
-                  Text('去抽检').fontSize(13).fontWeight(600).fontColor(Color.White);
-                }
-              }
-              .width('100%').height(36)
-              .backgroundColor('#FF9800')
-              .borderRadius(12)
-              .padding(0);
+            if (this.vm.summary !== null &&
+                this.vm.summary.pendingInspectionItems.length === 0) {
+              Text('暂无待抽检工单')
+                .fontSize(13).fontColor('#9A9AA8')
+                .padding(16).width('100%').textAlign(TextAlign.Center);
             }
-            .padding(14)
-            .backgroundColor(Color.White)
-            .borderRadius(16)
-            .border({ width: { left: 3 }, color: '#FF9800' })
-            .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' });
           }
           .width('100%')
           .margin({ bottom: 20 });
 
-          // 产线运行状态
+          // 产线运行状态 — 保留占位
           Column() {
             Row() {
               Text('产线运行状态').fontSize(15).fontWeight(600).fontColor('#1A1A2E');
@@ -195,92 +188,8 @@ export struct InspectorHomeView {
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 12 });
 
-            // L1
-            Column() {
-              Row() {
-                Text('L1 柔性线')
-                  .fontSize(13).fontWeight(600).fontColor('#1A1A2E');
-                Row() {
-                  Circle().width(8).height(8).fill('#4CAF50');
-                  Text('运行中').fontSize(11).fontColor('#4CAF50');
-                }
-              }
-              .width('100%')
-              .justifyContent(FlexAlign.SpaceBetween)
-              .margin({ bottom: 10 });
-
-              Row() {
-                Column() {
-                  Text('WO-0116').fontSize(14).fontWeight(600).fontColor('#1A1A2E').margin({ bottom: 2 });
-                  Text('当前工单').fontSize(10).fontColor('#5A5A6E');
-                }
-                .padding(8).backgroundColor('#F5F7FA').borderRadius(8)
-                .alignItems(HorizontalAlign.Center).layoutWeight(1);
-
-                Column() {
-                  Text('68%').fontSize(14).fontWeight(600).fontColor('#1A1A2E').margin({ bottom: 2 });
-                  Text('完成度').fontSize(10).fontColor('#5A5A6E');
-                }
-                .padding(8).backgroundColor('#F5F7FA').borderRadius(8)
-                .alignItems(HorizontalAlign.Center).layoutWeight(1);
-
-                Column() {
-                  Text('98.5%').fontSize(14).fontWeight(600).fontColor('#1A1A2E').margin({ bottom: 2 });
-                  Text('良品率').fontSize(10).fontColor('#5A5A6E');
-                }
-                .padding(8).backgroundColor('#F5F7FA').borderRadius(8)
-                .alignItems(HorizontalAlign.Center).layoutWeight(1);
-              }
-              .width('100%');
-            }
-            .padding(14)
-            .backgroundColor(Color.White)
-            .borderRadius(16)
-            .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
-            .margin({ bottom: 10 });
-
-            // L2
-            Column() {
-              Row() {
-                Text('L2 柔性线')
-                  .fontSize(13).fontWeight(600).fontColor('#1A1A2E');
-                Row() {
-                  Circle().width(8).height(8).fill('#4CAF50');
-                  Text('运行中').fontSize(11).fontColor('#4CAF50');
-                }
-              }
-              .width('100%')
-              .justifyContent(FlexAlign.SpaceBetween)
-              .margin({ bottom: 10 });
-
-              Row() {
-                Column() {
-                  Text('WO-0115').fontSize(14).fontWeight(600).fontColor('#1A1A2E').margin({ bottom: 2 });
-                  Text('当前工单').fontSize(10).fontColor('#5A5A6E');
-                }
-                .padding(8).backgroundColor('#F5F7FA').borderRadius(8)
-                .alignItems(HorizontalAlign.Center).layoutWeight(1);
-
-                Column() {
-                  Text('45%').fontSize(14).fontWeight(600).fontColor('#1A1A2E').margin({ bottom: 2 });
-                  Text('完成度').fontSize(10).fontColor('#5A5A6E');
-                }
-                .padding(8).backgroundColor('#F5F7FA').borderRadius(8)
-                .alignItems(HorizontalAlign.Center).layoutWeight(1);
-
-                Column() {
-                  Text('97.2%').fontSize(14).fontWeight(600).fontColor('#1A1A2E').margin({ bottom: 2 });
-                  Text('良品率').fontSize(10).fontColor('#5A5A6E');
-                }
-                .padding(8).backgroundColor('#F5F7FA').borderRadius(8)
-                .alignItems(HorizontalAlign.Center).layoutWeight(1);
-              }
-              .width('100%');
-            }
-            .padding(14)
-            .backgroundColor(Color.White)
-            .borderRadius(16)
-            .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' });
+            Text('产线运行状态需接入 /lines 接口，暂未实现')
+              .fontSize(12).fontColor('#9A9AA8').padding(16).width('100%').textAlign(TextAlign.Center);
           }
           .width('100%');
         }

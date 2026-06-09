@@ -1,49 +1,42 @@
 import { UserModel } from '@ohos/user';
-
-class OperatorTaskItem {
-  tag: string = '';
-  tagLabel: string = '';
-  time: string = '';
-  name: string = '';
-  info: string = '';
-  buttonLabel: string = '';
-  buttonColor: string = '';
-  buttonIcon: ResourceStr = '';
-}
+import { HomeViewModel } from '../ViewModel/HomeViewModel';
+import { TaskItemModel } from '../Model/HomeSummaryModel';
 
 @ComponentV2
 export struct OperatorHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
-  @Local currentTaskTitle: string = '控制器主板组装 - SMT贴片工序';
-  @Local currentTaskCode: string = 'WO-2024-0116';
-  @Local currentTaskProgress: number = 68;
-  @Local tasks: OperatorTaskItem[] = [];
+  @Local vm: HomeViewModel = new HomeViewModel();
 
   aboutToAppear(): void {
-    this.tasks = [
-      {
-        tag: 'pending',
-        tagLabel: '待执行',
-        time: '14:00 开始',
-        name: 'WO-0118 传感器模组后焊',
-        info: '预计工时 2h · 数量 50件',
-        buttonLabel: '扫码开工',
-        buttonColor: '#1565C0',
-        buttonIcon: $r('app.media.icon_check_white')
-      },
-      {
-        tag: 'report',
-        tagLabel: '待报工',
-        time: '已完成加工',
-        name: 'WO-0115 电源模块测试',
-        info: '良品 96件 · NG 4件 · 工时 3.5h',
-        buttonLabel: '提交报工',
-        buttonColor: '#4CAF50',
-        buttonIcon: $r('app.media.icon_document_white')
+    this.vm.loadHomeData();
+  }
+
+  get activeTaskCode(): string {
+    if (this.vm.summary?.operatorActiveTask) {
+      return this.vm.summary.operatorActiveTask.code;
+    }
+    return '—';
+  }
+
+  get activeTaskTitle(): string {
+    if (this.vm.summary?.operatorActiveTask) {
+      const t = this.vm.summary.operatorActiveTask;
+      return `${t.type || ''} ${t.code || ''}`;
+    }
+    return '暂无进行中任务';
+  }
+
+  get activeTaskProgress(): number {
+    if (this.vm.summary?.operatorActiveTask) {
+      const t = this.vm.summary.operatorActiveTask;
+      if (t.planQty > 0) {
+        const done = (t.reportedQtyGood || 0) + (t.reportedQtyNg || 0);
+        return Math.round(done / t.planQty * 100);
       }
-    ];
+    }
+    return 0;
   }
 
   @Builder
@@ -76,7 +69,6 @@ export struct OperatorHomeView {
       Column() {
         // Header 蓝色区域
         Column() {
-          // 用户问候 + 扫码按钮
           Row() {
             Column() {
               Text(this.currentUser.name || '王操作员')
@@ -101,29 +93,32 @@ export struct OperatorHomeView {
           Column() {
             Row() {
               Row() {
-                Circle().width(8).height(8).fill('#81C784');
-                Text('进行中')
-                  .fontSize(11).fontWeight(500).fontColor('#81C784');
+                Circle().width(8).height(8)
+                  .fill(this.vm.summary?.operatorActiveTask ? '#81C784' : '#9A9AA8');
+                Text(this.vm.summary?.operatorActiveTask ? '进行中' : '待机')
+                  .fontSize(11).fontWeight(500)
+                  .fontColor(this.vm.summary?.operatorActiveTask ? '#81C784' : '#9A9AA8');
               }
               .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-              .backgroundColor('rgba(76,175,80,0.2)')
+              .backgroundColor(this.vm.summary?.operatorActiveTask ?
+                'rgba(76,175,80,0.2)' : 'rgba(158,158,158,0.15)')
               .borderRadius(12);
 
-              Text(this.currentTaskCode)
+              Text(this.activeTaskCode)
                 .fontSize(12).fontColor('rgba(255,255,255,0.7)');
             }
             .width('100%')
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 12 });
 
-            Text(this.currentTaskTitle)
+            Text(this.activeTaskTitle)
               .fontSize(15).fontWeight(600).fontColor(Color.White)
               .margin({ bottom: 12 });
 
             Row({ space: 10 }) {
               Row() {
                 Row()
-                  .width(this.currentTaskProgress + '%')
+                  .width(`${this.activeTaskProgress}%`)
                   .height(6)
                   .borderRadius(3)
                   .backgroundColor('#4CAF50');
@@ -134,7 +129,7 @@ export struct OperatorHomeView {
               .borderRadius(3)
               .layoutWeight(1);
 
-              Text(this.currentTaskProgress + '%')
+              Text(`${this.activeTaskProgress}%`)
                 .fontSize(13).fontWeight(600).fontColor(Color.White);
             }
             .width('100%');
@@ -193,47 +188,97 @@ export struct OperatorHomeView {
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 12 });
 
-            ForEach(this.tasks, (task: OperatorTaskItem) => {
-              Column() {
-                Row() {
-                  Text(task.tagLabel)
-                    .fontSize(10).fontWeight(500)
-                    .fontColor(task.tag === 'pending' ? '#FF9800' : '#1565C0')
-                    .padding({ left: 8, right: 8, top: 3, bottom: 3 })
-                    .borderRadius(10)
-                    .backgroundColor(task.tag === 'pending' ? '#FFF3E0' : '#E3F2FD');
-
-                  Text(task.time).fontSize(11).fontColor('#9A9AA8');
-                }
-                .width('100%')
-                .justifyContent(FlexAlign.SpaceBetween)
-                .margin({ bottom: 10 });
-
-                Text(task.name)
-                  .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
-                  .margin({ bottom: 4 });
-
-                Text(task.info)
-                  .fontSize(12).fontColor('#5A5A6E')
-                  .margin({ bottom: 12 });
-
-                Button() {
-                  Row({ space: 6 }) {
-                    Image(task.buttonIcon).width(14).height(14);
-                    Text(task.buttonLabel).fontSize(13).fontWeight(600).fontColor(Color.White);
+            if (this.vm.summary !== null) {
+              // 待开工（已派工）
+              ForEach(this.vm.summary.operatorPendingStartTasks, (t: TaskItemModel) => {
+                Column() {
+                  Row() {
+                    Text('待执行')
+                      .fontSize(10).fontWeight(500).fontColor('#FF9800')
+                      .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+                      .borderRadius(10)
+                      .backgroundColor('#FFF3E0');
+                    Text(`${t.planQty}件`).fontSize(11).fontColor('#9A9AA8');
                   }
+                  .width('100%')
+                  .justifyContent(FlexAlign.SpaceBetween)
+                  .margin({ bottom: 10 });
+
+                  Text(`${t.code} ${t.type || ''}`)
+                    .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
+                    .margin({ bottom: 4 });
+
+                  Text(`${t.lineName ? '产线: ' + t.lineName + ' · ' : ''}计划 ${t.planQty}件`)
+                    .fontSize(12).fontColor('#5A5A6E')
+                    .margin({ bottom: 12 });
+
+                  Button() {
+                    Row({ space: 6 }) {
+                      Image($r('app.media.icon_check_white')).width(14).height(14);
+                      Text('扫码开工').fontSize(13).fontWeight(600).fontColor(Color.White);
+                    }
+                  }
+                  .width('100%').height(36)
+                  .backgroundColor('#1565C0')
+                  .borderRadius(12)
+                  .padding(0);
                 }
-                .width('100%').height(36)
-                .backgroundColor(task.buttonColor)
-                .borderRadius(12)
-                .padding(0);
-              }
-              .padding(14)
-              .backgroundColor(Color.White)
-              .borderRadius(16)
-              .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
-              .margin({ bottom: 10 });
-            }, (task: OperatorTaskItem) => task.name);
+                .padding(14)
+                .backgroundColor(Color.White)
+                .borderRadius(16)
+                .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+                .margin({ bottom: 10 });
+              }, (t: TaskItemModel) => `start_${t.id}`);
+
+              // 待报工（生产完成）
+              ForEach(this.vm.summary.operatorPendingReportTasks, (t: TaskItemModel) => {
+                Column() {
+                  Row() {
+                    Text('待报工')
+                      .fontSize(10).fontWeight(500).fontColor('#1565C0')
+                      .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+                      .borderRadius(10)
+                      .backgroundColor('#E3F2FD');
+                    Text('已完成加工').fontSize(11).fontColor('#9A9AA8');
+                  }
+                  .width('100%')
+                  .justifyContent(FlexAlign.SpaceBetween)
+                  .margin({ bottom: 10 });
+
+                  Text(`${t.code} ${t.type || ''}`)
+                    .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
+                    .margin({ bottom: 4 });
+
+                  Text(`良品 ${t.reportedQtyGood || 0}件 · NG ${t.reportedQtyNg || 0}件`)
+                    .fontSize(12).fontColor('#5A5A6E')
+                    .margin({ bottom: 12 });
+
+                  Button() {
+                    Row({ space: 6 }) {
+                      Image($r('app.media.icon_document_white')).width(14).height(14);
+                      Text('提交报工').fontSize(13).fontWeight(600).fontColor(Color.White);
+                    }
+                  }
+                  .width('100%').height(36)
+                  .backgroundColor('#4CAF50')
+                  .borderRadius(12)
+                  .padding(0);
+                }
+                .padding(14)
+                .backgroundColor(Color.White)
+                .borderRadius(16)
+                .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+                .margin({ bottom: 10 });
+              }, (t: TaskItemModel) => `report_${t.id}`);
+            }
+
+            if (this.vm.summary !== null &&
+                this.vm.summary.operatorPendingStartTasks.length === 0 &&
+                this.vm.summary.operatorPendingReportTasks.length === 0) {
+              Text('暂无待处理任务')
+                .fontSize(13).fontColor('#9A9AA8')
+                .padding(16).width('100%').textAlign(TextAlign.Center);
+            }
           }
           .width('100%')
           .margin({ bottom: 20 });
@@ -248,48 +293,8 @@ export struct OperatorHomeView {
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 12 });
 
-            Column() {
-              Row() {
-                Text('L1 柔性线')
-                  .fontSize(13).fontWeight(600).fontColor('#1A1A2E');
-                Row() {
-                  Circle().width(8).height(8).fill('#4CAF50');
-                  Text('运行中').fontSize(11).fontColor('#4CAF50');
-                }
-              }
-              .width('100%')
-              .justifyContent(FlexAlign.SpaceBetween)
-              .margin({ bottom: 12 });
-
-              Row() {
-                Column() {
-                  Text('当前工单').fontSize(11).fontColor('#5A5A6E').margin({ bottom: 2 });
-                  Text('WO-0116').fontSize(13).fontWeight(600).fontColor('#1A1A2E');
-                }
-                .alignItems(HorizontalAlign.Center)
-                .layoutWeight(1);
-
-                Column() {
-                  Text('本班产量').fontSize(11).fontColor('#5A5A6E').margin({ bottom: 2 });
-                  Text('136件').fontSize(13).fontWeight(600).fontColor('#1A1A2E');
-                }
-                .alignItems(HorizontalAlign.Center)
-                .layoutWeight(1);
-
-                Column() {
-                  Text('良品率').fontSize(11).fontColor('#5A5A6E').margin({ bottom: 2 });
-                  Text('98.5%').fontSize(13).fontWeight(600).fontColor('#4CAF50');
-                }
-                .alignItems(HorizontalAlign.Center)
-                .layoutWeight(1);
-              }
-              .width('100%');
-            }
-            .padding(14)
-            .backgroundColor(Color.White)
-            .borderRadius(16)
-            .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
-            .width('100%');
+            Text('产线动态需接入 /lines 接口，暂未实现')
+              .fontSize(12).fontColor('#9A9AA8').padding(16).width('100%').textAlign(TextAlign.Center);
           }
           .width('100%');
         }

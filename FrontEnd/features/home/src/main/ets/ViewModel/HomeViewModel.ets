@@ -1,75 +1,130 @@
-// 工作台数据模型（各角色共用）
-
-export class TodoItem {
-  type: string = '';       // 'exception' | 'dispatch'
-  typeLabel: string = '';
-  time: string = '';
-  title: string = '';
-  desc: string = '';
-  meta: Record<string, string>[] = [];
-}
-
-export class LineStatusItem {
-  name: string = '';
-  status: string = '';     // 'running' | 'idle' | 'error'
-  stats: Record<string, string>[] = [];
-}
-
-export class CurrentTask {
-  status: string = '';
-  code: string = '';
-  title: string = '';
-  progress: number = 0;
-}
-
-export class OperatorTaskItem {
-  tag: string = '';        // 'pending' | 'report'
-  tagLabel: string = '';
-  tagColor: string = '';
-  time: string = '';
-  name: string = '';
-  info: string = '';
-  buttonLabel: string = '';
-  buttonColor: string = '';
-  buttonIcon: string = '';
-}
+import { HomeApi } from '@ohos/network';
+import {
+  HomeSummaryModel,
+  ExceptionItemModel,
+  DispatchItemModel,
+  InspectionItemModel,
+  TaskItemModel
+} from '../Model/HomeSummaryModel';
 
 @ObservedV2
 export class HomeViewModel {
   @Trace isLoading: boolean = false;
-  @Trace userName: string = '';
-  @Trace userRole: string = '';
-  @Trace userSubtitle: string = '';
+  @Trace errorMessage: string = '';
+  @Trace summary: HomeSummaryModel | null = null;
 
-  // Leader — 待办事项
-  @Trace leaderTodos: TodoItem[] = [];
-  @Trace leaderLines: LineStatusItem[] = [];
-
-  // Operator — 当前任务 + 我的任务 + 产线动态
-  @Trace operatorCurrentTask: CurrentTask | null = null;
-  @Trace operatorTasks: OperatorTaskItem[] = [];
-  @Trace operatorLineName: string = '';
-  @Trace operatorLineStatus: string = '';
-  @Trace operatorLineStats: Record<string, string>[] = [];
-
-  // Inspector — KPI + 待抽检列表 + 产线状态
-  @Trace inspectPendingCount: number = 0;
-  @Trace inspectTodayDone: number = 0;
-  @Trace inspectPassRate: string = '';
-  @Trace inspectList: Record<string, string>[] = [];
-  @Trace inspectLines: Record<string, string>[] = [];
-
-  // Admin — KPI + 告警 + 今日概览
-  @Trace adminKpis: Record<string, string>[] = [];
-  @Trace adminAlerts: Record<string, string>[] = [];
-  @Trace adminTodayStats: Record<string, string>[] = [];
-
-  async loadHomeData(role: string): Promise<void> {
+  async loadHomeData(): Promise<void> {
     this.isLoading = true;
+    this.errorMessage = '';
     try {
-      // 工作台数据加载（后续 Phase 实现）
+      const raw = await HomeApi.getSummary() as Record<string, Object>;
+      this.summary = this.parseSummary(raw);
+    } catch (e) {
+      this.errorMessage = (e as Error).message || '加载失败';
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private parseSummary(raw: Record<string, Object>): HomeSummaryModel {
+    const m = new HomeSummaryModel();
+    m.pendingExceptionCount = (raw['pendingExceptionCount'] as number) ?? 0;
+    m.pendingDispatchCount = (raw['pendingDispatchCount'] as number) ?? 0;
+    m.pendingInspectionCount = (raw['pendingInspectionCount'] as number) ?? 0;
+    m.activeWorkOrderCount = (raw['activeWorkOrderCount'] as number) ?? 0;
+    m.totalLineCount = (raw['totalLineCount'] as number) ?? 0;
+    m.totalUserCount = (raw['totalUserCount'] as number) ?? 0;
+    m.todayInspectionDone = (raw['todayInspectionDone'] as number) ?? 0;
+    m.todayInspectionPassRate = (raw['todayInspectionPassRate'] as number) ?? 0;
+
+    const exceptions = raw['recentExceptions'] as Array<Record<string, Object>>;
+    if (exceptions) {
+      m.recentExceptions = exceptions.map((e: Record<string, Object>) => {
+        const item = new ExceptionItemModel();
+        item.id = (e['id'] as number) ?? 0;
+        item.workOrderId = (e['workOrderId'] as number) ?? 0;
+        item.workOrderCode = (e['workOrderCode'] as string) ?? '';
+        item.lineId = (e['lineId'] as number) ?? 0;
+        item.lineName = (e['lineName'] as string) ?? '';
+        item.description = (e['description'] as string) ?? '';
+        item.reportTime = (e['reportTime'] as string) ?? '';
+        return item;
+      });
+    }
+
+    const dispatches = raw['pendingDispatchItems'] as Array<Record<string, Object>>;
+    if (dispatches) {
+      m.pendingDispatchItems = dispatches.map((d: Record<string, Object>) => {
+        const item = new DispatchItemModel();
+        item.id = (d['id'] as number) ?? 0;
+        item.code = (d['code'] as string) ?? '';
+        item.type = (d['type'] as string) ?? '';
+        item.planQty = (d['planQty'] as number) ?? 0;
+        item.createdAt = (d['createdAt'] as string) ?? '';
+        return item;
+      });
+    }
+
+    const inspections = raw['pendingInspectionItems'] as Array<Record<string, Object>>;
+    if (inspections) {
+      m.pendingInspectionItems = inspections.map((r: Record<string, Object>) => {
+        const item = new InspectionItemModel();
+        item.id = (r['id'] as number) ?? 0;
+        item.workOrderId = (r['workOrderId'] as number) ?? 0;
+        item.workOrderCode = (r['workOrderCode'] as string) ?? '';
+        item.sampleQty = (r['sampleQty'] as number) ?? 0;
+        item.inspectTime = (r['inspectTime'] as string) ?? '';
+        return item;
+      });
+    }
+
+    const activeTask = raw['operatorActiveTask'] as Record<string, Object>;
+    if (activeTask) {
+      m.operatorActiveTask = this.parseTaskItem(activeTask);
+    }
+
+    const startTasks = raw['operatorPendingStartTasks'] as Array<Record<string, Object>>;
+    if (startTasks) {
+      m.operatorPendingStartTasks = startTasks.map((t: Record<string, Object>) => this.parseTaskItem(t));
+    }
+
+    const reportTasks = raw['operatorPendingReportTasks'] as Array<Record<string, Object>>;
+    if (reportTasks) {
+      m.operatorPendingReportTasks = reportTasks.map((t: Record<string, Object>) => this.parseTaskItem(t));
+    }
+
+    return m;
+  }
+
+  private parseTaskItem(t: Record<string, Object>): TaskItemModel {
+    const item = new TaskItemModel();
+    item.id = (t['id'] as number) ?? 0;
+    item.code = (t['code'] as string) ?? '';
+    item.type = (t['type'] as string) ?? '';
+    item.status = (t['status'] as string) ?? '';
+    item.lineName = (t['lineName'] as string) ?? '';
+    item.planQty = (t['planQty'] as number) ?? 0;
+    item.reportedQtyGood = (t['reportedQtyGood'] as number) ?? 0;
+    item.reportedQtyNg = (t['reportedQtyNg'] as number) ?? 0;
+    return item;
+  }
+
+  get hasPendingExceptions(): boolean {
+    return this.summary !== null && this.summary.pendingExceptionCount > 0;
+  }
+
+  get hasPendingDispatches(): boolean {
+    return this.summary !== null && this.summary.pendingDispatchCount > 0;
+  }
+
+  get hasPendingInspections(): boolean {
+    return this.summary !== null && this.summary.pendingInspectionCount > 0;
+  }
+
+  get hasOperatorTasks(): boolean {
+    return this.summary !== null &&
+      (this.summary.operatorActiveTask !== null ||
+       this.summary.operatorPendingStartTasks.length > 0 ||
+       this.summary.operatorPendingReportTasks.length > 0);
   }
 }

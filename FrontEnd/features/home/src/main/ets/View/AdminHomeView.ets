@@ -1,10 +1,33 @@
 import { UserModel } from '@ohos/user';
+import { HomeViewModel } from '../ViewModel/HomeViewModel';
+import { ExceptionItemModel } from '../Model/HomeSummaryModel';
 
 @ComponentV2
 export struct AdminHomeView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('activeTab') activeTab: string = '';
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
+  @Local vm: HomeViewModel = new HomeViewModel();
+
+  aboutToAppear(): void {
+    this.vm.loadHomeData();
+  }
+
+  get totalLines(): string {
+    return this.vm.summary ? `${this.vm.summary.totalLineCount}` : '0';
+  }
+
+  get totalUsers(): string {
+    return this.vm.summary ? `${this.vm.summary.totalUserCount}` : '0';
+  }
+
+  get activeOrders(): string {
+    return this.vm.summary ? `${this.vm.summary.activeWorkOrderCount}` : '0';
+  }
+
+  get pendingExceptions(): string {
+    return this.vm.summary ? `${this.vm.summary.pendingExceptionCount}` : '0';
+  }
 
   @Builder
   KpiCard(icon: ResourceStr, label: string, value: string, trend: string, valueColor: ResourceColor) {
@@ -63,7 +86,6 @@ export struct AdminHomeView {
       Column() {
         // Header 蓝色区域
         Column() {
-          // 用户问候 + 设置按钮
           Row() {
             Column() {
               Text(this.currentUser.name || '刘管理员')
@@ -86,15 +108,21 @@ export struct AdminHomeView {
 
           // 2×2 KPI Grid
           Row({ space: 10 }) {
-            this.KpiCard($r('app.media.icon_dashboard_white'), '产线总数', '4', '3运行 1待机', Color.White);
-            this.KpiCard($r('app.media.icon_person_white'), '人员总数', '12', '8在岗 4休班', Color.White);
+            this.KpiCard($r('app.media.icon_dashboard_white'), '产线总数', this.totalLines,
+              `${this.vm.summary?.totalLineCount || 0}条产线`, Color.White);
+            this.KpiCard($r('app.media.icon_person_white'), '人员总数', this.totalUsers,
+              `${this.vm.summary?.totalUserCount || 0}人`, Color.White);
           }
           .width('100%')
           .margin({ bottom: 10 });
 
           Row({ space: 10 }) {
-            this.KpiCard($r('app.media.icon_document_white'), '活跃工单', '5', '2生产中 3待派工', Color.White);
-            this.KpiCard($r('app.media.icon_alert_white'), '待处理异常', '1', 'L3产线故障', '#FF8A80');
+            this.KpiCard($r('app.media.icon_document_white'), '活跃工单', this.activeOrders,
+              `${this.vm.summary?.pendingDispatchCount || 0}待派工`, Color.White);
+            this.KpiCard($r('app.media.icon_alert_white'), '待处理异常', this.pendingExceptions,
+              this.vm.summary?.pendingExceptionCount !== undefined && this.vm.summary.pendingExceptionCount > 0 ?
+                '需关注' : '无异常', this.vm.summary?.pendingExceptionCount !== undefined && this.vm.summary.pendingExceptionCount > 0 ?
+                '#FF8A80' : Color.White);
           }
           .width('100%')
           .margin({ bottom: 16 });
@@ -144,40 +172,49 @@ export struct AdminHomeView {
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 12 });
 
-            Row({ space: 12 }) {
-              Column() {
-                Image($r('app.media.icon_alert_red')).width(20).height(20);
-              }
-              .width(40).height(40)
-              .backgroundColor('#FFEBEE')
-              .borderRadius(12)
-              .justifyContent(FlexAlign.Center)
-              .alignItems(HorizontalAlign.Center);
-
-              Column() {
-                Text('产线L3工作站故障')
-                  .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
-                  .margin({ bottom: 2 });
-                Text('3号柔性产线第5工作站检测到传送带速度异常')
-                  .fontSize(12).fontColor('#5A5A6E')
-                  .margin({ bottom: 8 });
+            if (this.vm.summary !== null && this.vm.summary.recentExceptions.length > 0) {
+              ForEach(this.vm.summary.recentExceptions, (ex: ExceptionItemModel) => {
                 Row({ space: 12 }) {
-                  Text('产线：L3柔性线').fontSize(11).fontColor('#9A9AA8');
-                  Text('工位：WS-05').fontSize(11).fontColor('#9A9AA8');
+                  Column() {
+                    Image($r('app.media.icon_alert_red')).width(20).height(20);
+                  }
+                  .width(40).height(40)
+                  .backgroundColor('#FFEBEE')
+                  .borderRadius(12)
+                  .justifyContent(FlexAlign.Center)
+                  .alignItems(HorizontalAlign.Center);
+
+                  Column() {
+                    Text(`${ex.lineName}故障`)
+                      .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
+                      .margin({ bottom: 2 });
+                    Text(ex.description || '')
+                      .fontSize(12).fontColor('#5A5A6E')
+                      .margin({ bottom: 8 });
+                    Row({ space: 12 }) {
+                      Text(`产线：${ex.lineName}`).fontSize(11).fontColor('#9A9AA8');
+                      Text(`工单：${ex.workOrderCode}`).fontSize(11).fontColor('#9A9AA8');
+                    }
+                  }
+                  .layoutWeight(1);
                 }
-              }
-              .layoutWeight(1);
+                .padding(14)
+                .backgroundColor(Color.White)
+                .borderRadius(16)
+                .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+                .width('100%')
+                .margin({ bottom: 10 });
+              }, (ex: ExceptionItemModel) => `alert_${ex.id}`);
+            } else {
+              Text('暂无异常告警')
+                .fontSize(13).fontColor('#9A9AA8')
+                .padding(16).width('100%').textAlign(TextAlign.Center);
             }
-            .padding(14)
-            .backgroundColor(Color.White)
-            .borderRadius(16)
-            .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
-            .width('100%');
           }
           .width('100%')
           .margin({ bottom: 20 });
 
-          // 今日概览
+          // 今日概览 — 保留占位
           Column() {
             Row() {
               Text('今日概览').fontSize(15).fontWeight(600).fontColor('#1A1A2E');
@@ -187,30 +224,8 @@ export struct AdminHomeView {
             .justifyContent(FlexAlign.SpaceBetween)
             .margin({ bottom: 12 });
 
-            Row() {
-              Column() {
-                Text('320').fontSize(20).fontWeight(700).fontColor('#1A1A2E').margin({ bottom: 2 });
-                Text('今日产量').fontSize(11).fontColor('#5A5A6E');
-              }
-              .alignItems(HorizontalAlign.Center).layoutWeight(1);
-
-              Column() {
-                Text('97.8%').fontSize(20).fontWeight(700).fontColor('#4CAF50').margin({ bottom: 2 });
-                Text('平均良品率').fontSize(11).fontColor('#5A5A6E');
-              }
-              .alignItems(HorizontalAlign.Center).layoutWeight(1);
-
-              Column() {
-                Text('6.5h').fontSize(20).fontWeight(700).fontColor('#1565C0').margin({ bottom: 2 });
-                Text('平均工时').fontSize(11).fontColor('#5A5A6E');
-              }
-              .alignItems(HorizontalAlign.Center).layoutWeight(1);
-            }
-            .width('100%')
-            .padding(16)
-            .backgroundColor(Color.White)
-            .borderRadius(16)
-            .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' });
+            Text('今日概览需接入 /dashboard 接口，暂未实现')
+              .fontSize(12).fontColor('#9A9AA8').padding(16).width('100%').textAlign(TextAlign.Center);
           }
           .width('100%');
         }
