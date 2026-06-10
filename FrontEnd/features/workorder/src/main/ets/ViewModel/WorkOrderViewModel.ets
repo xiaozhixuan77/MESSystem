@@ -298,8 +298,7 @@ export class WorkOrderViewModel {
 
   async loadOperators(): Promise<void> {
     try {
-      const params: Record<string, string> = { 'role': 'operator' };
-      const raw = await UserApi.getUsers(params) as Record<string, Object>[];
+      const raw = await UserApi.getUsers('operator') as Record<string, Object>[];
       this.operators = raw.map((r: Record<string, Object>): UserModel => {
         const u = new UserModel();
         u.id = r['id'] as number;
