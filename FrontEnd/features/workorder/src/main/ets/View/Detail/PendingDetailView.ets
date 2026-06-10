@@ -249,7 +249,8 @@ export struct PendingDetailView {
                   .fontSize(14).fontWeight(600).fontColor('#1A1A2E');
                 Circle()
                   .width(6).height(6)
-                  .fill((op.status === '在岗' || op.status === 'active') ? '#4CAF50' : '#F44336');
+                  .fill((op.status === '在岗' || op.status === 'active') ? '#4CAF50' :
+                    (op.status === '离岗' || op.status === 'disabled') ? '#F44336' : '#9A9AA8');
               }
               .margin({ bottom: 2 });
               Text(`工号：${op.employeeNo}`)

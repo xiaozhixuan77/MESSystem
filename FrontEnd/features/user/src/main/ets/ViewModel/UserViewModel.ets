@@ -37,7 +37,7 @@ export class UserViewModel {
   @Trace formName: string = '';
   @Trace formRole: string = '操作员';
   @Trace formPassword: string = '';
-  @Trace formStatus: string = 'active';
+  @Trace formStatus: string = '在岗';
   @Trace errorMessage: string = '';
   @Trace isSubmitting: boolean = false;
   roleTabs: string[] = ROLE_TABS;
@@ -85,7 +85,7 @@ export class UserViewModel {
     this.formName = '';
     this.formRole = '操作员';
     this.formPassword = '';
-    this.formStatus = 'active';
+    this.formStatus = '在岗';
     this.errorMessage = '';
     this.showFormDialog = true;
   }

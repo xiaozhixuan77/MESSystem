@@ -1,5 +1,6 @@
 import { UserViewModel } from '../ViewModel/UserViewModel';
 import { UserModel } from '../Model/UserModel';
+import { WebSocketService } from '@ohos/network';
 
 interface RoleBadgeStyle {
   bg: string;
@@ -28,9 +29,35 @@ export struct EmployeeListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Local vm: UserViewModel = new UserViewModel();
   private searchTimer: number = 0;
+  private readonly USERS_TOPIC: string = '/topic/users';
+  private wsSubscribed: boolean = false;
 
   aboutToAppear(): void {
     this.vm.loadUsers();
+    this.subscribeUsers();
+  }
+
+  aboutToDisappear(): void {
+    this.unsubscribeUsers();
+  }
+
+  private onUserStatusChanged = (_msg: Object): void => {
+    this.vm.loadUsers();
+  };
+
+  private subscribeUsers(): void {
+    if (this.wsSubscribed) { return; }
+    this.wsSubscribed = true;
+    const ws = WebSocketService.getInstance();
+    ws.subscribe(this.USERS_TOPIC);
+    WebSocketService.addListener(this.USERS_TOPIC, this.onUserStatusChanged);
+  }
+
+  private unsubscribeUsers(): void {
+    if (!this.wsSubscribed) { return; }
+    this.wsSubscribed = false;
+    WebSocketService.removeListener(this.USERS_TOPIC, this.onUserStatusChanged);
+    WebSocketService.getInstance().unsubscribe(this.USERS_TOPIC);
   }
 
   getAvatarColor(role: string): string {
@@ -60,9 +87,9 @@ export struct EmployeeListView {
   }
 
   getStatusColor(status: string): string {
-    if (!status) { return '#9A9AA8'; }
     if (status === '在岗' || status === 'active') { return '#4CAF50'; }
-    return '#F44336';
+    if (status === '离岗' || status === 'disabled' || status === 'offline') { return '#F44336'; }
+    return '#9A9AA8';
   }
 
   @Builder
@@ -178,29 +205,29 @@ export struct EmployeeListView {
         Text('状态').fontSize(12).fontColor('#5A5A6E').width('100%').margin({ bottom: 6 });
         Row({ space: 8 }) {
           Row() {
-            Text('在职')
+            Text('在岗')
               .fontSize(13)
               .fontWeight(500)
-              .fontColor(this.vm.formStatus === 'active' ? Color.White : '#5A5A6E')
+              .fontColor(this.vm.formStatus === '在岗' ? Color.White : '#5A5A6E')
               .padding({ left: 16, right: 16, top: 6, bottom: 6 });
           }
           .borderRadius(20)
-          .backgroundColor(this.vm.formStatus === 'active' ? '#4CAF50' : '#F5F7FA')
+          .backgroundColor(this.vm.formStatus === '在岗' ? '#4CAF50' : '#F5F7FA')
           .onClick(() => {
-            this.vm.formStatus = 'active';
+            this.vm.formStatus = '在岗';
           });
 
           Row() {
-            Text('禁用')
+            Text('离岗')
               .fontSize(13)
               .fontWeight(500)
-              .fontColor(this.vm.formStatus === 'disabled' ? Color.White : '#5A5A6E')
+              .fontColor(this.vm.formStatus === '离岗' ? Color.White : '#5A5A6E')
               .padding({ left: 16, right: 16, top: 6, bottom: 6 });
           }
           .borderRadius(20)
-          .backgroundColor(this.vm.formStatus === 'disabled' ? '#F44336' : '#F5F7FA')
+          .backgroundColor(this.vm.formStatus === '离岗' ? '#F44336' : '#F5F7FA')
           .onClick(() => {
-            this.vm.formStatus = 'disabled';
+            this.vm.formStatus = '离岗';
           });
         }
         Blank().height(12);
