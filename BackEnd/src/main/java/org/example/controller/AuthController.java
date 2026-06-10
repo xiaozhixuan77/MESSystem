@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import org.example.constant.ErrorMessages;
 import org.example.dto.request.LoginRequest;
 import org.example.dto.response.LoginResponse;
 import org.example.dto.response.R;
@@ -89,7 +90,7 @@ public class AuthController {
         Long userId = Long.valueOf(userDetails.getUsername());
         User user = userService.getById(userId);
         if (user == null) {
-            return R.error(404, "用户不存在");
+            return R.error(404, ErrorMessages.USER_NOT_FOUND);
         }
 
         UserVO userVO = new UserVO();

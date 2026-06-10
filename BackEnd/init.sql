@@ -551,7 +551,11 @@ INSERT IGNORE INTO role_permission (role, permission) VALUES
 ('inspector', 'inspection.create'),
 ('inspector', 'workorder.view_inspection'),
 ('inspector', 'line.view'),
-('inspector', 'dashboard.view');
+('inspector', 'dashboard.view'),
+('admin', 'user.view'),
+('admin', 'user.create'),
+('admin', 'user.update'),
+('admin', 'user.delete');
 
 -- --------------------------------------------------------
 -- 9. line_process_support（产线支持工艺关联）
