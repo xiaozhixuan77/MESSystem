@@ -422,15 +422,15 @@ export struct EmployeeListView {
           }
           .width('100%').layoutWeight(1).justifyContent(FlexAlign.Center);
         } else {
-          Scroll() {
-            Column() {
-              ForEach(this.vm.userList, (user: UserModel) => {
+          List() {
+            ForEach(this.vm.userList, (user: UserModel) => {
+              ListItem() {
                 this.EmployeeCard(user);
-              }, (user: UserModel) => `${user.id}`);
-            }
-            .padding({ left: 16, right: 16, top: 4, bottom: 16 });
+              }
+            }, (user: UserModel) => `${user.id}`);
           }
           .layoutWeight(1)
+          .padding({ left: 16, right: 16, top: 4, bottom: 16 })
           .scrollBar(BarState.Off)
           .edgeEffect(EdgeEffect.None);
         }
