@@ -64,7 +64,7 @@ export class UserViewModel {
         u.role = (item['role'] as string) ?? '';
         u.workshopId = (item['workshopId'] as number) ?? null;
         u.teamId = (item['teamId'] as number) ?? null;
-        u.status = (item['status'] as string) ?? 'active';
+        u.status = (item['status'] as string) ?? '在岗';
         u.avatarUrl = (item['avatarUrl'] as string) ?? '';
         return u;
       });

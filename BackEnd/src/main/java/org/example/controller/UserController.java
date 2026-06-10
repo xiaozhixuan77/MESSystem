@@ -10,6 +10,7 @@ import org.example.exception.BusinessException;
 import org.example.security.RequiresPermission;
 import org.example.service.UserService;
 import org.example.vo.UserVO;
+import org.example.websocket.LineBroadcaster;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -22,22 +23,30 @@ public class UserController {
 
     private final UserService userService;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final LineBroadcaster lineBroadcaster;
 
-    public UserController(UserService userService, BCryptPasswordEncoder passwordEncoder) {
+    public UserController(UserService userService,
+                          BCryptPasswordEncoder passwordEncoder,
+                          LineBroadcaster lineBroadcaster) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.lineBroadcaster = lineBroadcaster;
     }
 
     @GetMapping("/users")
     @RequiresPermission("user.view")
     public R<List<UserVO>> list(@RequestParam(required = false) String role,
-                                 @RequestParam(required = false) String keyword) {
+                                 @RequestParam(required = false) String keyword,
+                                 @RequestParam(required = false) String status) {
         var query = userService.lambdaQuery();
         if (role != null && !role.isEmpty()) {
             query = query.eq(User::getRole, role);
         }
         if (keyword != null && !keyword.isEmpty()) {
             query = query.and(w -> w.like(User::getName, keyword).or().like(User::getEmployeeNo, keyword));
+        }
+        if (status != null && !status.isEmpty()) {
+            query = query.eq(User::getStatus, status);
         }
         List<User> users = query.list();
         List<UserVO> vos = users.stream().map(this::toVO).collect(Collectors.toList());
@@ -79,11 +88,20 @@ public class UserController {
         if (req.getRole() != null) user.setRole(req.getRole());
         if (req.getWorkshopId() != null) user.setWorkshopId(req.getWorkshopId());
         if (req.getTeamId() != null) user.setTeamId(req.getTeamId());
-        if (req.getStatus() != null) user.setStatus(req.getStatus());
+        String oldStatus = user.getStatus();
+        if (req.getStatus() != null) {
+            user.setStatus(req.getStatus());
+        }
         if (req.getPassword() != null && !req.getPassword().isEmpty()) {
             user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         }
         userService.updateById(user);
+
+        if (req.getStatus() != null && !req.getStatus().equals(oldStatus)) {
+            lineBroadcaster.broadcastUserStatusChanged(
+                    user.getId(), user.getEmployeeNo(), user.getName(), req.getStatus());
+        }
+
         return R.ok(toVO(user));
     }
 

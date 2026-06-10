@@ -1,9 +1,10 @@
 import { httpClient } from './HttpClient';
 export class UserApi {
-  static async getUsers(role?: string, keyword?: string): Promise<Object[]> {
+  static async getUsers(role?: string, keyword?: string, status?: string): Promise<Object[]> {
     const params: Record<string, string> = {};
     if (role) { params['role'] = role; }
     if (keyword) { params['keyword'] = keyword; }
+    if (status) { params['status'] = status; }
     const qs = Object.keys(params)
       .filter(k => params[k] !== undefined && params[k] !== null && params[k] !== '')
       .map(k => `${k}=${encodeURIComponent(params[k])}`)

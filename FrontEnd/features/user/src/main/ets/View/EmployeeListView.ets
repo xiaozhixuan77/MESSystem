@@ -53,7 +53,16 @@ export struct EmployeeListView {
     if (user.teamId) {
       parts.push(`班组${user.teamId}`);
     }
+    if (user.status) {
+      parts.push(user.status);
+    }
     return parts.join(' · ') || '—';
+  }
+
+  getStatusColor(status: string): string {
+    if (!status) { return '#9A9AA8'; }
+    if (status === '在岗' || status === 'active') { return '#4CAF50'; }
+    return '#F44336';
   }
 
   @Builder
@@ -282,11 +291,16 @@ export struct EmployeeListView {
 
       // Info
       Column() {
-        Text(user.name)
-          .fontSize(15)
-          .fontWeight(600)
-          .fontColor('#1A1A2E')
-          .margin({ bottom: 2 });
+        Row({ space: 6 }) {
+          Text(user.name)
+            .fontSize(15)
+            .fontWeight(600)
+            .fontColor('#1A1A2E');
+          Circle()
+            .width(6).height(6)
+            .fill(this.getStatusColor(user.status));
+        }
+        .margin({ bottom: 2 });
         Text(this.getSubtitle(user))
           .fontSize(12)
           .fontColor('#5A5A6E');

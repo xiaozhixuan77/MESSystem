@@ -8,6 +8,7 @@ import org.example.entity.ProcessStep;
 import org.example.entity.Product;
 import org.example.entity.ProductionLine;
 import org.example.entity.WorkOrder;
+import org.example.entity.User;
 import org.example.entity.WorkOrderRouteStep;
 import org.example.exception.BusinessException;
 import org.example.mapper.InspectionRecordMapper;
@@ -16,6 +17,7 @@ import org.example.service.InspectionRecordService;
 import org.example.service.ProcessStepService;
 import org.example.service.ProductService;
 import org.example.service.ProductionLineService;
+import org.example.service.UserService;
 import org.example.service.WorkOrderRouteStepService;
 import org.example.service.WorkOrderService;
 import org.example.simulator.SimulatorManager;
@@ -52,6 +54,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final LineBroadcaster lineBroadcaster;
     private final InspectionRecordService inspectionRecordService;
     private final InspectionRecordMapper inspectionRecordMapper;
+    private final UserService userService;
 
     public WorkOrderServiceImpl(ProductService productService,
                                 ProcessStepService processStepService,
@@ -61,7 +64,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                                 SimulatorManager simulatorManager,
                                 LineBroadcaster lineBroadcaster,
                                 @Lazy InspectionRecordService inspectionRecordService,
-                                InspectionRecordMapper inspectionRecordMapper) {
+                                InspectionRecordMapper inspectionRecordMapper,
+                                UserService userService) {
         this.productService = productService;
         this.processStepService = processStepService;
         this.workOrderRouteStepService = workOrderRouteStepService;
@@ -71,6 +75,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         this.lineBroadcaster = lineBroadcaster;
         this.inspectionRecordService = inspectionRecordService;
         this.inspectionRecordMapper = inspectionRecordMapper;
+        this.userService = userService;
     }
 
     @Override
@@ -307,6 +312,14 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
         if (hasActiveWorkOrder(operatorId)) {
             throw new BusinessException(400, "该操作员已持有激活工单");
+        }
+
+        User operator = userService.getById(operatorId);
+        if (operator == null) {
+            throw new BusinessException(404, "操作员不存在");
+        }
+        if (!"在岗".equals(operator.getStatus())) {
+            throw new BusinessException(400, "该操作员当前不在岗，无法派工");
         }
 
         wo.setStatus("已派工");

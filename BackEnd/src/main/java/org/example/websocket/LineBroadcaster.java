@@ -175,6 +175,25 @@ public class LineBroadcaster {
     }
 
     /**
+     * 用户状态变更广播 → /topic/users。
+     */
+    public void broadcastUserStatusChanged(Long userId, String employeeNo, String name, String status) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("userId", userId);
+        data.put("employeeNo", employeeNo);
+        data.put("name", name);
+        data.put("status", status);
+
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "USER_STATUS_CHANGED");
+        message.put("timestamp", System.currentTimeMillis());
+        message.put("data", data);
+
+        messagingTemplate.convertAndSend("/topic/users", message);
+        log.debug("用户状态已广播: userId={}, status={}", userId, status);
+    }
+
+    /**
      * 主页摘要刷新信号 → /topic/home。
      * 当工单状态、异常、抽检等影响主页待办卡片的数据变更时调用。
      */

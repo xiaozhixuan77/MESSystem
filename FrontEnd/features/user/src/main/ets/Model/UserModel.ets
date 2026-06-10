@@ -6,7 +6,7 @@ export class UserModel {
   @Trace role: string = '';
   @Trace teamId: number | null = null;
   @Trace workshopId: number | null = null;
-  @Trace status: string = 'active';
+  @Trace status: string = '在岗';
   @Trace avatarUrl: string = '';
   createdAt: string = '';
 }

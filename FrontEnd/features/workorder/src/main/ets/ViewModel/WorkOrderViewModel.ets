@@ -298,7 +298,7 @@ export class WorkOrderViewModel {
 
   async loadOperators(): Promise<void> {
     try {
-      const raw = await UserApi.getUsers('operator') as Record<string, Object>[];
+      const raw = await UserApi.getUsers('operator', undefined, '在岗') as Record<string, Object>[];
       this.operators = raw.map((r: Record<string, Object>): UserModel => {
         const u = new UserModel();
         u.id = r['id'] as number;
@@ -307,6 +307,7 @@ export class WorkOrderViewModel {
         u.role = r['role'] as string;
         u.workshopId = (r['workshopId'] as number) ?? null;
         u.teamId = (r['teamId'] as number) ?? null;
+        u.status = (r['status'] as string) ?? '';
         return u;
       });
       if (this.operators.length > 0 && this.selectedOperatorId === 0) {

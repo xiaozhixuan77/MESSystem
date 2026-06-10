@@ -244,9 +244,14 @@ export struct PendingDetailView {
             .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center);
 
             Column() {
-              Text(op.name)
-                .fontSize(14).fontWeight(600).fontColor('#1A1A2E')
-                .margin({ bottom: 2 });
+              Row({ space: 6 }) {
+                Text(op.name)
+                  .fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+                Circle()
+                  .width(6).height(6)
+                  .fill((op.status === '在岗' || op.status === 'active') ? '#4CAF50' : '#F44336');
+              }
+              .margin({ bottom: 2 });
               Text(`工号：${op.employeeNo}`)
                 .fontSize(12).fontColor('#5A5A6E');
             }
