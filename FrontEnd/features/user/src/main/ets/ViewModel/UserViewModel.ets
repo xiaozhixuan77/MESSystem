@@ -50,27 +50,36 @@ export class UserViewModel {
     return ROLE_LABEL_TO_API[roleTab] || '';
   }
 
+  private loadingPromise: Promise<void> | null = null;
+
   async loadUsers(): Promise<void> {
-    this.isLoading = true;
-    try {
-      const role = this.activeRoleTab === '全部' ? undefined : this.getRoleApiValue(this.activeRoleTab);
-      const kw = this.keyword.trim() || undefined;
-      const result = await UserApi.getUsers(role, kw) as Record<string, Object>[];
-      this.userList = result.map((item: Record<string, Object>) => {
-        const u = new UserModel();
-        u.id = (item['id'] as number) ?? 0;
-        u.employeeNo = (item['employeeNo'] as string) ?? '';
-        u.name = (item['name'] as string) ?? '';
-        u.role = (item['role'] as string) ?? '';
-        u.workshopId = (item['workshopId'] as number) ?? null;
-        u.teamId = (item['teamId'] as number) ?? null;
-        u.status = (item['status'] as string) ?? '在岗';
-        u.avatarUrl = (item['avatarUrl'] as string) ?? '';
-        return u;
-      });
-    } finally {
-      this.isLoading = false;
+    if (this.loadingPromise) {
+      return this.loadingPromise;
     }
+    this.isLoading = true;
+    this.loadingPromise = (async (): Promise<void> => {
+      try {
+        const role = this.activeRoleTab === '全部' ? undefined : this.getRoleApiValue(this.activeRoleTab);
+        const kw = this.keyword.trim() || undefined;
+        const result = await UserApi.getUsers(role, kw) as Record<string, Object>[];
+        this.userList = result.map((item: Record<string, Object>) => {
+          const u = new UserModel();
+          u.id = (item['id'] as number) ?? 0;
+          u.employeeNo = (item['employeeNo'] as string) ?? '';
+          u.name = (item['name'] as string) ?? '';
+          u.role = (item['role'] as string) ?? '';
+          u.workshopId = (item['workshopId'] as number) ?? null;
+          u.teamId = (item['teamId'] as number) ?? null;
+          u.status = (item['status'] as string) ?? '在岗';
+          u.avatarUrl = (item['avatarUrl'] as string) ?? '';
+          return u;
+        });
+      } finally {
+        this.isLoading = false;
+        this.loadingPromise = null;
+      }
+    })();
+    return this.loadingPromise;
   }
 
   onRoleTabChange(tab: string): void {
@@ -104,6 +113,18 @@ export class UserViewModel {
 
   closeDialog(): void {
     this.showFormDialog = false;
+  }
+
+  private applyLocalUpdate(): void {
+    const roleApi = this.getRoleApiValue(this.formRole);
+    for (let i = 0; i < this.userList.length; i++) {
+      if (this.userList[i].id === this.editingUserId) {
+        this.userList[i].name = this.formName.trim();
+        this.userList[i].role = roleApi;
+        this.userList[i].status = this.formStatus;
+        return;
+      }
+    }
   }
 
   async createUser(): Promise<boolean> {
@@ -152,6 +173,7 @@ export class UserViewModel {
         data.password = this.formPassword.trim();
       }
       await UserApi.updateUser(this.editingUserId, data);
+      this.applyLocalUpdate();
       this.showFormDialog = false;
       this.loadUsers();
       return true;
