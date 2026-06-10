@@ -9,7 +9,7 @@ interface StatusColor {
   bg: string;
 }
 
-const STATUS_TABS: string[] = ['全部', '待派工', '已派工', '生产中', '已暂停', '待报工', '已完成', '完工', '报废'];
+const STATUS_TABS: string[] = ['全部', '待派工', '已派工', '生产中', '已暂停', '待报工', '已报工', '完工', '报废'];
 
 const STATUS_COLORS: Record<string, StatusColor> = {
   '待派工': { text: '#1565C0', bg: '#E3F2FD' } as StatusColor,
@@ -17,6 +17,7 @@ const STATUS_COLORS: Record<string, StatusColor> = {
   '生产中': { text: '#4CAF50', bg: '#E8F5E9' } as StatusColor,
   '暂停中': { text: '#FF9800', bg: '#FFF3E0' } as StatusColor,
   '生产完成': { text: '#722ED1', bg: '#F3E5F5' } as StatusColor,
+  '待报工': { text: '#722ED1', bg: '#F3E5F5' } as StatusColor,
   '已报工': { text: '#00897B', bg: '#E0F2F1' } as StatusColor,
   '完工': { text: '#4CAF50', bg: '#E8F5E9' } as StatusColor,
   '报废': { text: '#F44336', bg: '#FFEBEE' } as StatusColor,
@@ -55,9 +56,13 @@ export struct WorkOrderListView {
       case '生产中': return '生产中';
       case '已暂停': return '暂停中';
       case '待报工': return '生产完成';
-      case '已完成': return '已报工';
       default: return label === '全部' ? '' : label;
     }
+  }
+
+  private statusToDisplay(status: string): string {
+    if (status === '生产完成') return '待报工';
+    return status;
   }
 
   private getDetailPageName(status: string): string {
@@ -76,10 +81,10 @@ export struct WorkOrderListView {
 
   @Builder
   StatusBadge(status: string) {
-    Text(status)
-      .fontSize(10).fontWeight(600).fontColor(STATUS_COLORS[status]?.text || '#9A9AA8')
+    Text(this.statusToDisplay(status))
+      .fontSize(10).fontWeight(600).fontColor(STATUS_COLORS[this.statusToDisplay(status)]?.text || '#9A9AA8')
       .padding({ left: 10, right: 10, top: 3, bottom: 3 })
-      .backgroundColor(STATUS_COLORS[status]?.bg || '#F5F7FA')
+      .backgroundColor(STATUS_COLORS[this.statusToDisplay(status)]?.bg || '#F5F7FA')
       .borderRadius(10);
   }
 
