@@ -13,6 +13,8 @@ public interface WorkOrderService extends IService<WorkOrder> {
     List<WorkOrder> listWorkOrders(String role, Long userId, Long workshopId,
                                    String status, String type, Long lineId);
 
+    List<WorkOrder> listAllWorkOrders(String status, String type, Long lineId, String keyword);
+
     WorkOrder createWorkOrder(WorkOrderCreateRequest request, Long createdBy);
 
     WorkOrder copyWorkOrder(Long sourceId, WorkOrderCreateRequest override, Long createdBy);

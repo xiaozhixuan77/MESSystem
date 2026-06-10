@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -86,41 +87,17 @@ public class WorkOrderController {
                 currentUser.getRole(), currentUser.getId(), currentUser.getWorkshopId(),
                 status, type, lineId);
 
-        Set<Long> productIds = orders.stream()
-                .map(WorkOrder::getProductId)
-                .filter(id -> id != null)
-                .collect(Collectors.toSet());
-        Set<Long> operatorIds = orders.stream()
-                .map(WorkOrder::getOperatorId)
-                .filter(id -> id != null)
-                .collect(Collectors.toSet());
+        return R.ok(buildWorkOrderVOs(orders));
+    }
 
-        Map<Long, Product> productMap = productIds.isEmpty() ? Map.of()
-                : productService.listByIds(productIds).stream()
-                        .collect(Collectors.toMap(Product::getId, p -> p));
-        Map<Long, User> userMap = operatorIds.isEmpty() ? Map.of()
-                : userService.listByIds(operatorIds).stream()
-                        .collect(Collectors.toMap(User::getId, u -> u));
-
-        Set<Long> workshopIds = orders.stream()
-                .map(WorkOrder::getWorkshopId)
-                .filter(id -> id != null)
-                .collect(Collectors.toSet());
-        Set<Long> lineIds = orders.stream()
-                .map(WorkOrder::getLineId)
-                .filter(id -> id != null)
-                .collect(Collectors.toSet());
-        Map<Long, Workshop> workshopMap = workshopIds.isEmpty() ? Map.of()
-                : workshopService.listByIds(workshopIds).stream()
-                        .collect(Collectors.toMap(Workshop::getId, w -> w));
-        Map<Long, ProductionLine> lineMap = lineIds.isEmpty() ? Map.of()
-                : productionLineService.listByIds(lineIds).stream()
-                        .collect(Collectors.toMap(ProductionLine::getId, l -> l));
-
-        List<WorkOrderVO> vos = orders.stream()
-                .map(wo -> toWorkOrderVO(wo, productMap, userMap, workshopMap, lineMap))
-                .collect(Collectors.toList());
-        return R.ok(vos);
+    @GetMapping("/workorders/all")
+    @RequiresPermission("workorder.view_team")
+    public R<List<WorkOrderVO>> listAll(@RequestParam(required = false) String status,
+                                         @RequestParam(required = false) String type,
+                                         @RequestParam(required = false) Long lineId,
+                                         @RequestParam(required = false) String keyword) {
+        List<WorkOrder> orders = workOrderService.listAllWorkOrders(status, type, lineId, keyword);
+        return R.ok(buildWorkOrderVOs(orders));
     }
 
     @PostMapping("/workorders")
@@ -281,6 +258,37 @@ public class WorkOrderController {
         }
 
         return vo;
+    }
+
+    private List<WorkOrderVO> buildWorkOrderVOs(List<WorkOrder> orders) {
+        Set<Long> productIds = new HashSet<>();
+        Set<Long> operatorIds = new HashSet<>();
+        Set<Long> workshopIds = new HashSet<>();
+        Set<Long> lineIds = new HashSet<>();
+
+        for (WorkOrder wo : orders) {
+            if (wo.getProductId() != null) productIds.add(wo.getProductId());
+            if (wo.getOperatorId() != null) operatorIds.add(wo.getOperatorId());
+            if (wo.getWorkshopId() != null) workshopIds.add(wo.getWorkshopId());
+            if (wo.getLineId() != null) lineIds.add(wo.getLineId());
+        }
+
+        Map<Long, Product> productMap = productIds.isEmpty() ? Map.of()
+                : productService.listByIds(productIds).stream()
+                        .collect(Collectors.toMap(Product::getId, p -> p));
+        Map<Long, User> userMap = operatorIds.isEmpty() ? Map.of()
+                : userService.listByIds(operatorIds).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u));
+        Map<Long, Workshop> workshopMap = workshopIds.isEmpty() ? Map.of()
+                : workshopService.listByIds(workshopIds).stream()
+                        .collect(Collectors.toMap(Workshop::getId, w -> w));
+        Map<Long, ProductionLine> lineMap = lineIds.isEmpty() ? Map.of()
+                : productionLineService.listByIds(lineIds).stream()
+                        .collect(Collectors.toMap(ProductionLine::getId, l -> l));
+
+        return orders.stream()
+                .map(wo -> toWorkOrderVO(wo, productMap, userMap, workshopMap, lineMap))
+                .collect(Collectors.toList());
     }
 
     private WorkOrderDetailVO toWorkOrderDetailVO(WorkOrder wo) {

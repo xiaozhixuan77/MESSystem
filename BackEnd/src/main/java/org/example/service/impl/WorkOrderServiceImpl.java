@@ -99,6 +99,39 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     }
 
     @Override
+    public List<WorkOrder> listAllWorkOrders(String status, String type, Long lineId, String keyword) {
+        LambdaQueryWrapper<WorkOrder> wrapper = new LambdaQueryWrapper<>();
+
+        if (keyword != null && !keyword.isEmpty()) {
+            List<Long> productIds = productService.lambdaQuery()
+                    .like(Product::getName, keyword)
+                    .list()
+                    .stream()
+                    .map(Product::getId)
+                    .collect(Collectors.toList());
+
+            wrapper.and(w -> {
+                w.like(WorkOrder::getCode, keyword);
+                if (!productIds.isEmpty()) {
+                    w.or().in(WorkOrder::getProductId, productIds);
+                }
+            });
+        }
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(WorkOrder::getStatus, status);
+        }
+        if (type != null && !type.isEmpty()) {
+            wrapper.eq(WorkOrder::getType, type);
+        }
+        if (lineId != null) {
+            wrapper.eq(WorkOrder::getLineId, lineId);
+        }
+
+        wrapper.orderByDesc(WorkOrder::getCreatedAt);
+        return list(wrapper);
+    }
+
+    @Override
     public WorkOrder createWorkOrder(WorkOrderCreateRequest request, Long createdBy) {
         for (int attempt = 0; ; attempt++) {
             try {
