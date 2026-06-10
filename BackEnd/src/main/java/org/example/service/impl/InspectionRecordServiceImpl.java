@@ -65,6 +65,7 @@ public class InspectionRecordServiceImpl
         record.setSampleNg(sampleNg);
         record.setDefectTypes(request.getDefectTypes());
         record.setDefectDescription(request.getDefectDescription());
+        record.setStatus("待抽检");
         record.setConclusion(request.getConclusion());
         save(record);
 
@@ -127,6 +128,9 @@ public class InspectionRecordServiceImpl
 
         lineBroadcaster.broadcastInspectionUpdate(record);
         lineBroadcaster.broadcastHomeRefresh("inspection");
+        lineBroadcaster.broadcastWorkOrderUpdate(wo.getLineId(), wo.getId(), wo.getCode(),
+                "INSPECTION_COMPLETED", Map.of("inspectionId", record.getId(),
+                "conclusion", record.getConclusion()));
 
         return record;
     }

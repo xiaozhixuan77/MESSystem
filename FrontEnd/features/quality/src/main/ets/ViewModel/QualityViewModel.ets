@@ -26,7 +26,7 @@ export class QualityViewModel {
     this.loadDashboard('month');
   };
 
-  async loadInspections(filters?: object): Promise<void> {
+  async loadInspections(filters?: Record<string, Object>): Promise<void> {
     this.isLoading = true;
     this.errorMessage = '';
     try {

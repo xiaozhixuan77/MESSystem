@@ -10,6 +10,7 @@ import org.example.entity.ProductionLine;
 import org.example.entity.WorkOrder;
 import org.example.entity.WorkOrderRouteStep;
 import org.example.exception.BusinessException;
+import org.example.mapper.InspectionRecordMapper;
 import org.example.mapper.WorkOrderMapper;
 import org.example.service.InspectionRecordService;
 import org.example.service.ProcessStepService;
@@ -50,6 +51,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final SimulatorManager simulatorManager;
     private final LineBroadcaster lineBroadcaster;
     private final InspectionRecordService inspectionRecordService;
+    private final InspectionRecordMapper inspectionRecordMapper;
 
     public WorkOrderServiceImpl(ProductService productService,
                                 ProcessStepService processStepService,
@@ -58,7 +60,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                                 TransactionTemplate transactionTemplate,
                                 SimulatorManager simulatorManager,
                                 LineBroadcaster lineBroadcaster,
-                                @Lazy InspectionRecordService inspectionRecordService) {
+                                @Lazy InspectionRecordService inspectionRecordService,
+                                InspectionRecordMapper inspectionRecordMapper) {
         this.productService = productService;
         this.processStepService = processStepService;
         this.workOrderRouteStepService = workOrderRouteStepService;
@@ -67,6 +70,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         this.simulatorManager = simulatorManager;
         this.lineBroadcaster = lineBroadcaster;
         this.inspectionRecordService = inspectionRecordService;
+        this.inspectionRecordMapper = inspectionRecordMapper;
     }
 
     @Override
@@ -547,6 +551,16 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
         if (!"已报工".equals(wo.getStatus())) {
             throw new BusinessException(400, "只有\"已报工\"状态才能确认完工");
+        }
+
+        long inspectionCount = inspectionRecordMapper.selectCount(
+                new LambdaQueryWrapper<InspectionRecord>()
+                        .eq(InspectionRecord::getWorkOrderId, workOrderId)
+                        .eq(InspectionRecord::getStatus, "已抽检")
+                        .eq(InspectionRecord::getIsDeleted, 0)
+        );
+        if (inspectionCount == 0) {
+            throw new BusinessException(400, "该工单尚无抽检记录，请先完成抽检后再确认完工");
         }
 
         wo.setStatus("完工");
