@@ -281,6 +281,8 @@ public class SimulatorManager {
 
             lineBroadcaster.broadcastStationUpdate(lineId, states);
 
+            lineBroadcaster.broadcastHomeRefresh("tick");
+
             if (checkProductionComplete(lineId, simulator)) {
                 markCompleted(lineId, simulator);
             }

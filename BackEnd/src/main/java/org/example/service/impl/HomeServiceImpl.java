@@ -14,7 +14,6 @@ import org.example.service.UserService;
 import org.example.service.WorkOrderService;
 import org.example.util.ControllerUtils;
 import org.example.vo.HomeSummaryVO;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -52,7 +51,6 @@ public class HomeServiceImpl implements HomeService {
     }
 
     @Override
-    @Cacheable(value = "homeSummary", key = "'summary'")
     public HomeSummaryVO getSummary() {
         HomeSummaryVO vo = new HomeSummaryVO();
 
@@ -124,8 +122,10 @@ public class HomeServiceImpl implements HomeService {
                 .ge("created_at", todayStart)
                 .lt("created_at", todayEnd);
         Map<String, Object> inspectionStats = inspectionRecordService.getBaseMapper().selectMaps(inspectionWrapper).get(0);
-        long todayDone = ((Number) inspectionStats.get("doneCount")).longValue();
-        long todayPassed = ((Number) inspectionStats.get("passedCount")).longValue();
+        Number doneCount = (Number) inspectionStats.get("doneCount");
+        Number passedCount = (Number) inspectionStats.get("passedCount");
+        long todayDone = doneCount != null ? doneCount.longValue() : 0;
+        long todayPassed = passedCount != null ? passedCount.longValue() : 0;
         vo.setTodayInspectionDone(todayDone);
         vo.setTodayInspectionPassRate(todayDone > 0 ? (double) todayPassed / todayDone : 0.0);
 

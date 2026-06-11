@@ -1,8 +1,11 @@
 package org.example.simulator;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.entity.ProductionLog;
+import org.example.entity.WorkOrder;
 import org.example.entity.Workstation;
+import org.example.mapper.WorkOrderMapper;
 import org.example.service.ProductionLogService;
 import org.example.service.WorkstationService;
 import org.slf4j.Logger;
@@ -24,13 +27,16 @@ public class SimulatorTickService {
 
     private final WorkstationService workstationService;
     private final ProductionLogService productionLogService;
+    private final WorkOrderMapper workOrderMapper;
     private final ObjectMapper objectMapper;
 
     public SimulatorTickService(WorkstationService workstationService,
                                  ProductionLogService productionLogService,
+                                 WorkOrderMapper workOrderMapper,
                                  ObjectMapper objectMapper) {
         this.workstationService = workstationService;
         this.productionLogService = productionLogService;
+        this.workOrderMapper = workOrderMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -42,6 +48,18 @@ public class SimulatorTickService {
     public void persistTick(Long lineId, LineSimulator simulator, List<StationState> states) {
         List<Workstation> stations = simulator.getStations();
         workstationService.updateBatchById(stations);
+
+        // 将最后一个工位的产出同步到工单，使操作员首页进度条实时更新
+        if (!stations.isEmpty()) {
+            Workstation lastStation = stations.get(stations.size() - 1);
+            int finished = lastStation.getFinishedCount() != null ? lastStation.getFinishedCount() : 0;
+            int ng = lastStation.getNgCount() != null ? lastStation.getNgCount() : 0;
+            LambdaUpdateWrapper<WorkOrder> wrapper = new LambdaUpdateWrapper<>();
+            wrapper.eq(WorkOrder::getId, simulator.getWorkOrderId())
+                    .set(WorkOrder::getReportedQtyGood, finished)
+                    .set(WorkOrder::getReportedQtyNg, ng);
+            workOrderMapper.update(null, wrapper);
+        }
 
         try {
             ProductionLog logEntry = new ProductionLog()
