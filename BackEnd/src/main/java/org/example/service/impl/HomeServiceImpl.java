@@ -205,10 +205,10 @@ public class HomeServiceImpl implements HomeService {
         Long userId = ControllerUtils.getCurrentUserId();
         if (userId == null) return;
 
-        // 当前生产中任务
+        // 当前生产中/暂停中任务
         WorkOrder active = workOrderService.lambdaQuery()
                 .eq(WorkOrder::getOperatorId, userId)
-                .eq(WorkOrder::getStatus, "生产中")
+                .in(WorkOrder::getStatus, "生产中", "暂停中")
                 .eq(WorkOrder::getIsDeleted, 0)
                 .orderByDesc(WorkOrder::getActualStartTime)
                 .last("LIMIT 1")

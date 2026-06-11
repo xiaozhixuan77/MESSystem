@@ -107,14 +107,22 @@ export struct OperatorHomeView {
           Row() {
             Row() {
               Circle().width(8).height(8)
-                .fill(this.summary?.operatorActiveTask ? '#81C784' : '#9A9AA8');
-              Text(this.summary?.operatorActiveTask ? '进行中' : '待机')
+                .fill(this.summary?.operatorActiveTask
+                  ? (this.summary.operatorActiveTask.status === '暂停中' ? '#FF9800' : '#81C784')
+                  : '#9A9AA8');
+              Text(this.summary?.operatorActiveTask
+                ? (this.summary.operatorActiveTask.status === '暂停中' ? '已暂停' : '进行中')
+                : '待机')
                 .fontSize(11).fontWeight(500)
-                .fontColor(this.summary?.operatorActiveTask ? '#81C784' : '#9A9AA8');
+                .fontColor(this.summary?.operatorActiveTask
+                  ? (this.summary.operatorActiveTask.status === '暂停中' ? '#FF9800' : '#81C784')
+                  : '#9A9AA8');
             }
             .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-            .backgroundColor(this.summary?.operatorActiveTask ?
-              'rgba(76,175,80,0.2)' : 'rgba(158,158,158,0.15)')
+            .backgroundColor(this.summary?.operatorActiveTask
+              ? (this.summary.operatorActiveTask.status === '暂停中'
+                ? 'rgba(255,152,0,0.2)' : 'rgba(76,175,80,0.2)')
+              : 'rgba(158,158,158,0.15)')
             .borderRadius(12);
 
             Text(this.summary?.operatorActiveTask?.code || '—')
