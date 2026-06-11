@@ -6,6 +6,7 @@ import org.example.entity.Workstation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -24,6 +25,7 @@ public class LineSimulator {
     private final int planQty;
     private int currentOpIndex = 0;
     private int productSnCounter = 0;
+    private volatile CountDownLatch tickLatch = new CountDownLatch(0);
 
     public LineSimulator(Long lineId, Long workOrderId, List<Workstation> stations,
                          List<ProcessStep> processSteps, double goodRate, int planQty) {
@@ -121,5 +123,17 @@ public class LineSimulator {
 
     public int incrementProductSn() {
         return ++productSnCounter;
+    }
+
+    public int getPlanQty() {
+        return planQty;
+    }
+
+    public CountDownLatch getTickLatch() {
+        return tickLatch;
+    }
+
+    public void resetTickLatch() {
+        this.tickLatch = new CountDownLatch(1);
     }
 }

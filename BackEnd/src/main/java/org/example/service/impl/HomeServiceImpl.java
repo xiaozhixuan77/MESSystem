@@ -1,5 +1,6 @@
 package org.example.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.example.entity.InspectionRecord;
 import org.example.entity.ProductionException;
 import org.example.entity.ProductionLine;
@@ -13,6 +14,7 @@ import org.example.service.UserService;
 import org.example.service.WorkOrderService;
 import org.example.util.ControllerUtils;
 import org.example.vo.HomeSummaryVO;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -50,6 +52,7 @@ public class HomeServiceImpl implements HomeService {
     }
 
     @Override
+    @Cacheable(value = "homeSummary", key = "'summary'")
     public HomeSummaryVO getSummary() {
         HomeSummaryVO vo = new HomeSummaryVO();
 
@@ -108,23 +111,21 @@ public class HomeServiceImpl implements HomeService {
                 .list();
         vo.setPendingInspectionItems(buildInspectionItems(pendingInspections));
 
-        // 今日质检统计
+        // 今日质检统计 — SQL 端聚合
         LocalDate today = LocalDate.now();
         LocalDateTime todayStart = today.atStartOfDay();
         LocalDateTime todayEnd = today.plusDays(1).atStartOfDay();
 
-        List<InspectionRecord> todayInspections = inspectionRecordService.lambdaQuery()
-                .eq(InspectionRecord::getIsDeleted, 0)
-                .ge(InspectionRecord::getCreatedAt, todayStart)
-                .lt(InspectionRecord::getCreatedAt, todayEnd)
-                .list();
-
-        long todayDone = todayInspections.stream()
-                .filter(i -> "已抽检".equals(i.getStatus()))
-                .count();
-        long todayPassed = todayInspections.stream()
-                .filter(i -> "已抽检".equals(i.getStatus()) && "合格".equals(i.getConclusion()))
-                .count();
+        QueryWrapper<InspectionRecord> inspectionWrapper = new QueryWrapper<InspectionRecord>()
+                .select("COUNT(*) as totalCount",
+                        "SUM(CASE WHEN status='已抽检' THEN 1 ELSE 0 END) as doneCount",
+                        "SUM(CASE WHEN status='已抽检' AND conclusion='合格' THEN 1 ELSE 0 END) as passedCount")
+                .eq("is_deleted", 0)
+                .ge("created_at", todayStart)
+                .lt("created_at", todayEnd);
+        Map<String, Object> inspectionStats = inspectionRecordService.getBaseMapper().selectMaps(inspectionWrapper).get(0);
+        long todayDone = ((Number) inspectionStats.get("doneCount")).longValue();
+        long todayPassed = ((Number) inspectionStats.get("passedCount")).longValue();
         vo.setTodayInspectionDone(todayDone);
         vo.setTodayInspectionPassRate(todayDone > 0 ? (double) todayPassed / todayDone : 0.0);
 
@@ -212,11 +213,6 @@ public class HomeServiceImpl implements HomeService {
                 .orderByDesc(WorkOrder::getActualStartTime)
                 .last("LIMIT 1")
                 .one();
-        if (active != null) {
-            vo.setOperatorActiveTask(buildTaskItem(active));
-        }
-
-        // 待开工（已派工）
         List<WorkOrder> pendingStart = workOrderService.lambdaQuery()
                 .eq(WorkOrder::getOperatorId, userId)
                 .eq(WorkOrder::getStatus, "已派工")
@@ -224,11 +220,6 @@ public class HomeServiceImpl implements HomeService {
                 .orderByAsc(WorkOrder::getCreatedAt)
                 .last("LIMIT 5")
                 .list();
-        vo.setOperatorPendingStartTasks(pendingStart.stream()
-                .map(this::buildTaskItem)
-                .collect(Collectors.toList()));
-
-        // 待报工（生产完成）
         List<WorkOrder> pendingReport = workOrderService.lambdaQuery()
                 .eq(WorkOrder::getOperatorId, userId)
                 .eq(WorkOrder::getStatus, "生产完成")
@@ -236,12 +227,41 @@ public class HomeServiceImpl implements HomeService {
                 .orderByAsc(WorkOrder::getCreatedAt)
                 .last("LIMIT 5")
                 .list();
+
+        // 批量加载产线名称，避免 N+1
+        Map<Long, String> lineNameMap = buildLineNameMap(active, pendingStart, pendingReport);
+
+        if (active != null) {
+            vo.setOperatorActiveTask(buildTaskItem(active, lineNameMap));
+        }
+        vo.setOperatorPendingStartTasks(pendingStart.stream()
+                .map(wo -> buildTaskItem(wo, lineNameMap))
+                .collect(Collectors.toList()));
         vo.setOperatorPendingReportTasks(pendingReport.stream()
-                .map(this::buildTaskItem)
+                .map(wo -> buildTaskItem(wo, lineNameMap))
                 .collect(Collectors.toList()));
     }
 
-    private HomeSummaryVO.TaskItem buildTaskItem(WorkOrder wo) {
+    private Map<Long, String> buildLineNameMap(WorkOrder active, List<WorkOrder>... lists) {
+        List<Long> lineIds = new ArrayList<>();
+        if (active != null && active.getLineId() != null) lineIds.add(active.getLineId());
+        for (List<WorkOrder> list : lists) {
+            for (WorkOrder wo : list) {
+                if (wo.getLineId() != null) lineIds.add(wo.getLineId());
+            }
+        }
+        if (lineIds.isEmpty()) return Map.of();
+        return productionLineService.lambdaQuery()
+                .in(ProductionLine::getId, lineIds)
+                .select(ProductionLine::getId, ProductionLine::getName)
+                .list().stream()
+                .collect(Collectors.toMap(
+                        ProductionLine::getId,
+                        l -> l.getName() != null ? l.getName() : "",
+                        (a, b) -> a));
+    }
+
+    private HomeSummaryVO.TaskItem buildTaskItem(WorkOrder wo, Map<Long, String> lineNameMap) {
         HomeSummaryVO.TaskItem item = new HomeSummaryVO.TaskItem();
         item.setId(wo.getId());
         item.setCode(wo.getCode());
@@ -250,13 +270,8 @@ public class HomeServiceImpl implements HomeService {
         item.setPlanQty(wo.getPlanQty());
         item.setReportedQtyGood(wo.getReportedQtyGood());
         item.setReportedQtyNg(wo.getReportedQtyNg());
-
         if (wo.getLineId() != null) {
-            ProductionLine line = productionLineService.lambdaQuery()
-                    .eq(ProductionLine::getId, wo.getLineId())
-                    .select(ProductionLine::getName)
-                    .one();
-            item.setLineName(line != null ? line.getName() : "");
+            item.setLineName(lineNameMap.getOrDefault(wo.getLineId(), ""));
         }
         return item;
     }

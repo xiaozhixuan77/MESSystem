@@ -12,3 +12,7 @@ spring:
   sql:
     init:
       mode: never
+
+logging:
+  level:
+    org.example.mapper: DEBUG

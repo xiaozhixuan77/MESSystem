@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -121,6 +122,20 @@ class E2E001_FullLifecycleTest extends E2ETestBase {
         // Step 14: Inspector 查看已报工工单
         MvcResult inspectorList = performGet("/workorders?status=已报工", inspectorToken);
         assertOk(inspectorList);
+
+        // Step 14.5: Inspector 创建抽检记录（待抽检状态）
+        MvcResult inspectionResult = performPostWithBody("/inspections",
+                Map.of("workOrderId", woId, "sampleQty", 5, "sampleGood", 5, "sampleNg", 0,
+                        "defectTypes", "[]", "defectDescription", "", "conclusion", "合格"),
+                inspectorToken);
+        assertOk(inspectionResult);
+        Long inspectionId = extractDataId(inspectionResult);
+
+        // Step 14.6: Inspector 提交抽检结果（→ 已抽检）
+        assertOk(performPutWithBody("/inspections/" + inspectionId,
+                Map.of("workOrderId", woId, "sampleQty", 5, "sampleGood", 5, "sampleNg", 0,
+                        "defectTypes", "[]", "defectDescription", "", "conclusion", "合格"),
+                inspectorToken));
 
         // Step 15: Leader 确认完工
         MvcResult confirmResult = performPost("/workorders/" + woId + "/confirm", leaderToken);

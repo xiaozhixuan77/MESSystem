@@ -45,8 +45,7 @@ public class SimulatorManager {
     private final SimulatorTickService tickService;
     private final WorkOrderService workOrderService;
 
-    private final ScheduledExecutorService scheduler =
-            Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+    private final ScheduledExecutorService scheduler;
     private final ConcurrentHashMap<Long, ScheduledFuture<?>> runningSimulators = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, LineSimulator> simulators = new ConcurrentHashMap<>();
     private final Set<Long> tickingLines = ConcurrentHashMap.newKeySet();
@@ -65,6 +64,7 @@ public class SimulatorManager {
         this.lineBroadcaster = lineBroadcaster;
         this.tickService = tickService;
         this.workOrderService = workOrderService;
+        this.scheduler = Executors.newScheduledThreadPool(config.getTickThreadPoolSize());
     }
 
     /**
@@ -147,9 +147,9 @@ public class SimulatorManager {
         if (future != null) {
             future.cancel(false);
         }
-        simulators.remove(lineId);
-        if (future != null) {
-            waitForTickCompletion(lineId);
+        LineSimulator stopped = simulators.remove(lineId);
+        if (future != null && stopped != null) {
+            waitForTickCompletion(stopped);
         }
 
         // 只更新 deviceStatus 字段，不动计数器（避免 lambdaUpdate 覆盖并发增量）
@@ -213,8 +213,10 @@ public class SimulatorManager {
         if (future != null) {
             future.cancel(false);
         }
-        simulators.remove(lineId);
-        waitForTickCompletion(lineId);
+        LineSimulator stopped = simulators.remove(lineId);
+        if (stopped != null) {
+            waitForTickCompletion(stopped);
+        }
 
         workstationService.resetCounters(lineId);
 
@@ -256,14 +258,11 @@ public class SimulatorManager {
     /**
      * 等待当前正在执行的 Tick 完成，防止 stop/reset 与 tick 的 DB 写入竞争。
      */
-    private void waitForTickCompletion(Long lineId) {
-        while (tickingLines.contains(lineId)) {
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
+    private void waitForTickCompletion(LineSimulator simulator) {
+        try {
+            simulator.getTickLatch().await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -273,14 +272,9 @@ public class SimulatorManager {
             return;
         }
 
+        simulator.resetTickLatch();
         tickingLines.add(lineId);
         try {
-            List<Workstation> fresh = workstationService.lambdaQuery()
-                    .eq(Workstation::getProductionLineId, lineId)
-                    .eq(Workstation::getIsDeleted, 0)
-                    .list();
-            simulator.replaceStations(fresh);
-
             List<StationState> states = simulator.tick();
 
             tickService.persistTick(lineId, simulator, states);
@@ -294,6 +288,7 @@ public class SimulatorManager {
             log.error("产线 {} Tick 异常", lineId, e);
         } finally {
             tickingLines.remove(lineId);
+            simulator.getTickLatch().countDown();
         }
     }
 
@@ -314,11 +309,7 @@ public class SimulatorManager {
             int lastNg = lastStation.getNgCount() != null ? lastStation.getNgCount() : 0;
             int totalOutput = lastFinished + lastNg;
             Long woId = simulator.getWorkOrderId();
-            int planQty = workOrderService.lambdaQuery()
-                    .eq(WorkOrder::getId, woId)
-                    .oneOpt()
-                    .map(w -> w.getPlanQty() != null ? w.getPlanQty() : Integer.MAX_VALUE)
-                    .orElse(Integer.MAX_VALUE);
+            int planQty = simulator.getPlanQty();
 
             if (rawCount >= planQty && totalOutput >= planQty) {
                 log.info("产线 {} 产量达标 (来料{}>=计划{} 且 总产出{}>=计划{})，自动完工",

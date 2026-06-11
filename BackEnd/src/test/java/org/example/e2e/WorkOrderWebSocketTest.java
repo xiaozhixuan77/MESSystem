@@ -103,6 +103,22 @@ class WorkOrderWebSocketTest extends SNCTestBase {
         assertEquals(0, ((Number) extra.get("ng")).intValue());
         log.info("=== [OK] 报工 → 已报工 (good=10 ng=0) ===");
 
+        // === Step 7.5: 抽检（planQty=10, 抽检范围 1-1）===
+        ResponseEntity<Map> inspResp = httpPost("/inspections",
+                Map.of("workOrderId", woId, "sampleQty", 1, "sampleGood", 1, "sampleNg", 0,
+                        "defectTypes", "[]", "defectDescription", "", "conclusion", "合格"),
+                inspectorToken);
+        Long inspectionId = extractId(inspResp);
+        httpPut("/inspections/" + inspectionId,
+                Map.of("workOrderId", woId, "sampleQty", 1, "sampleGood", 1, "sampleNg", 0,
+                        "defectTypes", "[]", "defectDescription", "", "conclusion", "合格"),
+                inspectorToken);
+        log.info("=== 抽检完成 (id={}) ===", inspectionId);
+
+        // 抽检步骤会产生两条 WORKORDER_UPDATE: "已报工" → "INSPECTION_COMPLETED"
+        expectMsg(woId, "已报工");
+        expectMsg(woId, "INSPECTION_COMPLETED");
+
         // === Step 8: 确认完工 → 应收到 "完工" ===
         httpPostVoid("/workorders/" + woId + "/confirm", leaderToken);
         expectMsg(woId, "完工");

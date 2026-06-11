@@ -9,7 +9,7 @@ server:
 
 mybatis-plus:
   configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     db-config:
       logic-delete-field: isDeleted
@@ -23,3 +23,4 @@ jwt:
 simulator:
   tick-interval: 1000
   good-rate: 0.95
+  tick-thread-pool-size: 16

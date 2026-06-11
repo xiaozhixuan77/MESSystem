@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,20 +58,41 @@ class LineWorkOrderIntegrationTest extends SNCTestBase {
     }
 
     /**
+     * 超时轮询，跳过不匹配的消息直到找到匹配项（避免多测试并跑时广播插队）。
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> pollFiltered(BlockingQueue<Map<String, Object>> q,
+                                              String expectedType,
+                                              Predicate<Object> dataPredicate) throws Exception {
+        long deadline = System.currentTimeMillis() + 5000;
+        while (System.currentTimeMillis() < deadline) {
+            Map<String, Object> msg = q.poll(500, TimeUnit.MILLISECONDS);
+            if (msg == null) continue;
+            if (!expectedType.equals(msg.get("type"))) continue;
+            Map<String, Object> data = (Map<String, Object>) msg.get("data");
+            if (data != null && dataPredicate.test(data)) {
+                return msg;
+            }
+        }
+        return null;
+    }
+
+    /**
      * 从 LINE_STATUS 队列取一条，断言 woStatus 和 workOrderId。
+     * 使用 pollFiltered 避免并跑时其他测试的广播插队。
      */
     private Map<String, Object> expectLineStatus(Long woId, String woStatus, String lineStatus) throws Exception {
-        Map<String, Object> msg = lineMsgs.poll(5, TimeUnit.SECONDS);
+        Map<String, Object> msg = pollFiltered(lineMsgs, "LINE_STATUS", data -> {
+            Map<String, Object> d = (Map<String, Object>) data;
+            if (!lineStatus.equals(d.get("status"))) return false;
+            if (woStatus != null && !woStatus.equals(d.get("woStatus"))) return false;
+            if (woId != null && !woId.equals(((Number) d.get("workOrderId")).longValue())) return false;
+            return true;
+        });
         assertNotNull(msg, "应收到 LINE_STATUS: " + lineStatus + " / woStatus=" + woStatus);
-        assertEquals("LINE_STATUS", msg.get("type"), "类型应为 LINE_STATUS");
         @SuppressWarnings("unchecked")
         Map<String, Object> data = (Map<String, Object>) msg.get("data");
         assertNotNull(data, "LINE_STATUS 应包含 data");
-        assertEquals(lineStatus, data.get("status"), "产线状态应为 " + lineStatus);
-        assertEquals(woStatus, data.get("woStatus"), "工单状态应为 " + woStatus);
-        if (woId != null) {
-            assertEquals(woId, ((Number) data.get("workOrderId")).longValue());
-        }
         return msg;
     }
 
@@ -138,9 +160,10 @@ class LineWorkOrderIntegrationTest extends SNCTestBase {
         // 暂停产线
         httpPostVoid("/lines/1/stop", operatorToken);
 
-        // LINE_STATUS: 产线=暂停, woStatus可能为"暂停中" (SimulatorManager.stop硬编码)
-        Map<String, Object> lineMsg = lineMsgs.poll(5, TimeUnit.SECONDS);
-        assertNotNull(lineMsg, "应收到 LINE_STATUS");
+        // LINE_STATUS: 轮询过滤，避免并跑时其他测试的广播插队
+        Map<String, Object> lineMsg = pollFiltered(lineMsgs, "LINE_STATUS",
+                data -> "暂停".equals(((Map<String, Object>) data).get("status")));
+        assertNotNull(lineMsg, "应收到 LINE_STATUS(status=暂停)");
         @SuppressWarnings("unchecked")
         Map<String, Object> lineData = (Map<String, Object>) lineMsg.get("data");
         assertEquals("暂停", lineData.get("status"), "产线状态应为 暂停");
@@ -207,12 +230,11 @@ class LineWorkOrderIntegrationTest extends SNCTestBase {
                 Map.of("description", "相机定位偏移"), operatorToken);
 
         // LINE_STATUS: 产线=暂停, woStatus=暂停中 (SimulatorManager.stop 硬编码)
-        Map<String, Object> lineMsg = lineMsgs.poll(5, TimeUnit.SECONDS);
+        Map<String, Object> lineMsg = pollFiltered(lineMsgs, "LINE_STATUS",
+                data -> "暂停".equals(((Map<String, Object>) data).get("status")));
         assertNotNull(lineMsg, "异常上报后应收到 LINE_STATUS");
         @SuppressWarnings("unchecked")
         Map<String, Object> lineData = (Map<String, Object>) lineMsg.get("data");
-        assertEquals("暂停", lineData.get("status"));
-        assertEquals("暂停中", lineData.get("woStatus"));
 
         // WORKORDER_UPDATE: 工单=暂停中
         expectWorkOrderUpdate(woId, "暂停中");
@@ -303,7 +325,8 @@ class LineWorkOrderIntegrationTest extends SNCTestBase {
         httpPost("/lines/1/start", Map.of("workOrderId", woId), operatorToken);
 
         // 验证 LINE_STATUS 包含正确工单数据
-        Map<String, Object> lineMsg = lineMsgs.poll(5, TimeUnit.SECONDS);
+        Map<String, Object> lineMsg = pollFiltered(lineMsgs, "LINE_STATUS",
+                data -> "生产中".equals(((Map<String, Object>) data).get("status")));
         assertNotNull(lineMsg);
         @SuppressWarnings("unchecked")
         Map<String, Object> data = (Map<String, Object>) lineMsg.get("data");

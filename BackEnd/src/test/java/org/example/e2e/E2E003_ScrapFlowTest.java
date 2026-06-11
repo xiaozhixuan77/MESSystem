@@ -1,5 +1,6 @@
 package org.example.e2e;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.example.dto.request.DispatchRequest;
 import org.example.dto.request.WorkOrderCreateRequest;
 import org.example.dto.request.WorkOrderReportRequest;
@@ -164,6 +165,39 @@ class E2E003_ScrapFlowTest extends E2ETestBase {
     @DisplayName("完工状态不可报废 → 400")
     void scrapFromCompleted() throws Exception {
         Long woId = createDispatchStartCompleteAndReport();
+
+        // 创建抽检记录
+        MvcResult inspectionResult = mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                                .post("/inspections")
+                                .characterEncoding("UTF-8")
+                                .header("Authorization", "Bearer " + inspectorToken)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(
+                                        Map.of("workOrderId", woId, "sampleQty", 5,
+                                                "sampleGood", 5, "sampleNg", 0,
+                                                "defectTypes", "[]",
+                                                "defectDescription", "",
+                                                "conclusion", "合格"))))
+                .andReturn();
+        assertOk(inspectionResult);
+        JsonNode inspData = dataNode(inspectionResult);
+        Long inspectionId = inspData.get("id").asLong();
+
+        // 提交抽检结果（→ 已抽检）
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                                .put("/inspections/" + inspectionId)
+                                .characterEncoding("UTF-8")
+                                .header("Authorization", "Bearer " + inspectorToken)
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(
+                                        Map.of("workOrderId", woId, "sampleQty", 5,
+                                                "sampleGood", 5, "sampleNg", 0,
+                                                "defectTypes", "[]",
+                                                "defectDescription", "",
+                                                "conclusion", "合格"))))
+                .andReturn();
 
         // 确认完工
         performPost("/workorders/" + woId + "/confirm", leaderToken);

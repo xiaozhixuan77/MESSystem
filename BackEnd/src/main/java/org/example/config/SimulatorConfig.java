@@ -16,6 +16,9 @@ public class SimulatorConfig {
     /** 良品率，默认 0.95 */
     private double goodRate = 0.95;
 
+    /** Tick 调度线程池大小，默认 16 */
+    private int tickThreadPoolSize = 16;
+
     public long getTickInterval() {
         return tickInterval;
     }
@@ -30,5 +33,13 @@ public class SimulatorConfig {
 
     public void setGoodRate(double goodRate) {
         this.goodRate = goodRate;
+    }
+
+    public int getTickThreadPoolSize() {
+        return tickThreadPoolSize;
+    }
+
+    public void setTickThreadPoolSize(int tickThreadPoolSize) {
+        this.tickThreadPoolSize = tickThreadPoolSize;
     }
 }
