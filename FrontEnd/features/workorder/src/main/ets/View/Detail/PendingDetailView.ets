@@ -4,6 +4,7 @@ import { PermissionUtil } from '@ohos/utils';
 import { UserModel } from '@ohos/user';
 import { WorkOrderViewModel } from '../../ViewModel/WorkOrderViewModel';
 import { WorkOrderRouteModel } from '../../Model/WorkOrderRouteModel';
+import { LoadingState, ErrorState } from '@ohos/uicomponents';
 
 @ComponentV2
 export struct PendingDetailView {
@@ -40,6 +41,13 @@ export struct PendingDetailView {
   }
 
   build() {
+    if (this.viewModel.currentWorkOrder === null) {
+      if (this.viewModel.errorMessage) {
+        ErrorState({ message: this.viewModel.errorMessage, onRetry: () => { this.viewModel.loadDetail(this.workOrderId); } })
+      } else {
+        LoadingState()
+      }
+    } else {
     Stack({ alignContent: Alignment.Bottom }) {
       Column() {
         this.PageHeader();
@@ -76,6 +84,7 @@ export struct PendingDetailView {
       }
       this.hasAppeared = true;
     });
+    }
   }
 
   @Builder

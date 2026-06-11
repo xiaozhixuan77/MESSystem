@@ -57,6 +57,7 @@ export class UserViewModel {
       return this.loadingPromise;
     }
     this.isLoading = true;
+    this.errorMessage = '';
     this.loadingPromise = (async (): Promise<void> => {
       try {
         const role = this.activeRoleTab === '全部' ? undefined : this.getRoleApiValue(this.activeRoleTab);
@@ -74,6 +75,8 @@ export class UserViewModel {
           u.avatarUrl = (item['avatarUrl'] as string) ?? '';
           return u;
         });
+      } catch (e) {
+        this.errorMessage = (e as Error).message || '加载人员数据失败';
       } finally {
         this.isLoading = false;
         this.loadingPromise = null;

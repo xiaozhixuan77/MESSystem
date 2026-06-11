@@ -1,6 +1,7 @@
 import { UserViewModel } from '../ViewModel/UserViewModel';
 import { UserModel } from '../Model/UserModel';
 import { WebSocketService } from '@ohos/network';
+import { ErrorState } from '@ohos/uicomponents';
 
 interface RoleBadgeStyle {
   bg: string;
@@ -442,6 +443,8 @@ export struct EmployeeListView {
             Text('加载中...').fontSize(13).fontColor('#9A9AA8').margin({ top: 12 });
           }
           .width('100%').layoutWeight(1).justifyContent(FlexAlign.Center);
+        } else if (this.vm.errorMessage) {
+          ErrorState({ message: this.vm.errorMessage, onRetry: () => { this.vm.loadUsers(); } })
         } else if (this.vm.userList.length === 0) {
           Column() {
             Text('暂无人员数据')

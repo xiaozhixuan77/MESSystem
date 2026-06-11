@@ -2,6 +2,7 @@ import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
 import { HomeSummaryModel, TaskItemModel } from '../Model/HomeSummaryModel';
 import { DeepLinkInfo } from '@ohos/utils';
+import { LoadingState, ErrorState } from '@ohos/uicomponents';
 import { promptAction } from '@kit.ArkUI';
 
 @ComponentV2
@@ -237,7 +238,12 @@ export struct OperatorHomeView {
       .backgroundColor('#1565C0')
       .width('100%');
 
-      // 内容区域（可滚动）
+      // 内容区域
+      if (this.vm.isLoading) {
+        LoadingState()
+      } else if (this.vm.errorMessage) {
+        ErrorState({ message: this.vm.errorMessage, onRetry: () => { this.vm.loadHomeData(); } })
+      } else {
       Column() {
         Scroll() {
           Column() {
@@ -382,6 +388,7 @@ export struct OperatorHomeView {
         .edgeEffect(EdgeEffect.None);
       }
       .layoutWeight(1);
+      }
     }
     .width('100%').height('100%');
   }

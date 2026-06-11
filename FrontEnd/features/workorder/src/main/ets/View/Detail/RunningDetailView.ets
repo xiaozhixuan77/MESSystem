@@ -1,4 +1,5 @@
 import { PermissionUtil } from '@ohos/utils';
+import { LoadingState, ErrorState } from '@ohos/uicomponents';
 import { WorkOrderViewModel } from '../../ViewModel/WorkOrderViewModel';
 
 @ComponentV2
@@ -56,6 +57,13 @@ export struct RunningDetailView {
   }
 
   build() {
+    if (this.viewModel.currentWorkOrder === null) {
+      if (this.viewModel.errorMessage) {
+        ErrorState({ message: this.viewModel.errorMessage, onRetry: () => { this.viewModel.loadDetail(this.workOrderId); } })
+      } else {
+        LoadingState()
+      }
+    } else {
     Stack({ alignContent: Alignment.Bottom }) {
       Column() {
         this.PageHeader();
@@ -96,6 +104,7 @@ export struct RunningDetailView {
       }
       this.hasAppeared = true;
     });
+    }
   }
 
   @Builder PageHeader() {

@@ -2,6 +2,7 @@ import { QualityViewModel } from '../ViewModel/QualityViewModel';
 import { DashboardChart } from './DashboardChart';
 import { TopDefectModel } from '../Model/DashboardModel';
 import { FormatUtil } from '@ohos/utils';
+import { LoadingState, ErrorState } from '@ohos/uicomponents';
 
 @ComponentV2
 export struct DashboardView {
@@ -141,6 +142,11 @@ export struct DashboardView {
   }
 
   build() {
+    if (this.vm.isLoading && this.vm.dashboardData === null) {
+      LoadingState()
+    } else if (this.vm.errorMessage && this.vm.dashboardData === null) {
+      ErrorState({ message: this.vm.errorMessage, onRetry: () => { this.vm.loadDashboard('month'); } })
+    } else {
     Refresh({ refreshing: this.isRefreshing }) {
       Scroll() {
         Column() {
@@ -278,5 +284,6 @@ export struct DashboardView {
       this.isRefreshing = true;
       this.vm.loadDashboard('month').then(() => { this.isRefreshing = false; });
     });
+    }
   }
 }

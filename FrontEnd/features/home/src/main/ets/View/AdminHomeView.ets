@@ -2,6 +2,7 @@ import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
 import { HomeSummaryModel, ExceptionItemModel } from '../Model/HomeSummaryModel';
 import { DeepLinkInfo } from '@ohos/utils';
+import { LoadingState, ErrorState } from '@ohos/uicomponents';
 
 @ComponentV2
 export struct AdminHomeView {
@@ -285,7 +286,12 @@ export struct AdminHomeView {
       .backgroundColor('#1565C0')
       .width('100%');
 
-      // 内容区域（可滚动）
+      // 内容区域
+      if (this.vm.isLoading) {
+        LoadingState()
+      } else if (this.vm.errorMessage) {
+        ErrorState({ message: this.vm.errorMessage, onRetry: () => { this.vm.loadHomeData(); } })
+      } else {
       Column() {
         Scroll() {
           Column() {
@@ -376,6 +382,7 @@ export struct AdminHomeView {
         .edgeEffect(EdgeEffect.None);
       }
       .layoutWeight(1);
+      }
     }
     .width('100%').height('100%');
   }

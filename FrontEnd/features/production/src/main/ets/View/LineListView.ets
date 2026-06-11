@@ -1,5 +1,6 @@
 import { ProductionViewModel } from '../ViewModel/ProductionViewModel';
 import { LineModel } from '../Model/LineModel';
+import { ErrorState } from '@ohos/uicomponents';
 
 @ComponentV2
 struct LineCard {
@@ -222,13 +223,7 @@ export struct LineListView {
           }
           .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
         } else if (this.viewModel.errorMessage && this.viewModel.lines.length === 0) {
-          Column() {
-            Text('加载失败').fontSize(15).fontColor('#f5222d').margin({ bottom: 8 });
-            Text(this.viewModel.errorMessage).fontSize(12).fontColor('#999').margin({ bottom: 16 });
-            Button('重试').fontSize(13).backgroundColor('#1565C0').borderRadius(8)
-              .onClick(() => this.selectTab(this.activeTab));
-          }
-          .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
+          ErrorState({ message: this.viewModel.errorMessage, onRetry: () => { this.selectTab(this.activeTab); } })
         } else if (this.viewModel.lines.length === 0) {
           Column() {
             Text('暂无产线数据').fontSize(14).fontColor('#999');

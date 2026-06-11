@@ -1,6 +1,7 @@
 import { UserModel } from '../Model/UserModel';
 import { AuthApi, httpClient } from '@ohos/network';
 import { promptAction } from '@kit.ArkUI';
+import { LoadingState, ErrorState } from '@ohos/uicomponents';
 
 class StatItem {
   value: string = '';
@@ -26,6 +27,8 @@ export struct ProfileView {
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
   @Local statData: StatItem[] = [];
   @Local menuGroups: MenuGroupData[] = [];
+  @Local profileLoading: boolean = false;
+  @Local profileError: string = '';
 
   aboutToAppear(): void {
     this.initStats();
@@ -134,6 +137,8 @@ export struct ProfileView {
     if (this.currentUser.name) {
       return;
     }
+    this.profileLoading = true;
+    this.profileError = '';
     try {
       const result = await AuthApi.getCurrentUser<Record<string, Object>>();
       if (result) {
@@ -146,7 +151,11 @@ export struct ProfileView {
         this.currentUser.status = (result['status'] as string) ?? '';
         this.currentUser.avatarUrl = (result['avatarUrl'] as string) ?? '';
       }
-    } catch (_) {}
+    } catch (e) {
+      this.profileError = (e as Error).message || '加载用户信息失败';
+    } finally {
+      this.profileLoading = false;
+    }
   }
 
   handleLogout(): void {
@@ -174,6 +183,11 @@ export struct ProfileView {
   }
 
   build() {
+    if (this.profileLoading && !this.currentUser.name) {
+      LoadingState()
+    } else if (this.profileError && !this.currentUser.name) {
+      ErrorState({ message: this.profileError, onRetry: () => { this.loadUserProfile(); } })
+    } else {
     Scroll() {
       Column() {
         // ===== 用户头部 =====
@@ -271,5 +285,6 @@ export struct ProfileView {
     .scrollable(ScrollDirection.Vertical)
     .scrollBar(BarState.Off)
     .edgeEffect(EdgeEffect.None);
+    }
   }
 }

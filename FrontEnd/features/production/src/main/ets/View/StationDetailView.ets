@@ -2,6 +2,7 @@ import { WebSocketService, ExceptionApi } from '@ohos/network';
 import { LineApi } from '@ohos/network';
 import { StationModel } from '../Model/StationModel';
 import { promptAction } from '@kit.ArkUI';
+import { ErrorState } from '@ohos/uicomponents';
 
 @ComponentV2
 export struct StationDetailView {
@@ -11,6 +12,7 @@ export struct StationDetailView {
   @Local station: StationModel = new StationModel();
   @Local lineName: string = '';
   @Local isLoading: boolean = true;
+  @Local errorMessage: string = '';
   @Local workOrderId: number = 0;
   @Local showExceptionDialog: boolean = false;
   @Local exceptionDescription: string = '';
@@ -59,8 +61,8 @@ export struct StationDetailView {
         }
       }
 
-    } catch (_e) {
-      // 加载失败，显示空数据
+    } catch (e) {
+      this.errorMessage = (e as Error).message || '加载工作站数据失败';
     } finally {
       this.isLoading = false;
     }
@@ -175,7 +177,9 @@ export struct StationDetailView {
 
   build() {
     Stack() {
-      if (this.isLoading) {
+      if (this.errorMessage) {
+        ErrorState({ message: this.errorMessage, onRetry: () => { this.loadData(); } })
+      } else if (this.isLoading) {
         Column() {
           LoadingProgress().width(36).height(36).color('#1565C0');
           Text('加载中...').fontSize(13).fontColor('#999').margin({ top: 8 });
