@@ -145,7 +145,7 @@ export struct DashboardView {
     if (this.vm.isLoading && this.vm.dashboardData === null) {
       LoadingState()
     } else if (this.vm.errorMessage && this.vm.dashboardData === null) {
-      ErrorState({ message: this.vm.errorMessage, onRetry: () => { this.vm.loadDashboard('month'); } })
+      ErrorState({ showRetry: true, message: this.vm.errorMessage, onRetry: () => { this.vm.loadDashboard('month'); } })
     } else {
     Refresh({ refreshing: this.isRefreshing }) {
       Scroll() {

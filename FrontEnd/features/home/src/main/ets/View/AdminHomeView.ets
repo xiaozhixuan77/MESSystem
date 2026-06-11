@@ -11,19 +11,33 @@ export struct AdminHomeView {
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
   @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
   @Local summary: HomeSummaryModel | null = null;
+  @Local isLoading: boolean = true;
+  @Local errorMessage: string = '';
   private vm: HomeViewModel = new HomeViewModel();
 
   aboutToAppear(): void {
     this.vm.subscribeHome(() => {
-      this.vm.loadHomeData().then((data) => {
-        if (data) {
-          this.summary = data;
-        }
-      });
+      this.reload(true);
     });
+    this.reload(false);
+  }
+
+  private reload(silent: boolean): void {
+    if (!silent) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
     this.vm.loadHomeData().then((data) => {
       if (data) {
         this.summary = data;
+      }
+      if (!silent) {
+        this.isLoading = false;
+      }
+    }).catch((e: Error) => {
+      if (!silent) {
+        this.errorMessage = e.message || '加载失败';
+        this.isLoading = false;
       }
     });
   }
@@ -287,10 +301,10 @@ export struct AdminHomeView {
       .width('100%');
 
       // 内容区域
-      if (this.vm.isLoading) {
+      if (this.isLoading) {
         LoadingState()
-      } else if (this.vm.errorMessage) {
-        ErrorState({ message: this.vm.errorMessage, onRetry: () => { this.vm.loadHomeData(); } })
+      } else if (this.errorMessage) {
+        ErrorState({ showRetry: true, message: this.errorMessage, onRetry: () => { this.reload(false); } })
       } else {
       Column() {
         Scroll() {

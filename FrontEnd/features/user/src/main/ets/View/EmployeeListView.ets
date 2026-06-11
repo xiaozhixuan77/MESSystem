@@ -444,7 +444,7 @@ export struct EmployeeListView {
           }
           .width('100%').layoutWeight(1).justifyContent(FlexAlign.Center);
         } else if (this.vm.errorMessage) {
-          ErrorState({ message: this.vm.errorMessage, onRetry: () => { this.vm.loadUsers(); } })
+          ErrorState({ showRetry: true, message: this.vm.errorMessage, onRetry: () => { this.vm.loadUsers(); } })
         } else if (this.vm.userList.length === 0) {
           Column() {
             Text('暂无人员数据')

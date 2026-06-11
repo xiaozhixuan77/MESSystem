@@ -223,7 +223,7 @@ export struct LineListView {
           }
           .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
         } else if (this.viewModel.errorMessage && this.viewModel.lines.length === 0) {
-          ErrorState({ message: this.viewModel.errorMessage, onRetry: () => { this.selectTab(this.activeTab); } })
+          ErrorState({ showRetry: true, message: this.viewModel.errorMessage, onRetry: () => { this.selectTab(this.activeTab); } })
         } else if (this.viewModel.lines.length === 0) {
           Column() {
             Text('暂无产线数据').fontSize(14).fontColor('#999');

@@ -3,7 +3,8 @@ export struct EmptyState {
   @Param title: string = '暂无数据';
   @Param description: string = '';
   @Param actionLabel: string = '';
-  @Event onAction: (() => void) | undefined = undefined;
+  @Param showAction: boolean = false;
+  @Event onAction: () => void = () => {};
 
   build() {
     Column({ space: 8 }) {
@@ -18,18 +19,14 @@ export struct EmptyState {
           .maxLines(2)
           .textAlign(TextAlign.Center);
       }
-      if (this.actionLabel && this.onAction) {
+      if (this.showAction && this.actionLabel) {
         Button(this.actionLabel)
           .fontSize(14)
           .margin({ top: 12 })
           .backgroundColor('#1565C0')
           .fontColor(Color.White)
           .borderRadius(8)
-          .onClick(() => {
-            if (this.onAction) {
-              this.onAction();
-            }
-          });
+          .onClick(() => { this.onAction(); });
       }
     }
     .width('100%')

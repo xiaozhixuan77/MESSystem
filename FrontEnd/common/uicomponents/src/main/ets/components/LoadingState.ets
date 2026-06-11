@@ -1,14 +1,14 @@
 @ComponentV2
 export struct LoadingState {
-  @Param size: number = 36;
+  @Param spinnerSize: number = 36;
   @Param text: string = '加载中...';
   @Param fullScreen: boolean = true;
 
   build() {
     Column({ space: 8 }) {
       LoadingProgress()
-        .width(this.size)
-        .height(this.size)
+        .width(this.spinnerSize)
+        .height(this.spinnerSize)
         .color('#1565C0');
       if (this.text) {
         Text(this.text)

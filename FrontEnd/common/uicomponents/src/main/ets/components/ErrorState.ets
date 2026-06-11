@@ -1,7 +1,8 @@
 @ComponentV2
 export struct ErrorState {
   @Param message: string = '加载失败';
-  @Param onRetry: (() => void) | undefined = undefined;
+  @Param showRetry: boolean = false;
+  @Event onRetry: () => void = () => {};
 
   build() {
     Column({ space: 8 }) {
@@ -16,18 +17,14 @@ export struct ErrorState {
           .maxLines(3)
           .textAlign(TextAlign.Center);
       }
-      if (this.onRetry) {
+      if (this.showRetry) {
         Button('重试')
           .fontSize(14)
           .margin({ top: 12 })
           .backgroundColor('#1565C0')
           .fontColor(Color.White)
           .borderRadius(8)
-          .onClick(() => {
-            if (this.onRetry) {
-              this.onRetry();
-            }
-          });
+          .onClick(() => { this.onRetry(); });
       }
     }
     .width('100%')

@@ -186,7 +186,7 @@ export struct ProfileView {
     if (this.profileLoading && !this.currentUser.name) {
       LoadingState()
     } else if (this.profileError && !this.currentUser.name) {
-      ErrorState({ message: this.profileError, onRetry: () => { this.loadUserProfile(); } })
+      ErrorState({ showRetry: true, message: this.profileError, onRetry: () => { this.loadUserProfile(); } })
     } else {
     Scroll() {
       Column() {

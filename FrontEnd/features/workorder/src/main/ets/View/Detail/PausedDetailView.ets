@@ -46,7 +46,7 @@ export struct PausedDetailView {
   build() {
     if (this.viewModel.currentWorkOrder === null) {
       if (this.viewModel.errorMessage) {
-        ErrorState({ message: this.viewModel.errorMessage, onRetry: () => { this.viewModel.loadDetail(this.workOrderId); } })
+        ErrorState({ showRetry: true, message: this.viewModel.errorMessage, onRetry: () => { this.viewModel.loadDetail(this.workOrderId); } })
       } else {
         LoadingState()
       }

@@ -178,7 +178,7 @@ export struct StationDetailView {
   build() {
     Stack() {
       if (this.errorMessage) {
-        ErrorState({ message: this.errorMessage, onRetry: () => { this.loadData(); } })
+        ErrorState({ showRetry: true, message: this.errorMessage, onRetry: () => { this.loadData(); } })
       } else if (this.isLoading) {
         Column() {
           LoadingProgress().width(36).height(36).color('#1565C0');
