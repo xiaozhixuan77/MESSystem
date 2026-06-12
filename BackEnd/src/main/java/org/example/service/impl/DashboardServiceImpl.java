@@ -43,7 +43,7 @@ public class DashboardServiceImpl implements DashboardService {
                         "COALESCE(SUM(reported_qty_good), 0) as totalOutput",
                         "COALESCE(SUM(reported_qty_ng), 0) as totalNg",
                         "COUNT(*) as totalCount",
-                        "SUM(CASE WHEN status IN ('生产完成','已报工','完工') THEN 1 ELSE 0 END) as finishedCount")
+                        "COALESCE(SUM(CASE WHEN status IN ('生产完成','已报工','完工') THEN 1 ELSE 0 END), 0) as finishedCount")
                 .ge("actual_start_time", todayStart)
                 .lt("actual_start_time", todayEnd)
                 .eq("is_deleted", 0);
