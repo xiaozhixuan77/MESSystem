@@ -1,4 +1,4 @@
-import { WebSocketService, ExceptionApi } from '@ohos/network';
+import { WebSocketService } from '@ohos/network';
 import { LineApi } from '@ohos/network';
 import { StationModel } from '../Model/StationModel';
 import { promptAction } from '@kit.ArkUI';
@@ -14,8 +14,6 @@ export struct StationDetailView {
   @Local isLoading: boolean = true;
   @Local errorMessage: string = '';
   @Local workOrderId: number = 0;
-  @Local showExceptionDialog: boolean = false;
-  @Local exceptionDescription: string = '';
 
   aboutToAppear(): void {
     const navInfo = this.queryNavDestinationInfo();
@@ -125,56 +123,6 @@ export struct StationDetailView {
     return 'rgba(158,158,158,0.15)';
   }
 
-  @Builder
-  ExceptionDialog() {
-    Column() {
-      Column() {
-        Text('异常上报')
-          .fontSize(16).fontWeight(FontWeight.Bold).fontColor('#1A1A2E')
-          .margin({ bottom: 12 });
-
-        Text('工作站：' + this.station.name)
-          .fontSize(13).fontColor('#5A5A6E').margin({ bottom: 8 });
-
-        TextArea({ placeholder: '请输入异常描述...', text: this.exceptionDescription })
-          .fontSize(14).height(100)
-          .backgroundColor('#F5F7FA').borderRadius(8).padding(12)
-          .onChange((value: string) => { this.exceptionDescription = value; });
-
-        Row({ space: 12 }) {
-          Button('取消')
-            .fontSize(14).backgroundColor('#F5F7FA').fontColor('#5A5A6E')
-            .borderRadius(8).layoutWeight(1)
-            .onClick(() => { this.showExceptionDialog = false; });
-          Button('确认上报')
-            .fontSize(14).backgroundColor('#F44336').fontColor('#FFFFFF')
-            .borderRadius(8).layoutWeight(1)
-            .enabled(this.exceptionDescription.trim().length > 0)
-            .opacity(this.exceptionDescription.trim().length > 0 ? 1.0 : 0.4)
-            .onClick(async () => {
-              this.showExceptionDialog = false;
-              const desc = this.exceptionDescription.trim();
-              if (desc.length === 0) { return; }
-              try {
-                await ExceptionApi.reportException(
-                  this.workOrderId, this.lineId, desc, this.stationId);
-                this.showToast('异常已上报');
-              } catch (_e) {
-                this.showToast('异常上报失败');
-              }
-            });
-        }
-        .width('100%').margin({ top: 16 });
-      }
-      .width('80%').padding(20).backgroundColor('#FFFFFF')
-      .borderRadius(16).shadow({ radius: 20, color: 'rgba(0,0,0,0.15)', offsetY: 8 });
-    }
-    .width('100%').height('100%')
-    .justifyContent(FlexAlign.Center).backgroundColor('rgba(0,0,0,0.45)')
-    .zIndex(1000)
-    .onClick(() => { this.showExceptionDialog = false; });
-  }
-
   build() {
     Stack() {
       if (this.errorMessage) {
@@ -228,76 +176,6 @@ export struct StationDetailView {
               .width('100%');
             }
 
-            // 4 action buttons grid
-            Row({ space: 8 }) {
-              Button() {
-                Column() {
-                  Column() {
-                    Image($r('app.media.icon_play_green')).width(16).height(16);
-                  }
-                  .width(32).height(32)
-                  .backgroundColor('rgba(255,255,255,0.95)').borderRadius(8)
-                  .justifyContent(FlexAlign.Center);
-                  Text('启动').fontSize(10).fontColor('#FFFFFF').margin({ top: 6 });
-                }
-                .alignItems(HorizontalAlign.Center);
-              }
-              .layoutWeight(1).height(62)
-              .backgroundColor('rgba(255,255,255,0.1)').borderRadius(12)
-              .onClick(() => this.showToast('功能开发中'));
-
-              Button() {
-                Column() {
-                  Column() {
-                    Image($r('app.media.icon_stop_orange')).width(16).height(16);
-                  }
-                  .width(32).height(32)
-                  .backgroundColor('rgba(255,255,255,0.95)').borderRadius(8)
-                  .justifyContent(FlexAlign.Center);
-                  Text('停止').fontSize(10).fontColor('#FFFFFF').margin({ top: 6 });
-                }
-                .alignItems(HorizontalAlign.Center);
-              }
-              .layoutWeight(1).height(62)
-              .backgroundColor('rgba(255,255,255,0.1)').borderRadius(12)
-              .onClick(() => this.showToast('功能开发中'));
-
-              Button() {
-                Column() {
-                  Column() {
-                    Image($r('app.media.icon_reset_blue')).width(16).height(16);
-                  }
-                  .width(32).height(32)
-                  .backgroundColor('rgba(255,255,255,0.95)').borderRadius(8)
-                  .justifyContent(FlexAlign.Center);
-                  Text('复位').fontSize(10).fontColor('#FFFFFF').margin({ top: 6 });
-                }
-                .alignItems(HorizontalAlign.Center);
-              }
-              .layoutWeight(1).height(62)
-              .backgroundColor('rgba(255,255,255,0.1)').borderRadius(12)
-              .onClick(() => this.showToast('功能开发中'));
-
-              Button() {
-                Column() {
-                  Column() {
-                    Image($r('app.media.icon_alert_red')).width(16).height(16);
-                  }
-                  .width(32).height(32)
-                  .backgroundColor('rgba(255,255,255,0.95)').borderRadius(8)
-                  .justifyContent(FlexAlign.Center);
-                  Text('异常').fontSize(10).fontColor('#FFFFFF').margin({ top: 6 });
-                }
-                .alignItems(HorizontalAlign.Center);
-              }
-              .layoutWeight(1).height(62)
-              .backgroundColor('rgba(255,255,255,0.1)').borderRadius(12)
-              .onClick(() => {
-                this.showExceptionDialog = true;
-                this.exceptionDescription = '';
-              });
-            }
-            .width('100%').margin({ top: 16 });
           }
           .width('100%')
           .padding({ left: 16, right: 16, top: 16, bottom: 18 })
@@ -481,10 +359,6 @@ export struct StationDetailView {
         .width('100%').height('100%').backgroundColor('#F5F7FA');
       }
 
-      // Exception dialog overlay
-      if (this.showExceptionDialog) {
-        this.ExceptionDialog();
-      }
     }
     .width('100%').height('100%');
   }
