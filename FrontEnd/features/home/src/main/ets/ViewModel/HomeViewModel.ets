@@ -1,16 +1,23 @@
-import { HomeApi, WebSocketService } from '@ohos/network';
+import { HomeApi, DashboardApi, LineApi, WebSocketService } from '@ohos/network';
 import {
   HomeSummaryModel,
   ExceptionItemModel,
   DispatchItemModel,
   InspectionItemModel,
-  TaskItemModel
+  TaskItemModel,
+  LineItemModel,
+  DashboardModel
 } from '../Model/HomeSummaryModel';
 
 export class HomeViewModel {
   isLoading: boolean = false;
   errorMessage: string = '';
   summary: HomeSummaryModel | null = null;
+
+  lineList: LineItemModel[] = [];
+  lineLoading: boolean = false;
+  dashboard: DashboardModel | null = null;
+  dashboardLoading: boolean = false;
 
   async loadHomeData(): Promise<HomeSummaryModel | null> {
     this.isLoading = true;
@@ -110,6 +117,53 @@ export class HomeViewModel {
     return item;
   }
 
+  async loadLines(params?: Record<string, string | number>): Promise<void> {
+    this.lineLoading = true;
+    try {
+      const raw = await LineApi.getLines(params) as Array<Record<string, Object>>;
+      if (raw) {
+        this.lineList = raw.map((r: Record<string, Object>) => {
+          const item = new LineItemModel();
+          item.id = (r['id'] as number) ?? 0;
+          item.name = (r['name'] as string) ?? '';
+          item.status = (r['status'] as string) ?? '';
+          item.workshopName = (r['workshopName'] as string) ?? '';
+          item.stationCount = (r['stationCount'] as number) ?? 0;
+          item.workOrderCode = (r['workOrderCode'] as string) ?? '';
+          item.planQty = (r['planQty'] as number) ?? 0;
+          item.finishedCount = (r['finishedCount'] as number) ?? 0;
+          item.ngCount = (r['ngCount'] as number) ?? 0;
+          return item;
+        });
+      }
+    } catch (e) {
+      console.error('[HomeVM] loadLines 失败:', (e as Error).message);
+    } finally {
+      this.lineLoading = false;
+    }
+  }
+
+  async loadDashboard(): Promise<void> {
+    this.dashboardLoading = true;
+    try {
+      const raw = await DashboardApi.getDashboard('today') as Record<string, Object>;
+      if (raw) {
+        const d = new DashboardModel();
+        d.todayPlanRate = (raw['todayPlanRate'] as number) ?? 0;
+        d.totalInput = (raw['totalInput'] as number) ?? 0;
+        d.totalOutput = (raw['totalOutput'] as number) ?? 0;
+        d.totalNg = (raw['totalNg'] as number) ?? 0;
+        d.productCompletionRate = (raw['productCompletionRate'] as number) ?? 0;
+        d.stationCompletionRate = (raw['stationCompletionRate'] as number) ?? 0;
+        this.dashboard = d;
+      }
+    } catch (e) {
+      console.error('[HomeVM] loadDashboard 失败:', (e as Error).message);
+    } finally {
+      this.dashboardLoading = false;
+    }
+  }
+
   private subscribed: boolean = false;
   private debounceTimer: number = -1;
   private readonly DEBOUNCE_MS: number = 1000;
@@ -154,7 +208,11 @@ export class HomeViewModel {
     }
     this.debounceTimer = setTimeout(async () => {
       this.debounceTimer = -1;
-      await this.loadHomeData();
+      await Promise.all([
+        this.loadHomeData(),
+        this.loadDashboard(),
+        this.loadLines()
+      ]);
       this.refreshCallback?.();
     }, this.DEBOUNCE_MS);
   }

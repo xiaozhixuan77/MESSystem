@@ -1,6 +1,6 @@
 import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
-import { HomeSummaryModel, TaskItemModel } from '../Model/HomeSummaryModel';
+import { HomeSummaryModel, TaskItemModel, LineItemModel } from '../Model/HomeSummaryModel';
 import { DeepLinkInfo } from '@ohos/utils';
 import { LoadingState, ErrorState } from '@ohos/uicomponents';
 import { promptAction } from '@kit.ArkUI';
@@ -41,6 +41,7 @@ export struct OperatorHomeView {
         this.isLoading = false;
       }
     });
+    this.vm.loadLines();
   }
 
   aboutToDisappear(): void {
@@ -51,6 +52,56 @@ export struct OperatorHomeView {
     this.deepLink = { targetTab: tab, targetPage: page, params: params };
     this.activeTab = tab;
     this.pageStack.replacePath({ name: tab });
+  }
+
+  @Builder
+  lineCard(name: string, status: string, statusColor: string, woCode: string,
+           planQty: number, finished: number, ngCount: number) {
+    Column() {
+      Row() {
+        Text(name).fontSize(14).fontWeight(600).fontColor('#1A1A2E');
+        Text(status).fontSize(10).fontColor(Color.White).fontWeight(500)
+          .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+          .borderRadius(8)
+          .backgroundColor(statusColor);
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.SpaceBetween)
+      .margin({ bottom: 8 });
+
+      if (woCode) {
+        Text(`工单: ${woCode}`).fontSize(12).fontColor('#5A5A6E').margin({ bottom: 4 });
+      }
+
+      if (planQty > 0) {
+        Row({ space: 8 }) {
+          Row() {
+            Row()
+              .width(`${Math.min(100, Math.round(finished / planQty * 100))}%`)
+              .height(4).borderRadius(2)
+              .backgroundColor(statusColor);
+          }
+          .width('100%').height(4).backgroundColor('#E8EBF0').borderRadius(2)
+          .layoutWeight(1);
+          Text(`${finished}/${planQty}`).fontSize(11).fontColor('#9A9AA8');
+        }
+        .width('100%');
+      }
+    }
+    .padding(12)
+    .backgroundColor(Color.White)
+    .borderRadius(12)
+    .shadow({ radius: 4, color: 'rgba(0,0,0,0.04)' })
+    .width('100%')
+    .margin({ bottom: 8 });
+  }
+
+  private getStatusColor(status: string): string {
+    if (status === '生产中') return '#4CAF50';
+    if (status === '空闲') return '#9A9AA8';
+    if (status === '异常') return '#F44336';
+    if (status === '暂停' || status === '暂停中') return '#FF9800';
+    return '#9A9AA8';
   }
 
   build() {
@@ -369,8 +420,18 @@ export struct OperatorHomeView {
               .justifyContent(FlexAlign.SpaceBetween)
               .margin({ bottom: 12 });
 
-              Text('产线动态需接入 /lines 接口，暂未实现')
-                .fontSize(12).fontColor('#9A9AA8').padding(16).width('100%').textAlign(TextAlign.Center);
+              if (this.vm.lineLoading) {
+                Text('加载中...').fontSize(12).fontColor('#9A9AA8')
+                  .padding(16).width('100%').textAlign(TextAlign.Center);
+              } else if (this.vm.lineList.length > 0) {
+                ForEach(this.vm.lineList, (item: LineItemModel) => {
+                  this.lineCard(item.name, item.status, this.getStatusColor(item.status),
+                    item.workOrderCode, item.planQty, item.finishedCount, item.ngCount);
+                }, (item: LineItemModel) => `line_${item.id}`);
+              } else {
+                Text('暂无产线数据').fontSize(12).fontColor('#9A9AA8')
+                  .padding(16).width('100%').textAlign(TextAlign.Center);
+              }
             }
             .width('100%');
           }

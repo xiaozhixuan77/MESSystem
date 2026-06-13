@@ -40,6 +40,7 @@ export struct AdminHomeView {
         this.isLoading = false;
       }
     });
+    this.vm.loadDashboard();
   }
 
   aboutToDisappear(): void {
@@ -50,6 +51,23 @@ export struct AdminHomeView {
     this.deepLink = { targetTab: tab, targetPage: page, params: params };
     this.activeTab = tab;
     this.pageStack.replacePath({ name: tab });
+  }
+
+  @Builder
+  kpiCard(label: string, value: string, valueColor: string) {
+    Column() {
+      Text(value).fontSize(20).fontWeight(700).fontColor(valueColor).maxLines(1);
+      Text(label).fontSize(10).fontColor('#9A9AA8').margin({ top: 4 });
+    }
+    .padding(12)
+    .backgroundColor(Color.White)
+    .borderRadius(12)
+    .alignItems(HorizontalAlign.Center)
+    .width('100%');
+  }
+
+  private formatPercent(rate: number): string {
+    return `${Math.round(rate * 100)}%`;
   }
 
   build() {
@@ -342,7 +360,7 @@ export struct AdminHomeView {
             .width('100%')
             .margin({ bottom: 20 });
 
-            // 今日概览 — 保留占位
+            // 今日概览
             Column() {
               Row() {
                 Text('今日概览').fontSize(15).fontWeight(600).fontColor('#1A1A2E');
@@ -355,8 +373,26 @@ export struct AdminHomeView {
               .justifyContent(FlexAlign.SpaceBetween)
               .margin({ bottom: 12 });
 
-              Text('今日概览需接入 /dashboard 接口，暂未实现')
-                .fontSize(12).fontColor('#9A9AA8').padding(16).width('100%').textAlign(TextAlign.Center);
+              if (this.vm.dashboardLoading) {
+                Text('加载中...').fontSize(12).fontColor('#9A9AA8')
+                  .padding(16).width('100%').textAlign(TextAlign.Center);
+              } else if (this.vm.dashboard !== null) {
+                Grid() {
+                  GridItem() { this.kpiCard('计划完成率', this.formatPercent(this.vm.dashboard!.todayPlanRate), '#1565C0'); }
+                  GridItem() { this.kpiCard('投入数', `${this.vm.dashboard!.totalInput}`, '#1A1A2E'); }
+                  GridItem() { this.kpiCard('产出数', `${this.vm.dashboard!.totalOutput}`, '#1A1A2E'); }
+                  GridItem() { this.kpiCard('不良品', `${this.vm.dashboard!.totalNg}`,
+                    (this.vm.dashboard!.totalNg ?? 0) > 0 ? '#F44336' : '#1A1A2E'); }
+                  GridItem() { this.kpiCard('产品完工率', this.formatPercent(this.vm.dashboard!.productCompletionRate), '#1565C0'); }
+                  GridItem() { this.kpiCard('工站完工率', this.formatPercent(this.vm.dashboard!.stationCompletionRate), '#1565C0'); }
+                }
+                .columnsTemplate('1fr 1fr 1fr')
+                .rowsGap(8).columnsGap(8)
+                .width('100%');
+              } else {
+                Text('暂无今日数据').fontSize(12).fontColor('#9A9AA8')
+                  .padding(16).width('100%').textAlign(TextAlign.Center);
+              }
             }
             .width('100%');
           }

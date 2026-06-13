@@ -58,3 +58,26 @@ export class HomeSummaryModel {
   @Trace operatorPendingStartTasks: TaskItemModel[] = [];
   @Trace operatorPendingReportTasks: TaskItemModel[] = [];
 }
+
+@ObservedV2
+export class LineItemModel {
+  @Trace id: number = 0;
+  @Trace name: string = '';
+  @Trace status: string = '';
+  @Trace workshopName: string = '';
+  @Trace stationCount: number = 0;
+  @Trace workOrderCode: string = '';
+  @Trace planQty: number = 0;
+  @Trace finishedCount: number = 0;
+  @Trace ngCount: number = 0;
+}
+
+@ObservedV2
+export class DashboardModel {
+  @Trace todayPlanRate: number = 0;
+  @Trace totalInput: number = 0;
+  @Trace totalOutput: number = 0;
+  @Trace totalNg: number = 0;
+  @Trace productCompletionRate: number = 0;
+  @Trace stationCompletionRate: number = 0;
+}
