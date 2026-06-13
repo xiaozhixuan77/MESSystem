@@ -4,8 +4,10 @@ import org.example.constant.ErrorMessages;
 import org.example.dto.request.LoginRequest;
 import org.example.dto.response.LoginResponse;
 import org.example.dto.response.R;
+import org.example.entity.RolePermission;
 import org.example.entity.User;
 import org.example.security.JwtTokenProvider;
+import org.example.service.RolePermissionService;
 import org.example.service.UserService;
 import org.example.vo.UserVO;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +18,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 public class AuthController {
@@ -23,13 +27,16 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserService userService;
+    private final RolePermissionService rolePermissionService;
 
     public AuthController(AuthenticationManager authenticationManager,
                           JwtTokenProvider jwtTokenProvider,
-                          UserService userService) {
+                          UserService userService,
+                          RolePermissionService rolePermissionService) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userService = userService;
+        this.rolePermissionService = rolePermissionService;
     }
 
     @PostMapping("/auth/login")
@@ -46,9 +53,16 @@ public class AuthController {
             Long userId = Long.valueOf(userDetails.getUsername());
             String role = userDetails.getAuthorities().iterator().next().getAuthority();
 
-            String token = jwtTokenProvider.createToken(userId, role);
-
             User user = userService.getById(userId);
+            String permissions = rolePermissionService.lambdaQuery()
+                    .eq(RolePermission::getRole, role)
+                    .list()
+                    .stream()
+                    .map(RolePermission::getPermission)
+                    .collect(Collectors.joining(","));
+
+            String token = jwtTokenProvider.createToken(userId, role, permissions);
+
             UserVO userVO = new UserVO();
             userVO.setId(user.getId());
             userVO.setEmployeeNo(user.getEmployeeNo());
@@ -62,6 +76,7 @@ public class AuthController {
             LoginResponse response = new LoginResponse();
             response.setToken(token);
             response.setRole(role);
+            response.setPermissions(permissions);
             response.setUser(userVO);
 
             return R.ok(response);

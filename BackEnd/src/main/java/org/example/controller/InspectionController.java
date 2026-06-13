@@ -63,7 +63,7 @@ public class InspectionController {
     }
 
     @GetMapping("/inspections")
-    @RequiresPermission("inspection.create")
+    @RequiresPermission("inspection.view")
     public R<List<InspectionRecordVO>> list(@RequestParam(required = false) Long workOrderId) {
         var query = inspectionRecordService.lambdaQuery()
                 .eq(InspectionRecord::getIsDeleted, 0);
@@ -112,7 +112,7 @@ public class InspectionController {
     }
 
     @GetMapping("/inspections/{id}")
-    @RequiresPermission("inspection.create")
+    @RequiresPermission("inspection.view")
     public R<InspectionRecordVO> detail(@PathVariable Long id) {
         InspectionRecord record = inspectionRecordService.getById(id);
         if (record == null || record.getIsDeleted() == 1) {
@@ -122,7 +122,7 @@ public class InspectionController {
     }
 
     @PutMapping("/inspections/{id}")
-    @RequiresPermission("inspection.create")
+    @RequiresPermission("inspection.submit")
     public R<InspectionRecordVO> submit(@PathVariable Long id,
                                          @Valid @RequestBody InspectionCreateRequest request) {
         Long inspectorId = ControllerUtils.getCurrentUserId();

@@ -333,36 +333,50 @@ INSERT INTO `user` (id, employee_no, name, role, team_id, workshop_id, status, a
 (4, 'INS001', '陈静', 'inspector', NULL, 3, '在岗', NULL, '$2a$10$9LLHytJcuDv3q13pyQyftuk/Wttx400E1e5Q/ui3lF0Kroob/tSva');
 
 INSERT INTO role_permission (role, permission) VALUES
+-- admin: 通配符覆盖全部权限
 ('admin', '*'),
+-- leader (班组长): 17 条
 ('leader', 'workorder.view_team'),
 ('leader', 'workorder.create'),
 ('leader', 'workorder.dispatch'),
+('leader', 'workorder.start'),
+('leader', 'workorder.complete'),
 ('leader', 'workorder.pause'),
 ('leader', 'workorder.resume'),
 ('leader', 'workorder.confirm'),
 ('leader', 'workorder.scrap'),
 ('leader', 'line.view'),
 ('leader', 'line.operate'),
+('leader', 'station.view'),
 ('leader', 'station.operate'),
-('leader', 'exception.report'),
 ('leader', 'exception.view'),
+('leader', 'exception.report'),
 ('leader', 'exception.handle'),
 ('leader', 'dashboard.view'),
+('leader', 'master.view'),
+-- operator (操作员): 13 条 (注意: 无 resume/confirm/scrap/dispatch)
 ('operator', 'workorder.view_own'),
 ('operator', 'workorder.start'),
 ('operator', 'workorder.complete'),
 ('operator', 'workorder.pause'),
-('operator', 'workorder.resume'),
 ('operator', 'workorder.report'),
 ('operator', 'line.view'),
 ('operator', 'line.operate'),
+('operator', 'station.view'),
 ('operator', 'station.operate'),
 ('operator', 'exception.report'),
 ('operator', 'dashboard.view'),
-('inspector', 'inspection.create'),
+('operator', 'master.view'),
+-- inspector (质检员): 9 条
 ('inspector', 'workorder.view_inspection'),
+('inspector', 'inspection.view'),
+('inspector', 'inspection.create'),
+('inspector', 'inspection.submit'),
 ('inspector', 'line.view'),
-('inspector', 'dashboard.view');
+('inspector', 'station.view'),
+('inspector', 'exception.view'),
+('inspector', 'dashboard.view'),
+('inspector', 'master.view');
 
 INSERT INTO line_process_support (line_id, process_id) VALUES
 (1, 1);

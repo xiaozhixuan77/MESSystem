@@ -71,6 +71,7 @@ public class ProductionLineController {
     }
 
     @GetMapping("/lines")
+    @RequiresPermission("line.view")
     public R<List<ProductionLineVO>> list(@RequestParam(required = false) Long workshopId,
                                           @RequestParam(required = false) String status) {
         var query = productionLineService.lambdaQuery()
@@ -174,6 +175,7 @@ public class ProductionLineController {
     }
 
     @GetMapping("/lines/{id}")
+    @RequiresPermission("line.view")
     public R<LineDetailVO> detail(@PathVariable Long id) {
         ProductionLine line = productionLineService.lambdaQuery()
                 .eq(ProductionLine::getId, id)

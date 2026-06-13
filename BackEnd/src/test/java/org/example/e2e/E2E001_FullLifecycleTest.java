@@ -84,8 +84,8 @@ class E2E001_FullLifecycleTest extends E2ETestBase {
         MvcResult lineDetailPaused = performGet("/lines/1", leaderToken);
         assertDataFieldEquals(lineDetailPaused, "status", "暂停");
 
-        // Step 10: Operator 恢复生产
-        MvcResult resumeResult = performPost("/workorders/" + woId + "/resume", operatorToken);
+        // Step 10: Leader 恢复生产（矩阵规定仅班组长/管理员可恢复）
+        MvcResult resumeResult = performPost("/workorders/" + woId + "/resume", leaderToken);
         assertOk(resumeResult);
 
         MvcResult detailAfterResume = performGet("/workorders/" + woId, leaderToken);
@@ -181,8 +181,8 @@ class E2E001_FullLifecycleTest extends E2ETestBase {
         void startByWrongOperator() throws Exception {
             Long woId = createAndDispatchWorkOrder();
 
-            // 用 admin（非指派操作员）尝试启动
-            MvcResult result = performPostWithBodyExpectAny("/workorders/" + woId + "/start", null, adminToken);
+            // 用班组长（非指派操作员，且工单非暂停中）尝试启动
+            MvcResult result = performPostWithBodyExpectAny("/workorders/" + woId + "/start", null, leaderToken);
             assertError(result, 403);
         }
 

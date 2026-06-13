@@ -300,6 +300,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void dispatch(Long workOrderId, Long operatorId) {
+        User currentUser = getCurrentUser();
         WorkOrder wo = lambdaQuery()
                 .eq(WorkOrder::getId, workOrderId)
                 .last("FOR UPDATE")
@@ -321,6 +322,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         if (!"在岗".equals(operator.getStatus())) {
             throw new BusinessException(400, "该操作员当前不在岗，无法派工");
         }
+        validateTeamAccess(currentUser, wo);
 
         wo.setStatus("已派工");
         wo.setOperatorId(operatorId);
@@ -335,6 +337,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void start(Long workOrderId) {
+        User currentUser = getCurrentUser();
         WorkOrder wo = lambdaQuery()
                 .eq(WorkOrder::getId, workOrderId)
                 .last("FOR UPDATE")
@@ -353,10 +356,21 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             return;
         }
 
-        Long currentUserId = getCurrentUserId();
-        if (currentUserId == null || !wo.getOperatorId().equals(currentUserId)) {
-            throw new BusinessException(403, "只有被指派的操作员才能开工");
+        // 角色感知校验: operator 须是被指派操作员; leader 仅限异常恢复(暂停中); admin 放行
+        if (currentUser == null) {
+            throw new BusinessException(401, "未登录");
         }
+        if ("operator".equals(currentUser.getRole())) {
+            if (!currentUser.getId().equals(wo.getOperatorId())) {
+                throw new BusinessException(403, "只有被指派的操作员才能开工");
+            }
+        } else if ("leader".equals(currentUser.getRole())) {
+            if (!isPaused) {
+                throw new BusinessException(403, "班组长仅在异常恢复时可开工（工单须为暂停中）");
+            }
+            validateTeamAccess(currentUser, wo);
+        }
+        // admin 不限制
 
         ProductionLine line = productionLineService.lambdaQuery()
                 .eq(ProductionLine::getId, wo.getLineId())
@@ -403,10 +417,16 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             throw new BusinessException(400, "只有\"生产中\"状态才能完成生产");
         }
 
-        Long currentUserId = getCurrentUserId();
-        if (currentUserId == null || !wo.getOperatorId().equals(currentUserId)) {
-            throw new BusinessException(403, "只有被指派的操作员才能完成生产");
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(401, "未登录");
         }
+        if ("operator".equals(currentUser.getRole())) {
+            if (!currentUser.getId().equals(wo.getOperatorId())) {
+                throw new BusinessException(403, "只有被指派的操作员才能完成生产");
+            }
+        }
+        // admin 放行
 
         wo.setStatus("生产完成");
         wo.setActualEndTime(LocalDateTime.now());
@@ -484,6 +504,18 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             throw new BusinessException(400, "只有\"生产中\"状态才能暂停");
         }
 
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(401, "未登录");
+        }
+        if ("operator".equals(currentUser.getRole())) {
+            if (!currentUser.getId().equals(wo.getOperatorId())) {
+                throw new BusinessException(403, "只有被指派的操作员才能暂停");
+            }
+        } else if ("leader".equals(currentUser.getRole())) {
+            validateTeamAccess(currentUser, wo);
+        }
+
         if (reason != null && !reason.isEmpty()) {
             String existing = wo.getExceptionNote();
             wo.setExceptionNote(existing != null ? existing + "; " + reason : reason);
@@ -521,6 +553,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             throw new BusinessException(400, "只有\"暂停中\"状态才能恢复");
         }
 
+        User currentUser = getCurrentUser();
+        validateTeamAccess(currentUser, wo);
+
         wo.setStatus("生产中");
         wo.setPauseTime(null);
         updateById(wo);
@@ -556,6 +591,16 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
         if (request.getGood() + request.getNg() > wo.getPlanQty()) {
             throw new BusinessException(400, "良品+NG不能超过计划数量");
+        }
+
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(401, "未登录");
+        }
+        if ("operator".equals(currentUser.getRole())) {
+            if (!currentUser.getId().equals(wo.getOperatorId())) {
+                throw new BusinessException(403, "只有被指派的操作员才能报工");
+            }
         }
 
         wo.setStatus("已报工");
@@ -598,6 +643,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         if (!"已报工".equals(wo.getStatus())) {
             throw new BusinessException(400, "只有\"已报工\"状态才能确认完工");
         }
+
+        User currentUser = getCurrentUser();
+        validateTeamAccess(currentUser, wo);
 
         long inspectionCount = inspectionRecordMapper.selectCount(
                 new LambdaQueryWrapper<InspectionRecord>()
@@ -643,6 +691,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         if (!"暂停中".equals(wo.getStatus()) && !"已报工".equals(wo.getStatus())) {
             throw new BusinessException(400, "只有\"暂停中\"或\"已报工\"状态才能报废");
         }
+
+        User currentUser = getCurrentUser();
+        validateTeamAccess(currentUser, wo);
 
         if (reason != null && !reason.isEmpty()) {
             String existing = wo.getExceptionNote();
@@ -694,15 +745,41 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     }
 
     private Long getCurrentUserId() {
+        User user = getCurrentUser();
+        return user != null ? user.getId() : null;
+    }
+
+    private User getCurrentUser() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
         }
         Object principal = authentication.getPrincipal();
         if (principal instanceof UserDetails userDetails) {
-            return Long.valueOf(userDetails.getUsername());
+            Long userId = Long.valueOf(userDetails.getUsername());
+            return userService.getById(userId);
         }
         return null;
+    }
+
+    /**
+     * 校验班组长只能操作本班组工单。
+     * @throws BusinessException(403) 若非本班组
+     */
+    private void validateTeamAccess(User currentUser, WorkOrder wo) {
+        if (currentUser == null) {
+            throw new BusinessException(401, "未登录");
+        }
+        if ("leader".equals(currentUser.getRole())) {
+            Long woOperatorId = wo.getOperatorId();
+            if (woOperatorId != null) {
+                User woOperator = userService.getById(woOperatorId);
+                if (woOperator == null || !currentUser.getTeamId().equals(woOperator.getTeamId())) {
+                    throw new BusinessException(403, "只能操作本班组工单");
+                }
+            }
+        }
+        // admin 放行; operator 由各方法内做"被指派操作员"判断
     }
 
     private WorkOrder doCreateWorkOrder(WorkOrderCreateRequest request, Long createdBy) {

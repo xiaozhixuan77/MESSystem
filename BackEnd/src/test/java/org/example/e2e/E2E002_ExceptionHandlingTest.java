@@ -44,8 +44,8 @@ class E2E002_ExceptionHandlingTest extends E2ETestBase {
         MvcResult lineDetailFault = performGet("/lines/1", leaderToken);
         assertDataFieldEquals(lineDetailFault, "status", "暂停");
 
-        // Step 4: Operator 恢复工单
-        MvcResult resumeResult = performPost("/workorders/" + woId + "/resume", operatorToken);
+        // Step 4: Leader 恢复工单（矩阵规定仅班组长/管理员可恢复）
+        MvcResult resumeResult = performPost("/workorders/" + woId + "/resume", leaderToken);
         assertOk(resumeResult);
 
         MvcResult detailAfterResume = performGet("/workorders/" + woId, leaderToken);
