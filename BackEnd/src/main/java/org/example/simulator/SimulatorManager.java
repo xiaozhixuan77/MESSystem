@@ -15,9 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -113,7 +111,7 @@ public class SimulatorManager {
             }
 
             LineSimulator simulator = new LineSimulator(lineId, workOrderId, stations,
-                    Collections.emptyList(), config.getGoodRate(), planQty);
+                    config.getGoodRate(), planQty);
             simulators.put(lineId, simulator);
 
             lineBroadcaster.broadcastLineStatus(lineId, "生产中", workOrderId, 0, 0, "生产中",
@@ -249,10 +247,6 @@ public class SimulatorManager {
 
     public Optional<LineSimulator> getSimulator(Long lineId) {
         return Optional.ofNullable(simulators.get(lineId));
-    }
-
-    public Set<Long> getRunningLineIds() {
-        return new HashSet<>(runningSimulators.keySet());
     }
 
     /**

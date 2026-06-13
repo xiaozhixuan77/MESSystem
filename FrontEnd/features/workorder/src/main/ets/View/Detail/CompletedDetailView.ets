@@ -231,17 +231,6 @@ export struct CompletedDetailView {
     .width('100%').margin({ bottom: 12 });
   }
 
-  @Builder StatCard(label: string, value: string, color: ResourceColor) {
-    Column() {
-      Text(value).fontSize(24).fontWeight(700).fontColor(color);
-      Text(label).fontSize(12).fontColor('#5A5A6E').margin({ bottom: 4 });
-    }
-    .layoutWeight(1)
-    .padding({ top: 16, bottom: 16, left: 8, right: 8 })
-    .backgroundColor('#F5F7FA').borderRadius(12)
-    .alignItems(HorizontalAlign.Center);
-  }
-
   @Builder ReportFormSection() {
     Column() {
       this.SectionTitle('报工录入');
@@ -391,11 +380,4 @@ export struct CompletedDetailView {
       .width('100%').margin({ bottom: 14 });
   }
 
-  @Builder FieldItem(label: string, value: string) {
-    Column() {
-      Text(label).fontSize(11).fontColor('#9A9AA8').margin({ bottom: 4 });
-      Text(value).fontSize(14).fontWeight(600).fontColor('#1A1A2E');
-    }
-    .alignItems(HorizontalAlign.Start).width('100%');
-  }
 }

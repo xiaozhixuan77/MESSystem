@@ -1,7 +1,7 @@
 import { UserModel } from '../Model/UserModel';
 import { AuthApi, httpClient } from '@ohos/network';
 import { promptAction } from '@kit.ArkUI';
-import { LoadingState, ErrorState } from '@ohos/uicomponents';
+import { LoadingState, ErrorState } from  '@ohos/uicomponents';
 
 class StatItem {
   value: string = '';

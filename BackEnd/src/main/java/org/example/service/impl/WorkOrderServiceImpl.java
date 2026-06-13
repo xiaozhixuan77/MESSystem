@@ -744,11 +744,6 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 .exists();
     }
 
-    private Long getCurrentUserId() {
-        User user = getCurrentUser();
-        return user != null ? user.getId() : null;
-    }
-
     private User getCurrentUser() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {

@@ -29,7 +29,6 @@ const KNOWN_LINE_IDS = [1, 2];
 export struct WorkOrderListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('currentRole') currentRole: string = '';
-  @Param role: string = '';
   @Local viewModel: WorkOrderViewModel = new WorkOrderViewModel();
   @Local searchText: string = '';
   private hasAppeared: boolean = false;

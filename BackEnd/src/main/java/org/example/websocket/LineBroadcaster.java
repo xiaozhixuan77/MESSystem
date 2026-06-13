@@ -93,18 +93,6 @@ public class LineBroadcaster {
     }
 
     /**
-     * 点对点私有消息，发送到 /user/{userId}/{destination}。
-     */
-    public void sendToUser(Long userId, String destination, Object payload) {
-        Map<String, Object> message = new HashMap<>();
-        message.put("type", "USER_MESSAGE");
-        message.put("timestamp", System.currentTimeMillis());
-        message.put("data", payload);
-        messagingTemplate.convertAndSendToUser(userId.toString(), destination, message);
-        log.debug("私有消息已发送: userId={}, destination={}", userId, destination);
-    }
-
-    /**
      * 异常上报广播 → /topic/exceptions。
      */
     public void broadcastExceptionReported(ProductionException ex) {

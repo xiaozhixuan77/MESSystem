@@ -18,7 +18,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController

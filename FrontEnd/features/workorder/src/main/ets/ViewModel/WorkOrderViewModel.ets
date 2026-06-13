@@ -1,6 +1,6 @@
 import { emitter } from '@kit.BasicServicesKit';
 import { WORKORDER_CHANGED_EVENT } from '@ohos/datastore';
-import { WorkOrderApi, WorkshopApi, ProductApi, LineApi, UserApi, WebSocketService } from '@ohos/network';
+import { WorkOrderApi, WorkshopApi, ProductApi, LineApi, UserApi, QualityApi, WebSocketService } from '@ohos/network';
 import { UserModel } from '@ohos/user';
 import { WorkOrderModel } from '../Model/WorkOrderModel';
 import { WorkshopModel } from '../Model/WorkshopModel';
@@ -8,6 +8,7 @@ import { ProductModel } from '../Model/ProductModel';
 import { ProcessStepModel } from '../Model/ProcessStepModel';
 import { LineModel } from '../Model/LineModel';
 import { WorkOrderRouteModel } from '../Model/WorkOrderRouteModel';
+import { InspectionRecordModel } from '../Model/InspectionRecordModel';
 
 @ObservedV2
 export class WorkOrderViewModel {
@@ -45,8 +46,6 @@ export class WorkOrderViewModel {
   // —— 详情页状态 ——
   @Trace operators: UserModel[] = [];
   @Trace selectedOperatorId: number = 0;
-  @Trace pauseReason: string = '';
-  @Trace scrapReason: string = '';
   @Trace reportFormGood: number = 0;
   @Trace reportFormNg: number = 0;
   @Trace reportFormHours: number = 0;
@@ -62,6 +61,12 @@ export class WorkOrderViewModel {
 
   // WebSocket 订阅管理
   private subscribedLineIds: Set<number> = new Set();
+
+  // 抽检数据
+  @Trace inspectionList: InspectionRecordModel[] = [];
+  @Trace inspectionLoading: boolean = false;
+  @Trace inspectionError: string = '';
+  private subscribedInspection: boolean = false;
 
   subscribeWorkOrderUpdates(lineId: number): void {
     if (this.subscribedLineIds.has(lineId)) return;
@@ -259,39 +264,6 @@ export class WorkOrderViewModel {
     } finally {
       this.isLoading = false;
     }
-  }
-
-  get canDispatch(): boolean {
-    return this.currentWorkOrder?.status === '待派工';
-  }
-
-  get canStart(): boolean {
-    return this.currentWorkOrder?.status === '已派工';
-  }
-
-  get canPause(): boolean {
-    return this.currentWorkOrder?.status === '生产中';
-  }
-
-  get canResume(): boolean {
-    return this.currentWorkOrder?.status === '暂停中';
-  }
-
-  get canReport(): boolean {
-    return this.currentWorkOrder?.status === '生产完成';
-  }
-
-  get canConfirm(): boolean {
-    return this.currentWorkOrder?.status === '已报工';
-  }
-
-  get canComplete(): boolean {
-    return this.currentWorkOrder?.status === '生产中';
-  }
-
-  get canDelete(): boolean {
-    const s = this.currentWorkOrder?.status;
-    return s === '完工' || s === '报废';
   }
 
   // ========== 详情页动作方法 ==========
@@ -794,6 +766,76 @@ export class WorkOrderViewModel {
 
   cleanup(): void {
     this.unsubscribeStationUpdates();
+    this.unsubscribeInspectionUpdates();
     this.stopElapsedTimer();
   }
+
+  // ========== 抽检相关 ==========
+
+  async loadInspections(workOrderId: number): Promise<void> {
+    this.inspectionLoading = true;
+    this.inspectionError = '';
+    try {
+      const params: Record<string, Object> = { 'workOrderId': workOrderId };
+      const raw = await QualityApi.getInspections(params) as Record<string, Object>[];
+      this.inspectionList = raw.map((r: Record<string, Object>) => {
+        const m = new InspectionRecordModel();
+        m.id = r['id'] as number;
+        m.workOrderId = r['workOrderId'] as number;
+        m.inspectorId = r['inspectorId'] as number;
+        m.inspectorName = r['inspectorName'] as string;
+        m.inspectTime = r['inspectTime'] as string;
+        m.sampleQty = r['sampleQty'] as number;
+        m.sampleGood = r['sampleGood'] as number;
+        m.sampleNg = r['sampleNg'] as number;
+        m.defectTypes = r['defectTypes'] as string;
+        m.defectDescription = r['defectDescription'] as string;
+        m.conclusion = r['conclusion'] as string;
+        m.status = r['status'] as string;
+        m.workOrderCode = r['workOrderCode'] as string;
+        m.productName = r['productName'] as string;
+        m.processName = r['processName'] as string;
+        return m;
+      });
+    } catch (e) {
+      this.inspectionError = (e as Error).message || '加载抽检记录失败';
+    } finally {
+      this.inspectionLoading = false;
+    }
+  }
+
+  subscribeInspectionUpdates(): void {
+    if (this.subscribedInspection) {
+      return;
+    }
+    this.subscribedInspection = true;
+    const topic = '/topic/inspections';
+    const ws = WebSocketService.getInstance();
+    ws.subscribe(topic);
+    WebSocketService.addListener(topic, this.onInspectionUpdate);
+  }
+
+  unsubscribeInspectionUpdates(): void {
+    if (!this.subscribedInspection) {
+      return;
+    }
+    this.subscribedInspection = false;
+    const topic = '/topic/inspections';
+    WebSocketService.removeListener(topic, this.onInspectionUpdate);
+  }
+
+  private onInspectionUpdate = (payload: Object): void => {
+    const msg = payload as Record<string, Object>;
+    if (msg['type'] !== 'INSPECTION_UPDATE') {
+      return;
+    }
+    const data = msg['data'] as Record<string, Object>;
+    if (!data) {
+      return;
+    }
+    const woId = data['workOrderId'] as number;
+    if (this.currentWorkOrder && woId === this.currentWorkOrder.id) {
+      this.loadInspections(woId);
+    }
+  };
 }

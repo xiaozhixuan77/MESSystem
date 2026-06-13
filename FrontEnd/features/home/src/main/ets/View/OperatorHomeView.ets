@@ -53,31 +53,6 @@ export struct OperatorHomeView {
     this.pageStack.replacePath({ name: tab });
   }
 
-  @Builder
-  ActionButton(icon: ResourceStr, label: string) {
-    Column() {
-      Column() {
-        Image(icon).width(14).height(14);
-      }
-      .width(28).height(28)
-      .backgroundColor('rgba(255,255,255,0.95)')
-      .borderRadius(8)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center);
-
-      Text(label)
-        .fontSize(11)
-        .fontColor(Color.White)
-        .fontWeight(500)
-        .margin({ top: 6 });
-    }
-    .alignItems(HorizontalAlign.Center)
-    .padding({ top: 14, bottom: 14, left: 8, right: 8 })
-    .backgroundColor('rgba(255,255,255,0.1)')
-    .borderRadius(12)
-    .layoutWeight(1)
-  }
-
   build() {
     Column() {
       // Header 蓝色区域

@@ -52,31 +52,6 @@ export struct AdminHomeView {
     this.pageStack.replacePath({ name: tab });
   }
 
-  @Builder
-  QuickItem(icon: ResourceStr, label: string) {
-    Column() {
-      Column() {
-        Image(icon).width(16).height(16);
-      }
-      .width(32).height(32)
-      .backgroundColor('rgba(255,255,255,0.95)')
-      .borderRadius(8)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center);
-
-      Text(label)
-        .fontSize(10)
-        .fontColor(Color.White)
-        .fontWeight(500)
-        .margin({ top: 6 });
-    }
-    .alignItems(HorizontalAlign.Center)
-    .padding({ top: 10, bottom: 10, left: 4, right: 4 })
-    .backgroundColor('rgba(255,255,255,0.1)')
-    .borderRadius(12)
-    .layoutWeight(1)
-  }
-
   build() {
     Column() {
       // Header 蓝色区域

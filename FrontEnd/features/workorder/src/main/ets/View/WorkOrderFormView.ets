@@ -199,18 +199,6 @@ export struct WorkOrderFormView {
     }
   }
 
-  @Builder
-  LineMenu() {
-    Menu() {
-      ForEach(this.viewModel.lines, (l: LineModel) => {
-        MenuItem({ content: l.name })
-          .onClick(() => {
-            this.viewModel.formLineId = l.id
-          })
-      })
-    }
-  }
-
   build() {
     Stack() {
       Column() {

@@ -1,6 +1,5 @@
 package org.example.simulator;
 
-import org.example.entity.ProcessStep;
 import org.example.entity.Workstation;
 
 import java.util.ArrayList;
@@ -20,19 +19,16 @@ public class LineSimulator {
     private final Long lineId;
     private final Long workOrderId;
     private final List<Workstation> stations;
-    private final List<ProcessStep> processSteps;
     private final double goodRate;
     private final int planQty;
-    private int currentOpIndex = 0;
     private int productSnCounter = 0;
     private volatile CountDownLatch tickLatch = new CountDownLatch(0);
 
     public LineSimulator(Long lineId, Long workOrderId, List<Workstation> stations,
-                         List<ProcessStep> processSteps, double goodRate, int planQty) {
+                         double goodRate, int planQty) {
         this.lineId = lineId;
         this.workOrderId = workOrderId;
         this.stations = stations;
-        this.processSteps = processSteps;
         this.goodRate = goodRate;
         this.planQty = planQty;
     }
@@ -96,29 +92,8 @@ public class LineSimulator {
         return Collections.unmodifiableList(stations);
     }
 
-    public void replaceStations(List<Workstation> freshStations) {
-        this.stations.clear();
-        this.stations.addAll(freshStations);
-    }
-
-    public List<ProcessStep> getProcessSteps() {
-        return processSteps;
-    }
-
     public double getGoodRate() {
         return goodRate;
-    }
-
-    public int getCurrentOpIndex() {
-        return currentOpIndex;
-    }
-
-    public void setCurrentOpIndex(int currentOpIndex) {
-        this.currentOpIndex = currentOpIndex;
-    }
-
-    public int getProductSnCounter() {
-        return productSnCounter;
     }
 
     public int incrementProductSn() {

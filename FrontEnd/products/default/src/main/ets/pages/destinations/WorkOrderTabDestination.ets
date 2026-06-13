@@ -22,7 +22,7 @@ export struct WorkOrderTabDestination {
   PageMap(name: string) {
     NavDestination() {
       if (name === 'WorkOrderList') {
-        WorkOrderListView({ role: this.currentRole })
+        WorkOrderListView()
       } else if (name === 'PendingDetail') {
         PendingDetailView()
       } else if (name === 'AssignedDetail') {
@@ -49,7 +49,7 @@ export struct WorkOrderTabDestination {
   build() {
     NavDestination() {
       Navigation(this.workOrderStack) {
-        WorkOrderListView({ role: this.currentRole })
+        WorkOrderListView()
       }
       .navDestination(this.PageMap)
       .hideTitleBar(true)

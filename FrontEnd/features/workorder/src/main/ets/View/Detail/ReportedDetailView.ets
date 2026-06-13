@@ -1,5 +1,6 @@
 import { PermissionUtil } from '@ohos/utils';
 import { WorkOrderViewModel } from '../../ViewModel/WorkOrderViewModel';
+import { InspectionRecordModel } from '../../Model/InspectionRecordModel';
 import { LoadingState, ErrorState } from '@ohos/uicomponents';
 
 @ComponentV2
@@ -25,7 +26,13 @@ export struct ReportedDetailView {
     this.workOrderId = (param?.['workOrderId'] as number) ?? 0;
     if (this.workOrderId > 0) {
       this.viewModel.loadDetail(this.workOrderId);
+      this.viewModel.loadInspections(this.workOrderId);
+      this.viewModel.subscribeInspectionUpdates();
     }
+  }
+
+  aboutToDisappear(): void {
+    this.viewModel.cleanup();
   }
 
   get isEndState(): boolean {
@@ -93,6 +100,7 @@ export struct ReportedDetailView {
     .onAppear(() => {
       if (this.hasAppeared) {
         this.viewModel.loadDetail(this.workOrderId);
+        this.viewModel.loadInspections(this.workOrderId);
       }
       this.hasAppeared = true;
     });
@@ -143,6 +151,15 @@ export struct ReportedDetailView {
             GridItem() { this.EmbedStat('NG', `${this.viewModel.currentWorkOrder?.reportedQtyNg || 0}`); }
             GridItem() { this.EmbedStat('实际工时', `${this.viewModel.currentWorkOrder?.reportedHours || 0}h`); }
             GridItem() { this.EmbedStat('良品率', this.yieldRate); }
+
+            if (this.viewModel.inspectionList.length > 0) {
+              GridItem() { this.EmbedStat('抽检数量', `${this.viewModel.inspectionList[0].sampleQty || 0}`); }
+              GridItem() { this.EmbedStat('抽检结论', this.viewModel.inspectionList[0].conclusion || '—'); }
+              GridItem() { this.EmbedStat('抽检良品', `${this.viewModel.inspectionList[0].sampleGood || 0}`); }
+              GridItem() { this.EmbedStat('抽检NG', `${this.viewModel.inspectionList[0].sampleNg || 0}`); }
+              GridItem() { this.EmbedStat('质检员', this.viewModel.inspectionList[0].inspectorName || '—'); }
+              GridItem() { this.EmbedStat('抽检时间', this.viewModel.inspectionList[0].inspectTime || '—'); }
+            }
           }
           .columnsTemplate('1fr 1fr').rowsGap(10).columnsGap(10).width('100%');
         }

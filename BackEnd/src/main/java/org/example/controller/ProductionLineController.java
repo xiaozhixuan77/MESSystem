@@ -16,7 +16,6 @@ import org.example.service.ProductionLineService;
 import org.example.service.WorkOrderService;
 import org.example.service.WorkshopService;
 import org.example.service.WorkstationService;
-import org.example.simulator.LineSimulator;
 import org.example.simulator.SimulatorManager;
 import org.example.vo.LineDetailVO;
 import org.example.vo.ProductionLineVO;
@@ -31,13 +30,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController

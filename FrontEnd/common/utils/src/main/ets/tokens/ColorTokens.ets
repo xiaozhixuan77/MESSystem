@@ -142,7 +142,7 @@ export class Colors {
   static readonly statusScrapped: StatusColor = { fg: red600, bg: red50 };
   static readonly statusException: StatusColor = { fg: red500, bg: red50 };
 
-  // Convenience maps for StatusTag-style lookup
+  // Convenience maps for lookup
   static readonly statusFgMap: Record<string, string> = {
     '待派工': blue700, '已派工': blue500, '生产中': green500, '暂停中': orange500,
     '生产完成': purple600, '待报工': purple600, '已报工': teal500, '完工': green500,

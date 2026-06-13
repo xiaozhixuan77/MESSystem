@@ -19,7 +19,4 @@ public class StompUserPrincipal implements Principal {
         return userId.toString();
     }
 
-    public Long getUserId() {
-        return userId;
-    }
 }

@@ -69,6 +69,8 @@ public class InspectionRecordServiceImpl
         record.setConclusion(request.getConclusion());
         save(record);
 
+        lineBroadcaster.broadcastInspectionUpdate(record);
+
         Map<String, Object> extra = Map.of(
                 "inspectionId", record.getId(),
                 "conclusion", record.getConclusion() != null ? record.getConclusion() : ""

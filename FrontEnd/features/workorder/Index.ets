@@ -12,5 +12,4 @@ export { WorkOrderViewModel } from './src/main/ets/ViewModel/WorkOrderViewModel'
 export { WorkOrderModel } from './src/main/ets/Model/WorkOrderModel';
 export { WorkshopModel } from './src/main/ets/Model/WorkshopModel';
 export { ProductModel } from './src/main/ets/Model/ProductModel';
-export { ProcessModel } from './src/main/ets/Model/ProcessModel';
 export { ProcessStepModel } from './src/main/ets/Model/ProcessStepModel';
