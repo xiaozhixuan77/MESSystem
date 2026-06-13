@@ -293,8 +293,6 @@ class PERF001_ParallelSimulationTest extends SNCTestBase {
         // Step 3: 验证最终稳定（不死锁、线程池正常）
         assertFalse(simulatorManager.isRunning(20L),
                 "高频启停后产线应处于停止状态");
-        assertNotNull(simulatorManager.getRunningLineIds(),
-                "getRunningLineIds 应正常返回（不死锁）");
 
         log.info("PERF-001 高频启停验收通过: 无死锁，最终状态一致");
     }

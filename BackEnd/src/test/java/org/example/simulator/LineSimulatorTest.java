@@ -42,7 +42,7 @@ class LineSimulatorTest {
             stations.add(createStation(2L, "WS-OP20", "主板组装", "运行中"));
             stations.add(createStation(3L, "WS-OP30", "后盖组装", "运行中"));
             simulator = new LineSimulator(LINE_ID, WORK_ORDER_ID, stations,
-                    Collections.emptyList(), 1.0, 10);
+                    1.0, 10);
         }
 
         @Test
@@ -89,7 +89,7 @@ class LineSimulatorTest {
             stations.add(createStation(2L, "WS-OP20", "主板组装", "待机"));
             stations.add(createStation(3L, "WS-OP30", "后盖组装", "故障"));
             simulator = new LineSimulator(LINE_ID, WORK_ORDER_ID, stations,
-                    Collections.emptyList(), 1.0, 10);
+                    1.0, 10);
         }
 
         @Test
@@ -140,14 +140,14 @@ class LineSimulatorTest {
             stations = new ArrayList<>();
             stations.add(createStation(1L, "WS-OP10", "上料", "运行中"));
             simulator = new LineSimulator(LINE_ID, WORK_ORDER_ID, stations,
-                    Collections.emptyList(), 1.0, 10);
+                    1.0, 10);
         }
 
         @Test
         @DisplayName("良品率 1.0 → 全部良品，NG 为 0")
         void perfectGoodRateAllGood() {
             LineSimulator perfectSim = new LineSimulator(LINE_ID, WORK_ORDER_ID, stations,
-                    Collections.emptyList(), 1.0, 10);
+                    1.0, 10);
             List<StationState> states = perfectSim.tick();
 
             for (StationState s : states) {
@@ -163,7 +163,7 @@ class LineSimulatorTest {
             List<Workstation> fresh = new ArrayList<>();
             fresh.add(createStation(1L, "WS-OP10", "上料", "运行中"));
             LineSimulator zeroSim = new LineSimulator(LINE_ID, WORK_ORDER_ID, fresh,
-                    Collections.emptyList(), 0.0, 10);
+                    0.0, 10);
             List<StationState> states = zeroSim.tick();
 
             for (StationState s : states) {
@@ -179,7 +179,7 @@ class LineSimulatorTest {
             List<Workstation> fresh = new ArrayList<>();
             fresh.add(createStation(1L, "WS-OP10", "上料", "运行中"));
             LineSimulator halfSim = new LineSimulator(LINE_ID, WORK_ORDER_ID, fresh,
-                    Collections.emptyList(), 0.5, iterations);
+                    0.5, iterations);
 
             int totalFinished = 0;
             int totalNg = 0;
@@ -211,7 +211,7 @@ class LineSimulatorTest {
             stations = new ArrayList<>();
             stations.add(createStation(1L, "WS-OP10", "上料", "运行中"));
             simulator = new LineSimulator(LINE_ID, WORK_ORDER_ID, stations,
-                    Collections.emptyList(), 0.95, 10);
+                    0.95, 10);
         }
 
         @Test
@@ -230,19 +230,9 @@ class LineSimulatorTest {
         }
 
         @Test
-        @DisplayName("currentOpIndex 默认 0，可 set/get")
-        void currentOpIndexDefaultZero() {
-            assertEquals(0, simulator.getCurrentOpIndex());
-            simulator.setCurrentOpIndex(3);
-            assertEquals(3, simulator.getCurrentOpIndex());
-        }
-
-        @Test
-        @DisplayName("productSnCounter 默认 0，incrementProductSn 递增")
+        @DisplayName("incrementProductSn 逐次递增")
         void productSnCounterIncrement() {
-            assertEquals(0, simulator.getProductSnCounter());
             assertEquals(1, simulator.incrementProductSn());
-            assertEquals(1, simulator.getProductSnCounter());
             assertEquals(2, simulator.incrementProductSn());
         }
     }
@@ -255,7 +245,7 @@ class LineSimulatorTest {
         @DisplayName("空工作站列表 — Tick 返回空列表")
         void emptyStations() {
             LineSimulator sim = new LineSimulator(LINE_ID, WORK_ORDER_ID,
-                    Collections.emptyList(), Collections.emptyList(), 0.95, 10);
+                    Collections.emptyList(), 0.95, 10);
             List<StationState> states = sim.tick();
             assertNotNull(states);
             assertTrue(states.isEmpty());

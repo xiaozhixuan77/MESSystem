@@ -6,6 +6,7 @@ import org.example.dto.request.WorkOrderReportRequest;
 import org.example.entity.InspectionRecord;
 import org.example.entity.ProcessStep;
 import org.example.entity.Product;
+import org.example.entity.ProductionException;
 import org.example.entity.ProductionLine;
 import org.example.entity.WorkOrder;
 import org.example.entity.User;
@@ -16,7 +17,9 @@ import org.example.mapper.WorkOrderMapper;
 import org.example.service.InspectionRecordService;
 import org.example.service.ProcessStepService;
 import org.example.service.ProductService;
+import org.example.service.ProductionExceptionService;
 import org.example.service.ProductionLineService;
+import org.springframework.context.annotation.Lazy;
 import org.example.service.UserService;
 import org.example.service.WorkOrderRouteStepService;
 import org.example.service.WorkOrderService;
@@ -49,6 +52,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final ProcessStepService processStepService;
     private final WorkOrderRouteStepService workOrderRouteStepService;
     private final ProductionLineService productionLineService;
+    private final ProductionExceptionService productionExceptionService;
     private final TransactionTemplate transactionTemplate;
     private final SimulatorManager simulatorManager;
     private final LineBroadcaster lineBroadcaster;
@@ -60,6 +64,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                                 ProcessStepService processStepService,
                                 WorkOrderRouteStepService workOrderRouteStepService,
                                 ProductionLineService productionLineService,
+                                @Lazy ProductionExceptionService productionExceptionService,
                                 TransactionTemplate transactionTemplate,
                                 SimulatorManager simulatorManager,
                                 LineBroadcaster lineBroadcaster,
@@ -70,6 +75,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         this.processStepService = processStepService;
         this.workOrderRouteStepService = workOrderRouteStepService;
         this.productionLineService = productionLineService;
+        this.productionExceptionService = productionExceptionService;
         this.transactionTemplate = transactionTemplate;
         this.simulatorManager = simulatorManager;
         this.lineBroadcaster = lineBroadcaster;
@@ -379,6 +385,16 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         if (line == null) {
             throw new BusinessException(404, "产线不存在");
         }
+
+        long unresolvedExceptions = productionExceptionService.lambdaQuery()
+                .eq(ProductionException::getLineId, line.getId())
+                .eq(ProductionException::getResolved, 0)
+                .eq(ProductionException::getIsDeleted, 0)
+                .count();
+        if (unresolvedExceptions > 0) {
+            throw new BusinessException(400, "产线存在未处理的异常，请先处理异常后再开始生产");
+        }
+
         if (isDispatch && !"空闲".equals(line.getStatus())) {
             throw new BusinessException(400, "产线不是空闲状态，当前: " + line.getStatus());
         }

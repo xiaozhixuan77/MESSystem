@@ -142,7 +142,6 @@ class SimulatorManagerTest {
             manager.start(LINE_ID, WORK_ORDER_ID);
 
             assertTrue(manager.isRunning(LINE_ID));
-            assertTrue(manager.getRunningLineIds().contains(LINE_ID));
             verify(workstationService, atLeastOnce()).lambdaUpdate();
         }
 
@@ -231,7 +230,6 @@ class SimulatorManagerTest {
             manager.stop(LINE_ID);
 
             assertFalse(manager.isRunning(LINE_ID));
-            assertTrue(manager.getRunningLineIds().isEmpty());
         }
 
         @Test
@@ -310,27 +308,9 @@ class SimulatorManagerTest {
         @DisplayName("初始状态无运行中仿真")
         void initialStateNothingRunning() {
             assertFalse(manager.isRunning(LINE_ID));
-            assertTrue(manager.getRunningLineIds().isEmpty());
             assertTrue(manager.getSimulator(LINE_ID).isEmpty());
         }
 
-        @Test
-        @DisplayName("getRunningLineIds 返回防御性副本")
-        void getRunningLineIdsReturnsDefensiveCopy() {
-            when(workstationService.lambdaQuery()).thenReturn(workstationQuery);
-            when(workstationQuery.eq(any(), any())).thenReturn(workstationQuery);
-            when(workstationQuery.list()).thenReturn(createSevenStations());
-            when(productionLineService.lambdaQuery()).thenReturn(lineQuery);
-            when(lineQuery.eq(any(), any())).thenReturn(lineQuery);
-            when(lineQuery.one()).thenReturn(
-                    new ProductionLine().setId(LINE_ID).setName("柔性组装线").setStatus("空闲"));
-
-            manager.start(LINE_ID, WORK_ORDER_ID);
-
-            manager.getRunningLineIds().clear();
-
-            assertTrue(manager.isRunning(LINE_ID));
-        }
     }
 
     @Nested
@@ -354,7 +334,6 @@ class SimulatorManagerTest {
             manager.shutdown();
 
             assertFalse(manager.isRunning(LINE_ID));
-            assertTrue(manager.getRunningLineIds().isEmpty());
         }
 
         @Test

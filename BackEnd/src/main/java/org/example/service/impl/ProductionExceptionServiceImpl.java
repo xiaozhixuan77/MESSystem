@@ -1,9 +1,11 @@
 package org.example.service.impl;
 
 import org.example.entity.ProductionException;
+import org.example.entity.ProductionLine;
 import org.example.exception.BusinessException;
 import org.example.mapper.ProductionExceptionMapper;
 import org.example.service.ProductionExceptionService;
+import org.example.service.ProductionLineService;
 import org.example.service.WorkOrderService;
 import org.example.websocket.LineBroadcaster;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -18,11 +20,14 @@ public class ProductionExceptionServiceImpl
         implements ProductionExceptionService {
 
     private final WorkOrderService workOrderService;
+    private final ProductionLineService productionLineService;
     private final LineBroadcaster lineBroadcaster;
 
     public ProductionExceptionServiceImpl(WorkOrderService workOrderService,
+                                          ProductionLineService productionLineService,
                                           LineBroadcaster lineBroadcaster) {
         this.workOrderService = workOrderService;
+        this.productionLineService = productionLineService;
         this.lineBroadcaster = lineBroadcaster;
     }
 
@@ -41,6 +46,11 @@ public class ProductionExceptionServiceImpl
         save(ex);
 
         workOrderService.pause(workOrderId, description);
+
+        productionLineService.lambdaUpdate()
+                .eq(ProductionLine::getId, lineId)
+                .set(ProductionLine::getStatus, "异常")
+                .update();
 
         lineBroadcaster.broadcastExceptionReported(ex);
         lineBroadcaster.broadcastHomeRefresh("exception");
