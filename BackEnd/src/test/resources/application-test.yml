@@ -4,7 +4,7 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
   datasource:
-    url: jdbc:h2:mem:mes_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;NON_KEYWORDS=USER,ROLE
+    url: jdbc:h2:mem:mes_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;NON_KEYWORDS=USER,ROLE;LOCK_TIMEOUT=10000
     username: sa
     password:
     driver-class-name: org.h2.Driver
