@@ -158,7 +158,16 @@ export struct ReportedDetailView {
               GridItem() { this.EmbedStat('抽检良品', `${this.viewModel.inspectionList[0].sampleGood || 0}`); }
               GridItem() { this.EmbedStat('抽检NG', `${this.viewModel.inspectionList[0].sampleNg || 0}`); }
               GridItem() { this.EmbedStat('质检员', this.viewModel.inspectionList[0].inspectorName || '—'); }
-              GridItem() { this.EmbedStat('抽检时间', this.viewModel.inspectionList[0].inspectTime || '—'); }
+              GridItem() {
+                Column() {
+                  Text(this.viewModel.inspectionList[0].inspectTime || '—')
+                    .fontSize(12).fontWeight(600).fontColor(Color.White).maxLines(2)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis });
+                  Text('抽检时间').fontSize(10).fontColor('rgba(255,255,255,0.8)').margin({ top: 2 });
+                }
+                .padding(8).backgroundColor('rgba(255,255,255,0.1)').borderRadius(8)
+                .alignItems(HorizontalAlign.Center).width('100%');
+              }
             }
           }
           .columnsTemplate('1fr 1fr').rowsGap(10).columnsGap(10).width('100%');

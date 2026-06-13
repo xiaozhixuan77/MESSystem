@@ -35,13 +35,13 @@ export class LineDetailModel {
   }
 
   get runtime(): string {
-    if (this.stations.length === 0) return '0分钟';
+    if (this.stations.length === 0) return '0m';
     const minutes = this.stations[0].processedCount;
-    if (minutes <= 0) return '0分钟';
+    if (minutes <= 0) return '0m';
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    if (h > 0) return `${h}小时${m}分钟`;
-    return `${m}分钟`;
+    if (h > 0) return `${h}h${m}m`;
+    return `${m}m`;
   }
 
   get ngCount(): number {
