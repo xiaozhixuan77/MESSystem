@@ -328,14 +328,6 @@ export class ProductionViewModel {
     this.lines = [...this.lines];
     this.dataVersion++;
     this.notifyLineListListeners();
-    console.info('[test:ProductionVM] onLineListStatusUpdate 完成', JSON.stringify({
-      dataVersion: this.dataVersion,
-      lineId: lineId,
-      finishedCount: line?.finishedCount,
-      ngCount: line?.ngCount,
-      status: line?.status,
-      linesLength: this.lines.length
-    }));
   };
 
   onLineListStationUpdate = (payload: Object): void => {
@@ -361,12 +353,6 @@ export class ProductionViewModel {
     this.lines = [...this.lines];
     this.dataVersion++;
     this.notifyLineListListeners();
-    console.info('[test:ProductionVM] onLineListStationUpdate 完成', JSON.stringify({
-      dataVersion: this.dataVersion,
-      lineId: lineId,
-      finishedCount: line.finishedCount,
-      ngCount: line.ngCount
-    }));
   };
 
   onLineStatusUpdate = (payload: Object): void => {

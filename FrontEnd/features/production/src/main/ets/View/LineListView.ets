@@ -50,7 +50,6 @@ struct LineCard {
 
   build() {
     Column() {
-      if (this.dataVersion >= 0) {
       // Card Header
       Row() {
         Column() {
@@ -146,7 +145,6 @@ struct LineCard {
           });
       }
       .width('100%');
-      }
     }
     .width('100%')
     .padding(16)
@@ -164,12 +162,27 @@ export struct LineListView {
   @Local isRefreshing: boolean = false;
   @Local lines: LineModel[] = [];
 
+  private copyLine(src: LineModel): LineModel {
+    const m = new LineModel();
+    m.id = src.id;
+    m.name = src.name;
+    m.workshopId = src.workshopId;
+    m.currentProcessId = src.currentProcessId;
+    m.currentWorkorderId = src.currentWorkorderId;
+    m.status = src.status;
+    m.workshopName = src.workshopName;
+    m.createdAt = src.createdAt;
+    m.stationCount = src.stationCount;
+    m.workOrderCode = src.workOrderCode;
+    m.planQty = src.planQty;
+    m.finishedCount = src.finishedCount;
+    m.ngCount = src.ngCount;
+    m.workOrderStatus = src.workOrderStatus;
+    return m;
+  }
+
   private syncLines = (): void => {
-    this.lines = [...this.viewModel.lines];
-    console.info('[test:LineListView] syncLines 触发', JSON.stringify({
-      linesLength: this.lines.length,
-      firstFinished: this.lines.length > 0 ? this.lines[0].finishedCount : -1
-    }));
+    this.lines = this.viewModel.lines.map(l => this.copyLine(l));
   };
 
   aboutToAppear(): void {
@@ -213,8 +226,6 @@ export struct LineListView {
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
             .fontColor('#1A1A2E');
-          Text(`v${this.viewModel.dataVersion} f${this.lines.length > 0 ? this.lines[0].finishedCount : 0}`)
-            .fontSize(10).fontColor('#F44336').fontWeight(500);
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 16, bottom: 12 })
@@ -250,12 +261,66 @@ export struct LineListView {
         } else {
           Refresh({ refreshing: $$this.isRefreshing }) {
             List() {
-              ForEach(this.lines, (line: LineModel) => {
+              if (this.lines.length > 0) {
                 ListItem() {
-                  LineCard({ line: line, dataVersion: this.viewModel.dataVersion })
+                  LineCard({ line: this.lines[0], dataVersion: this.viewModel.dataVersion })
                 }
                 .margin({ left: 16, right: 16, bottom: 12 });
-              });
+              }
+              if (this.lines.length > 1) {
+                ListItem() {
+                  LineCard({ line: this.lines[1], dataVersion: this.viewModel.dataVersion })
+                }
+                .margin({ left: 16, right: 16, bottom: 12 });
+              }
+              if (this.lines.length > 2) {
+                ListItem() {
+                  LineCard({ line: this.lines[2], dataVersion: this.viewModel.dataVersion })
+                }
+                .margin({ left: 16, right: 16, bottom: 12 });
+              }
+              if (this.lines.length > 3) {
+                ListItem() {
+                  LineCard({ line: this.lines[3], dataVersion: this.viewModel.dataVersion })
+                }
+                .margin({ left: 16, right: 16, bottom: 12 });
+              }
+              if (this.lines.length > 4) {
+                ListItem() {
+                  LineCard({ line: this.lines[4], dataVersion: this.viewModel.dataVersion })
+                }
+                .margin({ left: 16, right: 16, bottom: 12 });
+              }
+              if (this.lines.length > 5) {
+                ListItem() {
+                  LineCard({ line: this.lines[5], dataVersion: this.viewModel.dataVersion })
+                }
+                .margin({ left: 16, right: 16, bottom: 12 });
+              }
+              if (this.lines.length > 6) {
+                ListItem() {
+                  LineCard({ line: this.lines[6], dataVersion: this.viewModel.dataVersion })
+                }
+                .margin({ left: 16, right: 16, bottom: 12 });
+              }
+              if (this.lines.length > 7) {
+                ListItem() {
+                  LineCard({ line: this.lines[7], dataVersion: this.viewModel.dataVersion })
+                }
+                .margin({ left: 16, right: 16, bottom: 12 });
+              }
+              if (this.lines.length > 8) {
+                ListItem() {
+                  LineCard({ line: this.lines[8], dataVersion: this.viewModel.dataVersion })
+                }
+                .margin({ left: 16, right: 16, bottom: 12 });
+              }
+              if (this.lines.length > 9) {
+                ListItem() {
+                  LineCard({ line: this.lines[9], dataVersion: this.viewModel.dataVersion })
+                }
+                .margin({ left: 16, right: 16, bottom: 12 });
+              }
             }
             .scrollBar(BarState.Off)
             .layoutWeight(1)
