@@ -16,6 +16,8 @@ export struct WorkOrderFormView {
   @Local showProductPicker: boolean = false;
   @Local showLinePicker: boolean = false;
   @Local productSearchText: string = '';
+  @Local showDatePickerFor: string = '';
+  @Local datePickerValue: Date = new Date();
 
   aboutToAppear(): void {
     this.viewModel.formMode = this.mode;
@@ -26,6 +28,46 @@ export struct WorkOrderFormView {
     } else if (this.mode === 'copy') {
       this.viewModel.loadForCopy(this.sourceWorkOrderId);
     }
+  }
+
+  private formatDateStr(date: Date, existingValue?: string): string {
+    const y = date.getFullYear();
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const d = date.getDate().toString().padStart(2, '0');
+    if (existingValue && existingValue.length >= 16) {
+      return `${y}-${m}-${d} ${existingValue.substring(11, 16)}`;
+    }
+    return `${y}-${m}-${d} 00:00`;
+  }
+
+  private openDatePickerFor(field: string): void {
+    const currentVal = field === 'start'
+      ? this.viewModel.formPlanStartTime
+      : this.viewModel.formPlanEndTime;
+    if (currentVal) {
+      const parsed = new Date(currentVal);
+      if (!isNaN(parsed.getTime())) {
+        this.datePickerValue = parsed;
+      } else {
+        this.datePickerValue = new Date();
+      }
+    } else {
+      this.datePickerValue = new Date();
+    }
+    this.showDatePickerFor = field;
+  }
+
+  private confirmDatePicker(): void {
+    const existing = this.showDatePickerFor === 'start'
+      ? this.viewModel.formPlanStartTime
+      : this.viewModel.formPlanEndTime;
+    const formatted = this.formatDateStr(this.datePickerValue, existing);
+    if (this.showDatePickerFor === 'start') {
+      this.viewModel.formPlanStartTime = formatted;
+    } else {
+      this.viewModel.formPlanEndTime = formatted;
+    }
+    this.showDatePickerFor = '';
   }
 
   private getTitle(): string {
@@ -197,6 +239,59 @@ export struct WorkOrderFormView {
           })
       })
     }
+  }
+
+  @Builder
+  DatePickerDialog() {
+    Column() {
+      Text('选择日期')
+        .fontSize(18)
+        .fontWeight(700)
+        .fontColor('#1A1A2E')
+        .width('100%')
+        .textAlign(TextAlign.Center)
+        .margin({ bottom: 16 });
+
+      DatePicker({
+        start: new Date('2020-1-1'),
+        end: new Date('2030-12-31'),
+        selected: this.datePickerValue
+      })
+        .onChange((value: DatePickerResult) => {
+          this.datePickerValue = new Date(value.year ?? 2025, value.month ?? 0, value.day ?? 1);
+        });
+
+      Row({ space: 12 }) {
+        Button('取消')
+          .fontSize(14)
+          .fontWeight(500)
+          .fontColor('#5A5A6E')
+          .backgroundColor('#F5F7FA')
+          .layoutWeight(1)
+          .height(40)
+          .borderRadius(10)
+          .onClick(() => {
+            this.showDatePickerFor = '';
+          });
+        Button('确定')
+          .fontSize(14)
+          .fontWeight(600)
+          .fontColor('#FFFFFF')
+          .backgroundColor('#1565C0')
+          .layoutWeight(1)
+          .height(40)
+          .borderRadius(10)
+          .onClick(() => {
+            this.confirmDatePicker();
+          });
+      }
+      .width('100%')
+      .margin({ top: 16 });
+    }
+    .width('85%')
+    .padding(20)
+    .backgroundColor(Color.White)
+    .borderRadius(16);
   }
 
   build() {
@@ -438,33 +533,45 @@ export struct WorkOrderFormView {
               Row({ space: 12 }) {
                 Column() {
                   this.FormLabel('计划开始', false)
-                  TextInput({ text: this.viewModel.formPlanStartTime, placeholder: 'yyyy-MM-dd HH:mm' })
-                    .fontSize(14)
-                    .width('100%')
-                    .height(44)
-                    .backgroundColor('#F5F7FA')
-                    .borderRadius(12)
-                    .border({ width: 1, color: '#E8EBF0' })
-                    .padding({ left: 12, right: 12 })
-                    .onChange((value: string) => {
-                      this.viewModel.formPlanStartTime = value
-                    })
+                  Row() {
+                    Text(this.viewModel.formPlanStartTime || 'yyyy-MM-dd HH:mm')
+                      .fontSize(14)
+                      .fontColor(this.viewModel.formPlanStartTime ? '#1A1A2E' : '#9A9AA8')
+                      .maxLines(1)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  }
+                  .width('100%')
+                  .height(44)
+                  .backgroundColor('#F5F7FA')
+                  .borderRadius(12)
+                  .border({ width: 1, color: '#E8EBF0' })
+                  .padding({ left: 12, right: 12 })
+                  .alignItems(VerticalAlign.Center)
+                  .onClick(() => {
+                    this.openDatePickerFor('start');
+                  })
                 }
                 .layoutWeight(1)
 
                 Column() {
                   this.FormLabel('计划完成', false)
-                  TextInput({ text: this.viewModel.formPlanEndTime, placeholder: 'yyyy-MM-dd HH:mm' })
-                    .fontSize(14)
-                    .width('100%')
-                    .height(44)
-                    .backgroundColor('#F5F7FA')
-                    .borderRadius(12)
-                    .border({ width: 1, color: '#E8EBF0' })
-                    .padding({ left: 12, right: 12 })
-                    .onChange((value: string) => {
-                      this.viewModel.formPlanEndTime = value
-                    })
+                  Row() {
+                    Text(this.viewModel.formPlanEndTime || 'yyyy-MM-dd HH:mm')
+                      .fontSize(14)
+                      .fontColor(this.viewModel.formPlanEndTime ? '#1A1A2E' : '#9A9AA8')
+                      .maxLines(1)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  }
+                  .width('100%')
+                  .height(44)
+                  .backgroundColor('#F5F7FA')
+                  .borderRadius(12)
+                  .border({ width: 1, color: '#E8EBF0' })
+                  .padding({ left: 12, right: 12 })
+                  .alignItems(VerticalAlign.Center)
+                  .onClick(() => {
+                    this.openDatePickerFor('end');
+                  })
                 }
                 .layoutWeight(1)
               }
@@ -614,6 +721,24 @@ export struct WorkOrderFormView {
             });
           Column() {
             this.LineDialog();
+          }
+          .onClick(() => {
+          }); // 阻止冒泡
+        }
+        .width('100%').height('100%');
+      }
+
+      // 日期选择弹窗
+      if (this.showDatePickerFor !== '') {
+        Stack() {
+          Column()
+            .width('100%').height('100%')
+            .backgroundColor('rgba(0,0,0,0.5)')
+            .onClick(() => {
+              this.showDatePickerFor = '';
+            });
+          Column() {
+            this.DatePickerDialog();
           }
           .onClick(() => {
           }); // 阻止冒泡

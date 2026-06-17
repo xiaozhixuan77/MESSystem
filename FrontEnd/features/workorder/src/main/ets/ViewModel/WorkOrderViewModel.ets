@@ -633,10 +633,10 @@ export class WorkOrderViewModel {
         'planQty': this.formPlanQty
       };
       if (this.formPlanStartTime) {
-        body['planStartTime'] = this.formPlanStartTime + ':00';
+        body['planStartTime'] = this.formPlanStartTime.replace(' ', 'T') + ':00';
       }
       if (this.formPlanEndTime) {
-        body['planEndTime'] = this.formPlanEndTime + ':00';
+        body['planEndTime'] = this.formPlanEndTime.replace(' ', 'T') + ':00';
       }
       await WorkOrderApi.createWorkOrder(body);
       try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
@@ -667,10 +667,10 @@ export class WorkOrderViewModel {
         'version': this.formVersion
       };
       if (this.formPlanStartTime) {
-        body['planStartTime'] = this.formPlanStartTime + ':00';
+        body['planStartTime'] = this.formPlanStartTime.replace(' ', 'T') + ':00';
       }
       if (this.formPlanEndTime) {
-        body['planEndTime'] = this.formPlanEndTime + ':00';
+        body['planEndTime'] = this.formPlanEndTime.replace(' ', 'T') + ':00';
       }
       await WorkOrderApi.updateWorkOrder(id, body);
       try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
@@ -692,10 +692,10 @@ export class WorkOrderViewModel {
         body['planQty'] = this.formPlanQty;
       }
       if (this.formPlanStartTime) {
-        body['planStartTime'] = this.formPlanStartTime + ':00';
+        body['planStartTime'] = this.formPlanStartTime.replace(' ', 'T') + ':00';
       }
       if (this.formPlanEndTime) {
-        body['planEndTime'] = this.formPlanEndTime + ':00';
+        body['planEndTime'] = this.formPlanEndTime.replace(' ', 'T') + ':00';
       }
       await WorkOrderApi.copyWorkOrder(sourceId, body);
       try { emitter.emit(WORKORDER_CHANGED_EVENT, { data: {} }); } catch (e) {}
