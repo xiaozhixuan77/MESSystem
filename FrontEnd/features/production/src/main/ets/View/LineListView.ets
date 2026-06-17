@@ -5,6 +5,7 @@ import { ErrorState } from '@ohos/uicomponents';
 @ComponentV2
 struct LineCard {
   @Param line: LineModel = new LineModel();
+  @Param dataVersion: number = 0;
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
 
   private getIconBgColor(status: string): [string, string] {
@@ -49,6 +50,7 @@ struct LineCard {
 
   build() {
     Column() {
+      if (this.dataVersion >= 0) {
       // Card Header
       Row() {
         Column() {
@@ -144,6 +146,7 @@ struct LineCard {
           });
       }
       .width('100%');
+      }
     }
     .width('100%')
     .padding(16)
@@ -159,12 +162,25 @@ export struct LineListView {
   @Consumer('sharedVm') viewModel: ProductionViewModel = new ProductionViewModel();
   @Local activeTab: string = '全部';
   @Local isRefreshing: boolean = false;
+  @Local lines: LineModel[] = [];
+
+  private syncLines = (): void => {
+    this.lines = [...this.viewModel.lines];
+    console.info('[test:LineListView] syncLines 触发', JSON.stringify({
+      linesLength: this.lines.length,
+      firstFinished: this.lines.length > 0 ? this.lines[0].finishedCount : -1
+    }));
+  };
 
   aboutToAppear(): void {
-    this.viewModel.loadLines();
+    this.viewModel.onLineListChanged(this.syncLines);
+    this.viewModel.loadLines().then(() => {
+      this.syncLines();
+    });
   }
 
   aboutToDisappear(): void {
+    this.viewModel.offLineListChanged(this.syncLines);
     // 不取消 WebSocket 订阅 — 保持在后台接收实时推送
   }
 
@@ -190,13 +206,15 @@ export struct LineListView {
 
   build() {
     Column() {
-      if (this.viewModel.refreshKey >= 0) {
+      if (this.viewModel.dataVersion >= 0) {
         // Header
       Row() {
         Text('产线数据')
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
             .fontColor('#1A1A2E');
+          Text(`v${this.viewModel.dataVersion} f${this.lines.length > 0 ? this.lines[0].finishedCount : 0}`)
+            .fontSize(10).fontColor('#F44336').fontWeight(500);
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 16, bottom: 12 })
@@ -216,15 +234,15 @@ export struct LineListView {
         .backgroundColor('#FFFFFF');
 
         // Content
-        if (this.viewModel.isLoading && this.viewModel.lines.length === 0) {
+        if (this.viewModel.isLoading && this.lines.length === 0) {
           Column() {
             LoadingProgress().width(32).height(32).color('#1565C0');
             Text('加载中...').fontSize(13).fontColor('#999').margin({ top: 8 });
           }
           .justifyContent(FlexAlign.Center).layoutWeight(1).width('100%');
-        } else if (this.viewModel.errorMessage && this.viewModel.lines.length === 0) {
+        } else if (this.viewModel.errorMessage && this.lines.length === 0) {
           ErrorState({ showRetry: true, message: this.viewModel.errorMessage, onRetry: () => { this.selectTab(this.activeTab); } })
-        } else if (this.viewModel.lines.length === 0) {
+        } else if (this.lines.length === 0) {
           Column() {
             Text('暂无产线数据').fontSize(14).fontColor('#999');
           }
@@ -232,12 +250,12 @@ export struct LineListView {
         } else {
           Refresh({ refreshing: $$this.isRefreshing }) {
             List() {
-              ForEach(this.viewModel.lines, (line: LineModel) => {
+              ForEach(this.lines, (line: LineModel) => {
                 ListItem() {
-                  LineCard({ line: line })
+                  LineCard({ line: line, dataVersion: this.viewModel.dataVersion })
                 }
                 .margin({ left: 16, right: 16, bottom: 12 });
-              }, (line: LineModel) => `${line.id}_${line.finishedCount}_${line.ngCount}_${line.status}`);
+              });
             }
             .scrollBar(BarState.Off)
             .layoutWeight(1)

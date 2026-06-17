@@ -20,11 +20,27 @@ export class ProductionViewModel {
   @Trace showErrorDialog: boolean = false;
   @Trace errorDialogMessage: string = '';
   @Trace isDataStale: boolean = false;
-  @Trace refreshKey: number = 0;
+  @Trace dataVersion: number = 0;
 
   private activeLineId: number = 0;
   private subscribedLineIds: Set<number> = new Set();
+  private lineListListeners: Array<() => void> = [];
   isActive: boolean = false;
+
+  onLineListChanged(listener: () => void): void {
+    this.lineListListeners.push(listener);
+  }
+
+  offLineListChanged(listener: () => void): void {
+    const i = this.lineListListeners.indexOf(listener);
+    if (i >= 0) {
+      this.lineListListeners.splice(i, 1);
+    }
+  }
+
+  private notifyLineListListeners(): void {
+    this.lineListListeners.forEach(fn => fn());
+  }
 
   async loadLines(status?: string): Promise<void> {
     this.isLoading = true;
@@ -35,8 +51,9 @@ export class ProductionViewModel {
         params['status'] = status;
       }
       this.lines = await LineApi.getLines(params) as LineModel[];
-      this.refreshKey++;
+      this.dataVersion++;
       this.subscribeLineList();
+      this.notifyLineListListeners();
     } catch (e) {
       this.errorMessage = (e as Error).message;
     } finally {
@@ -309,7 +326,16 @@ export class ProductionViewModel {
       }
     }
     this.lines = [...this.lines];
-    this.refreshKey++;
+    this.dataVersion++;
+    this.notifyLineListListeners();
+    console.info('[test:ProductionVM] onLineListStatusUpdate 完成', JSON.stringify({
+      dataVersion: this.dataVersion,
+      lineId: lineId,
+      finishedCount: line?.finishedCount,
+      ngCount: line?.ngCount,
+      status: line?.status,
+      linesLength: this.lines.length
+    }));
   };
 
   onLineListStationUpdate = (payload: Object): void => {
@@ -332,9 +358,15 @@ export class ProductionViewModel {
     if (last['deviceStatus'] === '运行中') {
       line.workOrderStatus = '生产中';
     }
-    // 强制替换数组引用以触发 ForEach 重渲染
     this.lines = [...this.lines];
-    this.refreshKey++;
+    this.dataVersion++;
+    this.notifyLineListListeners();
+    console.info('[test:ProductionVM] onLineListStationUpdate 完成', JSON.stringify({
+      dataVersion: this.dataVersion,
+      lineId: lineId,
+      finishedCount: line.finishedCount,
+      ngCount: line.ngCount
+    }));
   };
 
   onLineStatusUpdate = (payload: Object): void => {
