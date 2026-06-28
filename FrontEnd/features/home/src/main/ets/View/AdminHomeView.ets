@@ -1,6 +1,6 @@
 import { UserModel } from '@ohos/user';
 import { HomeViewModel } from '../ViewModel/HomeViewModel';
-import { HomeSummaryModel, ExceptionItemModel } from '../Model/HomeSummaryModel';
+import { HomeSummaryModel, ExceptionItemModel, DashboardModel } from '../Model/HomeSummaryModel';
 import { DeepLinkInfo } from '@ohos/utils';
 import { LoadingState, ErrorState } from '@ohos/uicomponents';
 
@@ -11,6 +11,8 @@ export struct AdminHomeView {
   @Consumer('currentUser') currentUser: UserModel = new UserModel();
   @Consumer('deepLink') deepLink: DeepLinkInfo | null = null;
   @Local summary: HomeSummaryModel | null = null;
+  @Local dashboard: DashboardModel | null = null;
+  @Local dashboardLoading: boolean = false;
   @Local isLoading: boolean = true;
   @Local errorMessage: string = '';
   private vm: HomeViewModel = new HomeViewModel();
@@ -40,7 +42,11 @@ export struct AdminHomeView {
         this.isLoading = false;
       }
     });
-    this.vm.loadDashboard();
+    this.dashboardLoading = true;
+    this.vm.loadDashboard().then(() => {
+      this.dashboard = this.vm.dashboard;
+      this.dashboardLoading = false;
+    });
   }
 
   aboutToDisappear(): void {
@@ -373,18 +379,18 @@ export struct AdminHomeView {
               .justifyContent(FlexAlign.SpaceBetween)
               .margin({ bottom: 12 });
 
-              if (this.vm.dashboardLoading) {
+              if (this.dashboardLoading) {
                 Text('加载中...').fontSize(12).fontColor('#9A9AA8')
                   .padding(16).width('100%').textAlign(TextAlign.Center);
-              } else if (this.vm.dashboard !== null) {
+              } else if (this.dashboard !== null) {
                 Grid() {
-                  GridItem() { this.kpiCard('计划完成率', this.formatPercent(this.vm.dashboard!.todayPlanRate), '#1565C0'); }
-                  GridItem() { this.kpiCard('投入数', `${this.vm.dashboard!.totalInput}`, '#1A1A2E'); }
-                  GridItem() { this.kpiCard('产出数', `${this.vm.dashboard!.totalOutput}`, '#1A1A2E'); }
-                  GridItem() { this.kpiCard('不良品', `${this.vm.dashboard!.totalNg}`,
-                    (this.vm.dashboard!.totalNg ?? 0) > 0 ? '#F44336' : '#1A1A2E'); }
-                  GridItem() { this.kpiCard('产品完工率', this.formatPercent(this.vm.dashboard!.productCompletionRate), '#1565C0'); }
-                  GridItem() { this.kpiCard('工站完工率', this.formatPercent(this.vm.dashboard!.stationCompletionRate), '#1565C0'); }
+                  GridItem() { this.kpiCard('计划完成率', this.formatPercent(this.dashboard!.todayPlanRate), '#1565C0'); }
+                  GridItem() { this.kpiCard('投入数', `${this.dashboard!.totalInput}`, '#1A1A2E'); }
+                  GridItem() { this.kpiCard('产出数', `${this.dashboard!.totalOutput}`, '#1A1A2E'); }
+                  GridItem() { this.kpiCard('不良品', `${this.dashboard!.totalNg}`,
+                    (this.dashboard!.totalNg ?? 0) > 0 ? '#F44336' : '#1A1A2E'); }
+                  GridItem() { this.kpiCard('产品完工率', this.formatPercent(this.dashboard!.productCompletionRate), '#1565C0'); }
+                  GridItem() { this.kpiCard('工站完工率', this.formatPercent(this.dashboard!.stationCompletionRate), '#1565C0'); }
                 }
                 .columnsTemplate('1fr 1fr 1fr')
                 .rowsGap(8).columnsGap(8)
