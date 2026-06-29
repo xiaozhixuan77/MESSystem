@@ -2,7 +2,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: mes-mysql
-    restart: always
+    restart: "no"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: mes_db
@@ -24,7 +24,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: mes-redis
-    restart: always
+    restart: "no"
     ports:
       - "6379:6379"
     volumes:
@@ -44,7 +44,7 @@ services:
       args:
         CACHEBUST: ${CACHEBUST:-0}
     container_name: mes-backend
-    restart: always
+    restart: "no"
     depends_on:
       mysql:
         condition: service_healthy
