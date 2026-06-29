@@ -1,6 +1,9 @@
 import { WebSocketService } from '@ohos/network';
 import { LineApi } from '@ohos/network';
 import { StationModel } from '../Model/StationModel';
+import { ProductionViewModel } from '../ViewModel/ProductionViewModel';
+import { PermissionUtil } from '@ohos/utils';
+import { preferencesUtil } from '@ohos/datastore';
 import { promptAction } from '@kit.ArkUI';
 import { ErrorState } from '@ohos/uicomponents';
 
@@ -14,6 +17,8 @@ export struct StationDetailView {
   @Local isLoading: boolean = true;
   @Local errorMessage: string = '';
   @Local workOrderId: number = 0;
+  @Local viewModel: ProductionViewModel = new ProductionViewModel();
+  @Local currentRole: string = '';
 
   aboutToAppear(): void {
     const navInfo = this.queryNavDestinationInfo();
@@ -23,11 +28,13 @@ export struct StationDetailView {
     if (this.lineId > 0 && this.stationId > 0) {
       this.loadData();
       this.subscribeStation();
+      this.loadRoleAndLine();
     }
   }
 
   aboutToDisappear(): void {
     this.unsubscribeStation();
+    this.viewModel.unsubscribeLine();
   }
 
   private async loadData(): Promise<void> {
@@ -123,6 +130,447 @@ export struct StationDetailView {
     return 'rgba(158,158,158,0.15)';
   }
 
+  private async loadRoleAndLine(): Promise<void> {
+    const userStr = await preferencesUtil.get('currentUser');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr) as Record<string, string>;
+        this.currentRole = user['role'] || '';
+      } catch (_e) {
+        // ignore parse error
+      }
+    }
+    await this.viewModel.loadLineDetail(this.lineId);
+    this.viewModel.subscribeLine(this.lineId);
+  }
+
+  private canOperate(): boolean {
+    return PermissionUtil.hasPermission('line.operate', this.currentRole);
+  }
+
+  private canReportException(): boolean {
+    return PermissionUtil.hasPermission('exception.report', this.currentRole);
+  }
+
+  private handleStart(): void {
+    const woId = this.viewModel.lineDetail.currentWorkorderId;
+    if (!woId || woId <= 0) {
+      this.viewModel.errorDialogMessage = '当前无关联工单，无法启动';
+      this.viewModel.showErrorDialog = true;
+      return;
+    }
+    this.viewModel.showStartConfirm = true;
+  }
+
+  private handleStop(): void {
+    this.viewModel.showStopConfirm = true;
+  }
+
+  private handleReset(): void {
+    this.viewModel.showResetConfirm = true;
+  }
+
+  private handleException(): void {
+    this.viewModel.showExceptionDialog = true;
+    this.viewModel.exceptionDescription = '';
+  }
+
+  private async confirmStart(): Promise<void> {
+    this.viewModel.showStartConfirm = false;
+    const woId = this.viewModel.lineDetail.currentWorkorderId;
+    const ok = await this.viewModel.startLine(this.lineId, woId!);
+    if (ok) {
+      this.showToast('产线已启动');
+      await this.viewModel.loadLineDetail(this.lineId);
+    } else {
+      this.viewModel.errorDialogMessage = this.viewModel.errorMessage || '启动失败';
+      this.viewModel.showErrorDialog = true;
+    }
+  }
+
+  private async confirmStop(): Promise<void> {
+    this.viewModel.showStopConfirm = false;
+    const ok = await this.viewModel.stopLine(this.lineId);
+    if (ok) {
+      this.showToast('产线已停止');
+      await this.viewModel.loadLineDetail(this.lineId);
+    } else {
+      this.viewModel.errorDialogMessage = this.viewModel.errorMessage || '停止失败';
+      this.viewModel.showErrorDialog = true;
+    }
+  }
+
+  private async confirmReset(): Promise<void> {
+    this.viewModel.showResetConfirm = false;
+    // 立即清空工单卡片，不依赖 WebSocket/HTTP 时序
+    this.viewModel.lineDetail.currentWorkorderId = null;
+    this.viewModel.lineDetail.activeWorkOrder = null;
+    const ok = await this.viewModel.resetLine(this.lineId);
+    if (ok) {
+      this.showToast('产线已复位');
+      await this.viewModel.loadLineDetail(this.lineId);
+    } else {
+      this.viewModel.errorDialogMessage = this.viewModel.errorMessage || '复位失败';
+      this.viewModel.showErrorDialog = true;
+    }
+  }
+
+  private dismissError(): void {
+    this.viewModel.showErrorDialog = false;
+    this.viewModel.errorDialogMessage = '';
+  }
+
+  private cancelException(): void {
+    this.viewModel.showExceptionDialog = false;
+    this.viewModel.exceptionDescription = '';
+  }
+
+  private async confirmException(): Promise<void> {
+    const desc = this.viewModel.exceptionDescription.trim();
+    if (desc.length === 0) {
+      return;
+    }
+    this.viewModel.showExceptionDialog = false;
+    const woId = this.viewModel.lineDetail.activeWorkOrder?.id ?? 0;
+    const ok = await this.viewModel.reportException(this.lineId, woId, desc, this.stationId);
+    if (ok) {
+      this.showToast('异常已上报');
+      await this.viewModel.loadLineDetail(this.lineId);
+    } else {
+      this.viewModel.errorDialogMessage = this.viewModel.errorMessage || '异常上报失败';
+      this.viewModel.showErrorDialog = true;
+    }
+  }
+
+  private getActionButtonColor(action: string): string {
+    if (action === 'start') return '#F6FFED';
+    if (action === 'stop') return '#FFF7E6';
+    if (action === 'reset') return '#E6F7FF';
+    return '#FFF1F0';
+  }
+
+  private getActionTextColor(action: string): string {
+    if (action === 'start') return '#52c41a';
+    if (action === 'stop') return '#fa8c16';
+    if (action === 'reset') return '#1890ff';
+    return '#f5222d';
+  }
+
+  private isActionDisabled(action: string): boolean {
+    const lineStatus = this.viewModel.lineDetail.status;
+    const woStatus = this.viewModel.lineDetail.activeWorkOrder?.status;
+    if (this.viewModel.isSubmitting) return true;
+
+    if (action === 'start') {
+      // 可启动: (空闲+已派工) 或 (暂停+暂停中)
+      if (lineStatus === '空闲' && woStatus === '已派工') return false;
+      if (lineStatus === '暂停' && woStatus === '暂停中') return false;
+      return true;
+    }
+    if (action === 'stop') {
+      return lineStatus !== '生产中';
+    }
+    if (action === 'reset') {
+      // 仅工单完成/无工单时可复位
+      if (woStatus === '生产中' || woStatus === '暂停中') return true;
+      return false;
+    }
+    // exception
+    return lineStatus !== '生产中';
+  }
+
+  @Builder
+  ExceptionDialog() {
+    Column() {
+      Column() {
+        Text('异常上报')
+          .fontSize(16)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#1A1A2E')
+          .margin({ bottom: 12 });
+
+        Text('产线：' + this.viewModel.lineDetail.name)
+          .fontSize(13)
+          .fontColor('#5A5A6E')
+          .margin({ bottom: 4 });
+
+        Text('工位：' + (this.station.name || '—'))
+          .fontSize(13)
+          .fontColor('#5A5A6E')
+          .margin({ bottom: 4 });
+
+        Text('工单：' + (this.viewModel.lineDetail.activeWorkOrder?.code ?? '无'))
+          .fontSize(13)
+          .fontColor('#5A5A6E')
+          .margin({ bottom: 12 });
+
+        TextArea({ placeholder: '请输入异常描述...', text: this.viewModel.exceptionDescription })
+          .fontSize(14)
+          .height(120)
+          .backgroundColor('#F5F7FA')
+          .borderRadius(8)
+          .padding(12)
+          .onChange((value: string) => {
+            this.viewModel.exceptionDescription = value;
+          });
+
+        Row({ space: 12 }) {
+          Button('取消')
+            .fontSize(14)
+            .backgroundColor('#F5F7FA')
+            .fontColor('#5A5A6E')
+            .borderRadius(8)
+            .layoutWeight(1)
+            .onClick(() => this.cancelException());
+
+          Button('确认上报')
+            .fontSize(14)
+            .backgroundColor('#f5222d')
+            .fontColor('#FFFFFF')
+            .borderRadius(8)
+            .layoutWeight(1)
+            .enabled(this.viewModel.exceptionDescription.trim().length > 0)
+            .opacity(this.viewModel.exceptionDescription.trim().length > 0 ? 1.0 : 0.4)
+            .onClick(() => this.confirmException());
+        }
+        .width('100%')
+        .margin({ top: 16 });
+      }
+      .width('80%')
+      .padding(20)
+      .backgroundColor('#FFFFFF')
+      .borderRadius(16)
+      .shadow({ radius: 20, color: 'rgba(0,0,0,0.15)', offsetY: 8 });
+    }
+    .width('100%')
+    .height('100%')
+    .justifyContent(FlexAlign.Center)
+    .backgroundColor('rgba(0,0,0,0.45)')
+    .zIndex(1000)
+    .onClick(() => this.cancelException());
+  }
+
+  @Builder
+  ConfirmStartDialog() {
+    Column() {
+      Column() {
+        Text('确认启动产线')
+          .fontSize(16)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#1A1A2E')
+          .margin({ bottom: 12 });
+
+        Text('产线：' + this.viewModel.lineDetail.name)
+          .fontSize(13)
+          .fontColor('#5A5A6E')
+          .margin({ bottom: 4 });
+
+        Text('工单：' + (this.viewModel.lineDetail.activeWorkOrder?.code ?? '无'))
+          .fontSize(13)
+          .fontColor('#5A5A6E')
+          .margin({ bottom: 12 });
+
+        Text('将从' + this.viewModel.lineDetail.status + '恢复生产')
+          .fontSize(13)
+          .fontColor('#5A5A6E')
+          .margin({ bottom: 4 });
+
+        Row({ space: 12 }) {
+          Button('取消')
+            .fontSize(14)
+            .backgroundColor('#F5F7FA')
+            .fontColor('#5A5A6E')
+            .borderRadius(8)
+            .layoutWeight(1)
+            .onClick(() => {
+              this.viewModel.showStartConfirm = false;
+            });
+
+          Button('确认启动')
+            .fontSize(14)
+            .backgroundColor('#52c41a')
+            .fontColor('#FFFFFF')
+            .borderRadius(8)
+            .layoutWeight(1)
+            .onClick(() => this.confirmStart());
+        }
+        .width('100%')
+        .margin({ top: 16 });
+      }
+      .width('80%')
+      .padding(20)
+      .backgroundColor('#FFFFFF')
+      .borderRadius(16)
+      .shadow({ radius: 20, color: 'rgba(0,0,0,0.15)', offsetY: 8 });
+    }
+    .width('100%')
+    .height('100%')
+    .justifyContent(FlexAlign.Center)
+    .backgroundColor('rgba(0,0,0,0.45)')
+    .zIndex(1000)
+    .onClick(() => {
+      this.viewModel.showStartConfirm = false;
+    });
+  }
+
+  @Builder
+  ConfirmStopDialog() {
+    Column() {
+      Column() {
+        Text('确认停止产线')
+          .fontSize(16)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#1A1A2E')
+          .margin({ bottom: 12 });
+
+        Text('产线：' + this.viewModel.lineDetail.name)
+          .fontSize(13)
+          .fontColor('#5A5A6E')
+          .margin({ bottom: 4 });
+
+        Text('工单：' + (this.viewModel.lineDetail.activeWorkOrder?.code ?? '无'))
+          .fontSize(13)
+          .fontColor('#5A5A6E')
+          .margin({ bottom: 12 });
+
+        Text('将暂停当前生产任务，工单进入暂停状态')
+          .fontSize(13)
+          .fontColor('#F44336')
+          .margin({ bottom: 4 });
+
+        Row({ space: 12 }) {
+          Button('取消')
+            .fontSize(14)
+            .backgroundColor('#F5F7FA')
+            .fontColor('#5A5A6E')
+            .borderRadius(8)
+            .layoutWeight(1)
+            .onClick(() => {
+              this.viewModel.showStopConfirm = false;
+            });
+
+          Button('确认停止')
+            .fontSize(14)
+            .backgroundColor('#F44336')
+            .fontColor('#FFFFFF')
+            .borderRadius(8)
+            .layoutWeight(1)
+            .onClick(() => this.confirmStop());
+        }
+        .width('100%')
+        .margin({ top: 16 });
+      }
+      .width('80%')
+      .padding(20)
+      .backgroundColor('#FFFFFF')
+      .borderRadius(16)
+      .shadow({ radius: 20, color: 'rgba(0,0,0,0.15)', offsetY: 8 });
+    }
+    .width('100%')
+    .height('100%')
+    .justifyContent(FlexAlign.Center)
+    .backgroundColor('rgba(0,0,0,0.45)')
+    .zIndex(1000)
+    .onClick(() => {
+      this.viewModel.showStopConfirm = false;
+    });
+  }
+
+  @Builder
+  ConfirmResetDialog() {
+    Column() {
+      Column() {
+        Text('确认复位产线')
+          .fontSize(16)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#1A1A2E')
+          .margin({ bottom: 12 });
+
+        Text('产线：' + this.viewModel.lineDetail.name)
+          .fontSize(13)
+          .fontColor('#5A5A6E')
+          .margin({ bottom: 12 });
+
+        Text('将清空所有工作站计数器，产线恢复空闲状态')
+          .fontSize(13)
+          .fontColor('#FF9800')
+          .margin({ bottom: 4 });
+
+        Row({ space: 12 }) {
+          Button('取消')
+            .fontSize(14)
+            .backgroundColor('#F5F7FA')
+            .fontColor('#5A5A6E')
+            .borderRadius(8)
+            .layoutWeight(1)
+            .onClick(() => {
+              this.viewModel.showResetConfirm = false;
+            });
+
+          Button('确认复位')
+            .fontSize(14)
+            .backgroundColor('#FF9800')
+            .fontColor('#FFFFFF')
+            .borderRadius(8)
+            .layoutWeight(1)
+            .onClick(() => this.confirmReset());
+        }
+        .width('100%')
+        .margin({ top: 16 });
+      }
+      .width('80%')
+      .padding(20)
+      .backgroundColor('#FFFFFF')
+      .borderRadius(16)
+      .shadow({ radius: 20, color: 'rgba(0,0,0,0.15)', offsetY: 8 });
+    }
+    .width('100%')
+    .height('100%')
+    .justifyContent(FlexAlign.Center)
+    .backgroundColor('rgba(0,0,0,0.45)')
+    .zIndex(1000)
+    .onClick(() => {
+      this.viewModel.showResetConfirm = false;
+    });
+  }
+
+  @Builder
+  ErrorDialog() {
+    Column() {
+      Column() {
+        Text('操作失败')
+          .fontSize(16)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#F44336')
+          .margin({ bottom: 12 });
+
+        Text(this.viewModel.errorDialogMessage)
+          .fontSize(14)
+          .fontColor('#5A5A6E')
+          .margin({ bottom: 16 });
+
+        Button('知道了')
+          .fontSize(14)
+          .backgroundColor('#F5F7FA')
+          .fontColor('#5A5A6E')
+          .borderRadius(8)
+          .width('100%')
+          .onClick(() => this.dismissError());
+      }
+      .width('80%')
+      .padding(20)
+      .backgroundColor('#FFFFFF')
+      .borderRadius(16)
+      .shadow({ radius: 20, color: 'rgba(0,0,0,0.15)', offsetY: 8 });
+    }
+    .width('100%')
+    .height('100%')
+    .justifyContent(FlexAlign.Center)
+    .backgroundColor('rgba(0,0,0,0.45)')
+    .zIndex(1000)
+    .onClick(() => this.dismissError());
+  }
+
   build() {
     Stack() {
       if (this.errorMessage) {
@@ -174,6 +622,93 @@ export struct StationDetailView {
                   .fontSize(13).fontColor('rgba(255,255,255,0.85)');
               }
               .width('100%');
+            }
+
+            // Action Buttons (作用于整条产线)
+            if (this.canOperate() || this.canReportException()) {
+              Row({ space: 10 }) {
+                if (this.canOperate()) {
+                  Button() {
+                    Column() {
+                      Image($r('app.media.icon_play_green'))
+                        .width(20).height(20);
+                      Text('启动')
+                        .fontSize(11)
+                        .fontColor(this.getActionTextColor('start'))
+                        .margin({ top: 4 });
+                    }
+                    .alignItems(HorizontalAlign.Center);
+                  }
+                  .layoutWeight(1)
+                  .height(64)
+                  .backgroundColor(this.getActionButtonColor('start'))
+                  .borderRadius(12)
+                  .enabled(!this.isActionDisabled('start'))
+                  .opacity(this.isActionDisabled('start') ? 0.4 : 1.0)
+                  .onClick(() => this.handleStart());
+
+                  Button() {
+                    Column() {
+                      Image($r('app.media.icon_stop_orange'))
+                        .width(20).height(20);
+                      Text('停止')
+                        .fontSize(11)
+                        .fontColor(this.getActionTextColor('stop'))
+                        .margin({ top: 4 });
+                    }
+                    .alignItems(HorizontalAlign.Center);
+                  }
+                  .layoutWeight(1)
+                  .height(64)
+                  .backgroundColor(this.getActionButtonColor('stop'))
+                  .borderRadius(12)
+                  .enabled(!this.isActionDisabled('stop'))
+                  .opacity(this.isActionDisabled('stop') ? 0.4 : 1.0)
+                  .onClick(() => this.handleStop());
+
+                  Button() {
+                    Column() {
+                      Image($r('app.media.icon_reset_blue'))
+                        .width(20).height(20);
+                      Text('复位')
+                        .fontSize(11)
+                        .fontColor(this.getActionTextColor('reset'))
+                        .margin({ top: 4 });
+                    }
+                    .alignItems(HorizontalAlign.Center);
+                  }
+                  .layoutWeight(1)
+                  .height(64)
+                  .backgroundColor(this.getActionButtonColor('reset'))
+                  .borderRadius(12)
+                  .enabled(!this.isActionDisabled('reset'))
+                  .opacity(this.isActionDisabled('reset') ? 0.4 : 1.0)
+                  .onClick(() => this.handleReset());
+                }
+
+                if (this.canReportException()) {
+                  Button() {
+                    Column() {
+                      Image($r('app.media.icon_alert_red'))
+                        .width(20).height(20);
+                      Text('异常')
+                        .fontSize(11)
+                        .fontColor(this.getActionTextColor('exception'))
+                        .margin({ top: 4 });
+                    }
+                    .alignItems(HorizontalAlign.Center);
+                  }
+                  .layoutWeight(1)
+                  .height(64)
+                  .backgroundColor(this.getActionButtonColor('exception'))
+                  .borderRadius(12)
+                  .enabled(!this.isActionDisabled('exception'))
+                  .opacity(this.isActionDisabled('exception') ? 0.4 : 1.0)
+                  .onClick(() => this.handleException());
+                }
+              }
+              .width('100%')
+              .margin({ top: 14 });
             }
 
           }
@@ -359,6 +894,22 @@ export struct StationDetailView {
         .width('100%').height('100%').backgroundColor('#F5F7FA');
       }
 
+      // Dialog Overlays
+      if (this.viewModel.showExceptionDialog) {
+        this.ExceptionDialog();
+      }
+      if (this.viewModel.showStartConfirm) {
+        this.ConfirmStartDialog();
+      }
+      if (this.viewModel.showStopConfirm) {
+        this.ConfirmStopDialog();
+      }
+      if (this.viewModel.showResetConfirm) {
+        this.ConfirmResetDialog();
+      }
+      if (this.viewModel.showErrorDialog) {
+        this.ErrorDialog();
+      }
     }
     .width('100%').height('100%');
   }
