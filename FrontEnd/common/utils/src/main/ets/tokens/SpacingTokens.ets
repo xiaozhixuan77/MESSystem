@@ -68,8 +68,11 @@ export class Spacing {
 
   // Sidebar
   static readonly sidebarSm = 0;
+  static readonly sidebarMdRail = 80;
+  static readonly sidebarMdExpanded = 200;
   static readonly sidebarMd = 120;
   static readonly sidebarLg = 160;
+  static readonly sidebarLgEnhanced = 240;
 
   // Border radius
   static readonly radiusSm = 4;

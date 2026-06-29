@@ -4,6 +4,7 @@ import { QualityViewModel } from '../ViewModel/QualityViewModel';
 @ComponentV2
 export struct InspectionListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('detailStack') detailStack: NavPathStack | null = null;
   @Local viewModel: QualityViewModel = new QualityViewModel();
   private hasAppeared: boolean = false;
 
@@ -153,7 +154,8 @@ export struct InspectionListView {
               .margin({ left: 16, right: 16, bottom: 10 })
               .onClick(() => {
                 const p: Record<string, Object> = { 'inspectionId': item.id };
-                this.pageStack.pushPathByName('InspectionDetail', p);
+                const targetStack = this.detailStack ?? this.pageStack;
+                targetStack.pushPathByName('InspectionDetail', p);
               });
             }, (item: InspectionModel) => `${item.id}-${item.status}`);
           }

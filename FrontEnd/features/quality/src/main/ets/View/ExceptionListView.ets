@@ -5,6 +5,7 @@ import { PermissionUtil } from '@ohos/utils';
 @ComponentV2
 export struct ExceptionListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('detailStack') detailStack: NavPathStack | null = null;
   @Local vm: ExceptionViewModel = new ExceptionViewModel();
   @Local filterIndex: number = 0;
 
@@ -156,7 +157,8 @@ export struct ExceptionListView {
               .margin({ left: 16, right: 16, bottom: 10 })
               .onClick(() => {
                 const p: Record<string, Object> = { 'exceptionId': item.id };
-                this.pageStack.pushPathByName('ExceptionDetail', p);
+                const targetStack = this.detailStack ?? this.pageStack;
+                targetStack.pushPathByName('ExceptionDetail', p);
               });
             }, (item: ExceptionModel) => `${item.id}`);
           }

@@ -1,14 +1,12 @@
 import { preferencesUtil, LOGIN_EXPIRED_EVENT, LOGIN_SUCCESS_EVENT } from '@ohos/datastore';
 import { httpClient, WebSocketService } from '@ohos/network';
-import { ApiConstants, BreakpointUtil, DeepLinkInfo, NetworkConfig } from '@ohos/utils';
+import { ApiConstants, BreakpointUtil, Colors, DeepLinkInfo, NetworkConfig } from '@ohos/utils';
 import { UserModel } from '@ohos/user';
 import { emitter } from '@kit.BasicServicesKit';
 import { window } from '@kit.ArkUI';
-import { LoginDestination } from './destinations/LoginDestination';
-import { AdminHomeView, LeaderHomeView, OperatorHomeView, InspectorHomeView } from '@ohos/home';
-import { DataTabDestination } from './destinations/DataTabDestination';
-import { WorkOrderTabDestination } from './destinations/WorkOrderTabDestination';
-import { ProfileTabDestination } from './destinations/ProfileTabDestination';
+import { PhoneLayout } from './layouts/PhoneLayout';
+import { TabletLayout } from './layouts/TabletLayout';
+import { DesktopLayout } from './layouts/DesktopLayout';
 
 @Entry
 @ComponentV2
@@ -27,32 +25,6 @@ struct Index {
   switchTab(tab: string): void {
     this.activeTab = tab;
     this.pageStack.replacePath({ name: tab });
-  }
-
-  @Builder
-  PageMap(name: string) {
-    if (name === 'LoginPage') {
-      LoginDestination()
-    } else if (name === 'HomeTab') {
-      NavDestination() {
-        if (this.currentRole === 'leader') {
-          LeaderHomeView()
-        } else if (this.currentRole === 'operator') {
-          OperatorHomeView()
-        } else if (this.currentRole === 'inspector') {
-          InspectorHomeView()
-        } else {
-          AdminHomeView()
-        }
-      }
-      .hideTitleBar(true)
-    } else if (name === 'DataTab') {
-      DataTabDestination()
-    } else if (name === 'WorkOrderTab') {
-      WorkOrderTabDestination()
-    } else if (name === 'ProfileTab') {
-      ProfileTabDestination()
-    }
   }
 
   async aboutToAppear(): Promise<void> {
@@ -165,10 +137,10 @@ struct Index {
           LoadingProgress()
             .width(48)
             .height(48)
-            .color('#1890ff')
+            .color(Colors.primaryLight)
           Text('加载中...')
             .fontSize(14)
-            .fontColor('#999999')
+            .fontColor(Colors.textMuted)
             .margin({ top: 16 })
         }
         .width('100%')
@@ -177,183 +149,25 @@ struct Index {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#f5f5f5')
+      .backgroundColor(Colors.background)
+    } else if (this.currentBreakpoint === 'sm') {
+      PhoneLayout({
+        targetPage: this.targetPage,
+        isReady: this.isReady,
+        onTabChange: (tab: string) => { this.switchTab(tab) }
+      })
+    } else if (this.currentBreakpoint === 'md') {
+      TabletLayout({
+        targetPage: this.targetPage,
+        isReady: this.isReady,
+        onTabChange: (tab: string) => { this.switchTab(tab) }
+      })
     } else {
-      Stack() {
-        Column() {
-          Row() {
-            // md/lg → 侧边导航栏
-            if (this.showTabBar && this.currentBreakpoint !== 'sm') {
-              this.Sidebar()
-            }
-
-            Navigation(this.pageStack) {
-              Stack() {}
-            }
-            .navDestination(this.PageMap)
-            .hideTitleBar(true)
-            .hideNavBar(true)
-            .layoutWeight(1)
-            .backgroundColor(Color.Transparent)
-            .onAppear(() => {
-              if (this.targetPage) {
-                this.pageStack.replacePath({ name: this.targetPage });
-              }
-            })
-          }
-          .layoutWeight(1)
-
-          // sm → 底部导航栏
-          if (this.showTabBar && this.currentBreakpoint === 'sm') {
-            this.BottomTabBar()
-          }
-        }
-        .width('100%')
-        .height('100%')
-      }
-      .width('100%')
-      .height('100%')
+      DesktopLayout({
+        targetPage: this.targetPage,
+        isReady: this.isReady,
+        onTabChange: (tab: string) => { this.switchTab(tab) }
+      })
     }
-  }
-
-  @Builder
-  Sidebar() {
-    Column() {
-      // 工作台
-      Column() {
-        Image(this.activeTab === 'HomeTab' ? $r('app.media.tab_home_active') : $r('app.media.tab_home_inactive'))
-          .width(24)
-          .height(24);
-        Text('工作台')
-          .fontSize(this.currentBreakpoint === 'md' ? 12 : 14)
-          .fontColor(this.activeTab === 'HomeTab' ? '#1565C0' : 'rgba(255,255,255,0.7)')
-          .margin({ top: 4 });
-      }
-      .width('100%')
-      .height(this.currentBreakpoint === 'md' ? 80 : 90)
-      .justifyContent(FlexAlign.Center)
-      .onClick(() => this.switchTab('HomeTab'));
-
-      // 数据
-      Column() {
-        Image(this.activeTab === 'DataTab' ? $r('app.media.tab_data_active') : $r('app.media.tab_data_inactive'))
-          .width(24)
-          .height(24);
-        Text('数据')
-          .fontSize(this.currentBreakpoint === 'md' ? 12 : 14)
-          .fontColor(this.activeTab === 'DataTab' ? '#1565C0' : 'rgba(255,255,255,0.7)')
-          .margin({ top: 4 });
-      }
-      .width('100%')
-      .height(this.currentBreakpoint === 'md' ? 80 : 90)
-      .justifyContent(FlexAlign.Center)
-      .onClick(() => this.switchTab('DataTab'));
-
-      // 工单
-      Column() {
-        Image(this.activeTab === 'WorkOrderTab' ? $r('app.media.tab_workorder_active') : $r('app.media.tab_workorder_inactive'))
-          .width(24)
-          .height(24);
-        Text('工单')
-          .fontSize(this.currentBreakpoint === 'md' ? 12 : 14)
-          .fontColor(this.activeTab === 'WorkOrderTab' ? '#1565C0' : 'rgba(255,255,255,0.7)')
-          .margin({ top: 4 });
-      }
-      .width('100%')
-      .height(this.currentBreakpoint === 'md' ? 80 : 90)
-      .justifyContent(FlexAlign.Center)
-      .onClick(() => this.switchTab('WorkOrderTab'));
-
-      // 我的
-      Column() {
-        Image(this.activeTab === 'ProfileTab' ? $r('app.media.tab_profile_active') : $r('app.media.tab_profile_inactive'))
-          .width(24)
-          .height(24);
-        Text('我的')
-          .fontSize(this.currentBreakpoint === 'md' ? 12 : 14)
-          .fontColor(this.activeTab === 'ProfileTab' ? '#1565C0' : 'rgba(255,255,255,0.7)')
-          .margin({ top: 4 });
-      }
-      .width('100%')
-      .height(this.currentBreakpoint === 'md' ? 80 : 90)
-      .justifyContent(FlexAlign.Center)
-      .onClick(() => this.switchTab('ProfileTab'));
-    }
-    .width(this.currentBreakpoint === 'md' ? 120 : 160)
-    .height('100%')
-    .backgroundColor('rgba(0,0,0,0.6)');
-  }
-
-  @Builder
-  BottomTabBar() {
-    Row() {
-      // 工作台
-      Column() {
-        Image(this.activeTab === 'HomeTab' ? $r('app.media.tab_home_active') : $r('app.media.tab_home_inactive'))
-          .width(22)
-          .height(22);
-        Text('工作台')
-          .fontSize(10)
-          .fontWeight(500)
-          .fontColor(this.activeTab === 'HomeTab' ? '#1565C0' : '#9A9AA8')
-          .margin({ top: 3 });
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Center)
-      .justifyContent(FlexAlign.Center)
-      .onClick(() => this.switchTab('HomeTab'));
-
-      // 数据
-      Column() {
-        Image(this.activeTab === 'DataTab' ? $r('app.media.tab_data_active') : $r('app.media.tab_data_inactive'))
-          .width(22)
-          .height(22);
-        Text('数据')
-          .fontSize(10)
-          .fontWeight(500)
-          .fontColor(this.activeTab === 'DataTab' ? '#1565C0' : '#9A9AA8')
-          .margin({ top: 3 });
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Center)
-      .justifyContent(FlexAlign.Center)
-      .onClick(() => this.switchTab('DataTab'));
-
-      // 工单
-      Column() {
-        Image(this.activeTab === 'WorkOrderTab' ? $r('app.media.tab_workorder_active') : $r('app.media.tab_workorder_inactive'))
-          .width(22)
-          .height(22);
-        Text('工单')
-          .fontSize(10)
-          .fontWeight(500)
-          .fontColor(this.activeTab === 'WorkOrderTab' ? '#1565C0' : '#9A9AA8')
-          .margin({ top: 3 });
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Center)
-      .justifyContent(FlexAlign.Center)
-      .onClick(() => this.switchTab('WorkOrderTab'));
-
-      // 我的
-      Column() {
-        Image(this.activeTab === 'ProfileTab' ? $r('app.media.tab_profile_active') : $r('app.media.tab_profile_inactive'))
-          .width(22)
-          .height(22);
-        Text('我的')
-          .fontSize(10)
-          .fontWeight(500)
-          .fontColor(this.activeTab === 'ProfileTab' ? '#1565C0' : '#9A9AA8')
-          .margin({ top: 3 });
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Center)
-      .justifyContent(FlexAlign.Center)
-      .onClick(() => this.switchTab('ProfileTab'));
-    }
-    .width('100%')
-    .backgroundColor(Color.White)
-    .border({ width: { top: 1 }, color: '#E8EBF0' })
-    .padding({ top: 8, bottom: 28 });
   }
 }

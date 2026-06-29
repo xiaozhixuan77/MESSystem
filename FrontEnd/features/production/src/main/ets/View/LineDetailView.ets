@@ -9,6 +9,7 @@ import { promptAction } from '@kit.ArkUI';
 @ComponentV2
 export struct LineDetailView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('detailStack') detailStack: NavPathStack | null = null;
   @Consumer('sharedVm') viewModel: ProductionViewModel = new ProductionViewModel();
   @Local lineId: number = 0;
 
@@ -833,7 +834,8 @@ export struct LineDetailView {
                     color: '#E8EBF0' })
                   .onClick(() => {
                     const params: Record<string, number> = { 'stationId': station.id, 'lineId': this.lineId };
-                    this.pageStack.pushPathByName('StationDetail', params);
+                    const targetStack = this.detailStack ?? this.pageStack;
+                    targetStack.pushPathByName('StationDetail', params);
                   });
                 }, (station: StationModel) => `${station.id}`);
               }

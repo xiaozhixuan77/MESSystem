@@ -7,6 +7,7 @@ struct LineCard {
   @Param line: LineModel = new LineModel();
   @Param dataVersion: number = 0;
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
+  @Consumer('detailStack') detailStack: NavPathStack | null = null;
 
   private getIconBgColor(status: string): [string, string] {
     if (status === '生产中') return ['#42A5F5', '#1565C0'];
@@ -141,7 +142,8 @@ struct LineCard {
           .borderRadius(8)
           .onClick(() => {
             const p: Record<string, number> = { 'lineId': this.line.id };
-            this.pageStack.pushPathByName('LineDetail', p);
+            const targetStack = this.detailStack ?? this.pageStack;
+            targetStack.pushPathByName('LineDetail', p);
           });
       }
       .width('100%');
