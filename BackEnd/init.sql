@@ -524,7 +524,7 @@ INSERT IGNORE INTO user (id, employee_no, name, role, team_id, workshop_id, stat
 INSERT IGNORE INTO role_permission (role, permission) VALUES
 -- admin: 通配符覆盖全部权限
 ('admin', '*'),
--- leader (班组长): 17 条
+-- leader (班组长): 20 条
 ('leader', 'workorder.view_team'),
 ('leader', 'workorder.create'),
 ('leader', 'workorder.dispatch'),
@@ -535,6 +535,9 @@ INSERT IGNORE INTO role_permission (role, permission) VALUES
 ('leader', 'workorder.confirm'),
 ('leader', 'workorder.scrap'),
 ('leader', 'line.view'),
+('leader', 'line.create'),
+('leader', 'line.update'),
+('leader', 'line.delete'),
 ('leader', 'line.operate'),
 ('leader', 'station.view'),
 ('leader', 'station.operate'),

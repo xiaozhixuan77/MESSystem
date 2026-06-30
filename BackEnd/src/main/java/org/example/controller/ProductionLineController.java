@@ -141,6 +141,7 @@ public class ProductionLineController {
             vo.setId(line.getId());
             vo.setName(line.getName());
             vo.setWorkshopId(line.getWorkshopId());
+            vo.setCurrentProcessId(line.getCurrentProcessId());
             vo.setStatus(line.getStatus());
             vo.setWorkshopName(finalWorkshopNames.getOrDefault(line.getWorkshopId(), ""));
             if (line.getCreatedAt() != null) {

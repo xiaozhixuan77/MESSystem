@@ -10,6 +10,7 @@ import org.example.entity.WorkOrder;
 import org.example.entity.Workstation;
 import org.example.entity.Workshop;
 import org.example.exception.BusinessException;
+import org.example.mapper.LineProcessSupportMapper;
 import org.example.mapper.ProductionLineMapper;
 import org.example.service.LineProcessSupportService;
 import org.example.service.ProcessService;
@@ -89,7 +90,7 @@ public class ProductionLineServiceImpl extends ServiceImpl<ProductionLineMapper,
                 .list();
         for (ProcessStep step : steps) {
             Workstation ws = new Workstation();
-            ws.setCode(step.getOpCode());
+            ws.setCode("WS-" + line.getId() + "-" + step.getOpCode());
             ws.setName(step.getName());
             ws.setProductionLineId(line.getId());
             ws.setCurrentProcessId(step.getProcessId());
@@ -173,7 +174,7 @@ public class ProductionLineServiceImpl extends ServiceImpl<ProductionLineMapper,
                     .list();
             for (ProcessStep step : steps) {
                 Workstation ws = new Workstation();
-                ws.setCode(step.getOpCode());
+                ws.setCode("WS-" + line.getId() + "-" + step.getOpCode());
                 ws.setName(step.getName());
                 ws.setProductionLineId(id);
                 ws.setCurrentProcessId(step.getProcessId());
@@ -193,10 +194,18 @@ public class ProductionLineServiceImpl extends ServiceImpl<ProductionLineMapper,
                     .eq(LineProcessSupport::getIsDeleted, 0)
                     .set(LineProcessSupport::getIsDeleted, 1)
                     .update();
-            LineProcessSupport lps = new LineProcessSupport();
-            lps.setLineId(id);
-            lps.setProcessId(request.getCurrentProcessId());
-            lineProcessSupportService.save(lps);
+            // 查找是否已有（含已删除的）相同关联记录，避免唯一约束冲突
+            LineProcessSupport existingLps = ((LineProcessSupportMapper) lineProcessSupportService.getBaseMapper())
+                    .findAnyByLineIdAndProcessId(id, request.getCurrentProcessId());
+            if (existingLps != null) {
+                existingLps.setIsDeleted((byte) 0);
+                lineProcessSupportService.updateById(existingLps);
+            } else {
+                LineProcessSupport lps = new LineProcessSupport();
+                lps.setLineId(id);
+                lps.setProcessId(request.getCurrentProcessId());
+                lineProcessSupportService.save(lps);
+            }
 
             line.setCurrentProcessId(request.getCurrentProcessId());
         }
@@ -259,6 +268,7 @@ public class ProductionLineServiceImpl extends ServiceImpl<ProductionLineMapper,
         vo.setId(line.getId());
         vo.setName(line.getName());
         vo.setWorkshopId(line.getWorkshopId());
+        vo.setCurrentProcessId(line.getCurrentProcessId());
         vo.setStatus(line.getStatus());
         vo.setWorkshopName(workshopName);
         if (line.getCreatedAt() != null) {
