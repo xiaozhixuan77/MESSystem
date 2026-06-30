@@ -484,6 +484,8 @@ export class WorkOrderViewModel {
         const process = await ProductApi.getProductProcess(product.code) as Record<string, Object>;
         this.formProcessId = process['id'] as number;
         this.formProcessName = process['name'] as string;
+        this.formWorkshopId = 0;
+        this.formLineId = 0;
         const stepsRaw = process['steps'] as Object[];
         this.formProcessSteps = (stepsRaw || []).map((s: Object) => {
           const step = new ProcessStepModel();
@@ -494,10 +496,8 @@ export class WorkOrderViewModel {
           step.name = r['name'] as string;
           return step;
         });
-        // 按工艺过滤产线
-        if (this.formProcessId > 0) {
-          this.loadLines(this.formWorkshopId, this.formProcessId);
-        }
+        // 清空产线列表，等待用户重选车间后重新按工艺过滤
+        this.lines = [];
       } catch (e) {
         // 工艺加载失败，清空
         this.formProcessId = 0;
@@ -553,7 +553,7 @@ export class WorkOrderViewModel {
       });
       await this.loadWorkshops();
       if (this.formWorkshopId > 0) {
-        await this.loadLines(this.formWorkshopId);
+        await this.loadLines(this.formWorkshopId, this.formProcessId);
       }
     } catch (e) {
       this.errorMessage = (e as Error).message;
@@ -594,7 +594,7 @@ export class WorkOrderViewModel {
       // 加载车间/产线选项
       await this.loadWorkshops();
       if (this.formWorkshopId > 0) {
-        await this.loadLines(this.formWorkshopId);
+        await this.loadLines(this.formWorkshopId, this.formProcessId);
       }
     } catch (e) {
       this.errorMessage = (e as Error).message;

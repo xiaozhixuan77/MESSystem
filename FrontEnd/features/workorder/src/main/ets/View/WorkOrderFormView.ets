@@ -198,7 +198,13 @@ export struct WorkOrderFormView {
         .margin({ bottom: 16 });
 
       if (this.viewModel.lines.length === 0) {
-        Text('暂无可用产线，请先选择车间').fontSize(14).fontColor('#9A9AA8').padding(20);
+        if (this.viewModel.formWorkshopId <= 0) {
+          Text('请先选择车间').fontSize(14).fontColor('#9A9AA8').padding(20);
+        } else if (this.viewModel.formProcessId <= 0) {
+          Text('请先选择产品以加载工艺').fontSize(14).fontColor('#9A9AA8').padding(20);
+        } else {
+          Text('当前车间下无支持该工艺的产线').fontSize(14).fontColor('#9A9AA8').padding(20);
+        }
       } else {
         List() {
           ForEach(this.viewModel.lines, (l: LineModel) => {
