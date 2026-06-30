@@ -53,6 +53,17 @@ public class UserController {
         return R.ok(vos);
     }
 
+    @GetMapping("/users/operators")
+    @RequiresPermission("workorder.dispatch")
+    public R<List<UserVO>> listOperators() {
+        List<User> users = userService.lambdaQuery()
+                .eq(User::getRole, "operator")
+                .eq(User::getStatus, UserStatus.ACTIVE.getLabel())
+                .list();
+        List<UserVO> vos = users.stream().map(this::toVO).collect(Collectors.toList());
+        return R.ok(vos);
+    }
+
     @PostMapping("/users")
     @RequiresPermission("user.create")
     public R<UserVO> create(@Valid @RequestBody CreateUserRequest req) {

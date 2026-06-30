@@ -13,6 +13,7 @@ export class UserApi {
     return httpClient.get<Object[]>(path);
   }
   static async getUserDetail(id: number): Promise<Object> { return httpClient.get(`/users/${id}`); }
+  static async getOperators(): Promise<Object[]> { return httpClient.get<Object[]>('/users/operators'); }
   static async createUser(data: object): Promise<Object> { return httpClient.post('/users', data); }
   static async updateUser(id: number, data: object): Promise<Object> { return httpClient.put(`/users/${id}`, data); }
   static async deleteUser(id: number): Promise<void> { return httpClient.delete<void>(`/users/${id}`); }
