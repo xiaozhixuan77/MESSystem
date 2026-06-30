@@ -449,11 +449,14 @@ export class WorkOrderViewModel {
     }
   }
 
-  async loadLines(workshopId?: number): Promise<void> {
+  async loadLines(workshopId?: number, processId?: number): Promise<void> {
     try {
       const params: Record<string, string | number> = {};
       if (workshopId) {
         params['workshopId'] = workshopId;
+      }
+      if (processId) {
+        params['processId'] = processId;
       }
       this.lines = await LineApi.getLines(params) as LineModel[];
     } catch (e) {
@@ -475,6 +478,7 @@ export class WorkOrderViewModel {
     this.formProductCode = product.code;
     this.formProductName = product.name;
     this.products = [];
+    this.formLineId = 0;
     if (product.defaultProcessId > 0) {
       try {
         const process = await ProductApi.getProductProcess(product.code) as Record<string, Object>;
@@ -490,19 +494,29 @@ export class WorkOrderViewModel {
           step.name = r['name'] as string;
           return step;
         });
+        // 按工艺过滤产线
+        if (this.formProcessId > 0) {
+          this.loadLines(this.formWorkshopId, this.formProcessId);
+        }
       } catch (e) {
         // 工艺加载失败，清空
         this.formProcessId = 0;
         this.formProcessName = '';
         this.formProcessSteps = [];
+        this.loadLines(this.formWorkshopId);
       }
+    } else {
+      this.formProcessId = 0;
+      this.formProcessName = '';
+      this.formProcessSteps = [];
+      this.loadLines(this.formWorkshopId);
     }
   }
 
   onWorkshopChange(workshopId: number): void {
     this.formWorkshopId = workshopId;
     this.formLineId = 0;
-    this.loadLines(workshopId);
+    this.loadLines(workshopId, this.formProcessId > 0 ? this.formProcessId : undefined);
   }
 
   async loadForEdit(id: number): Promise<void> {

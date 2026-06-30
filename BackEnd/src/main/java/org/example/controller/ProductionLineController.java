@@ -4,6 +4,7 @@ import org.example.dto.request.CreateProductionLineRequest;
 import org.example.dto.request.LineStartRequest;
 import org.example.dto.request.UpdateProductionLineRequest;
 import org.example.dto.response.R;
+import org.example.entity.LineProcessSupport;
 import org.example.entity.Process;
 import org.example.entity.Product;
 import org.example.entity.ProductionLine;
@@ -12,6 +13,7 @@ import org.example.entity.Workstation;
 import org.example.entity.Workshop;
 import org.example.exception.BusinessException;
 import org.example.security.RequiresPermission;
+import org.example.service.LineProcessSupportService;
 import org.example.service.ProcessService;
 import org.example.service.ProductService;
 import org.example.service.ProductionLineService;
@@ -52,6 +54,7 @@ public class ProductionLineController {
     private final WorkstationService workstationService;
     private final ProductService productService;
     private final ProcessService processService;
+    private final LineProcessSupportService lineProcessSupportService;
 
     public ProductionLineController(ProductionLineService productionLineService,
                                      SimulatorManager simulatorManager,
@@ -60,7 +63,8 @@ public class ProductionLineController {
                                      WorkshopService workshopService,
                                      WorkstationService workstationService,
                                      ProductService productService,
-                                     ProcessService processService) {
+                                     ProcessService processService,
+                                     LineProcessSupportService lineProcessSupportService) {
         this.productionLineService = productionLineService;
         this.simulatorManager = simulatorManager;
         this.workOrderService = workOrderService;
@@ -69,12 +73,14 @@ public class ProductionLineController {
         this.workstationService = workstationService;
         this.productService = productService;
         this.processService = processService;
+        this.lineProcessSupportService = lineProcessSupportService;
     }
 
     @GetMapping("/lines")
     @RequiresPermission("line.view")
     public R<List<ProductionLineVO>> list(@RequestParam(required = false) Long workshopId,
-                                          @RequestParam(required = false) String status) {
+                                          @RequestParam(required = false) String status,
+                                          @RequestParam(required = false) Long processId) {
         var query = productionLineService.lambdaQuery()
                 .eq(ProductionLine::getIsDeleted, 0);
         if (workshopId != null) {
@@ -82,6 +88,19 @@ public class ProductionLineController {
         }
         if (status != null && !status.isEmpty()) {
             query.eq(ProductionLine::getStatus, status);
+        }
+        if (processId != null) {
+            List<Long> lineIds = lineProcessSupportService.lambdaQuery()
+                    .eq(LineProcessSupport::getProcessId, processId)
+                    .eq(LineProcessSupport::getIsDeleted, 0)
+                    .list()
+                    .stream()
+                    .map(LineProcessSupport::getLineId)
+                    .collect(Collectors.toList());
+            if (lineIds.isEmpty()) {
+                return R.ok(Collections.emptyList());
+            }
+            query.in(ProductionLine::getId, lineIds);
         }
         List<ProductionLine> lines = query.list();
 
