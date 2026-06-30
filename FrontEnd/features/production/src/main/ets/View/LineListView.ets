@@ -9,9 +9,9 @@ struct LineCard {
   @Param dataVersion: number = 0;
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('detailStack') detailStack: NavPathStack | null = null;
+  @Consumer('currentBreakpoint') currentBreakpoint: string = 'sm';
   @Consumer('sharedVm') viewModel: ProductionViewModel = new ProductionViewModel();
   @Consumer('currentRole') currentRole: string = '';
-  @Event onDelete: () => void = () => {};
 
   private getIconBgColor(status: string): [string, string] {
     if (status === '生产中') return ['#42A5F5', '#1565C0'];
@@ -51,6 +51,32 @@ struct LineCard {
       return '异常停机中';
     }
     return '空闲中';
+  }
+
+  private showDeleteConfirm(): void {
+    try {
+      AlertDialog.show({
+        title: '确认删除',
+        message: '确定要删除该产线吗？删除后关联的工作站和工艺关联也将被移除。',
+        autoCancel: true,
+        alignment: DialogAlignment.Center,
+        primaryButton: {
+          value: '取消',
+          action: () => {},
+        },
+        secondaryButton: {
+          value: '删除',
+          fontColor: '#D32F2F',
+          action: async () => {
+            await this.viewModel.deleteLine(this.line.id);
+          },
+        },
+      });
+    } catch (e) {
+      // HAR 模块无 UIContext 时降级
+      this.viewModel.showDeleteConfirm = true;
+      this.viewModel.deletingLineId = this.line.id;
+    }
   }
 
   build() {
@@ -153,10 +179,7 @@ struct LineCard {
             .padding({ left: 10, right: 10, top: 4, bottom: 4 })
             .backgroundColor('#FFEBEE').borderRadius(6)
             .margin({ left: 6 })
-            .onClick(() => {
-              this.viewModel.showDeleteConfirm = true;
-              this.viewModel.deletingLineId = this.line.id;
-            });
+            .onClick(() => this.showDeleteConfirm());
         }
 
         Text('查看详情')
@@ -169,7 +192,8 @@ struct LineCard {
           .margin({ left: 8 })
           .onClick(() => {
             const p: Record<string, number> = { 'lineId': this.line.id };
-            const targetStack = this.detailStack ?? this.pageStack;
+            const useDetailStack = this.currentBreakpoint === 'lg' && this.detailStack !== null;
+            const targetStack = useDetailStack ? this.detailStack! : this.pageStack;
             targetStack.pushPathByName('LineDetail', p);
           });
       }
@@ -224,7 +248,6 @@ export struct LineListView {
 
   aboutToDisappear(): void {
     this.viewModel.offLineListChanged(this.syncLines);
-    // 不取消 WebSocket 订阅 — 保持在后台接收实时推送
   }
 
   private selectTab(tab: string): Promise<void> {
@@ -248,31 +271,30 @@ export struct LineListView {
   }
 
   build() {
-    Stack() {
     Column() {
       if (this.viewModel.dataVersion >= 0) {
         // Header
-      Row() {
-        Text('产线数据')
+        Row() {
+          Text('产线数据')
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
             .fontColor('#1A1A2E')
             .layoutWeight(1);
 
-        if (PermissionUtil.hasPermission('line.create', this.currentRole)) {
-          Button('+ 新增')
-            .fontSize(12)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#FFFFFF')
-            .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-            .backgroundColor('#1565C0')
-            .borderRadius(8)
-            .onClick(() => {
-              this.viewModel.openAddForm();
-              const p: Record<string, string> = { 'mode': 'add' };
-              this.pageStack.pushPathByName('LineEdit', p);
-            });
-        }
+          if (PermissionUtil.hasPermission('line.create', this.currentRole)) {
+            Button('+ 新增')
+              .fontSize(12)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#FFFFFF')
+              .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+              .backgroundColor('#1565C0')
+              .borderRadius(8)
+              .onClick(() => {
+                this.viewModel.openAddForm();
+                const p: Record<string, string> = { 'mode': 'add' };
+                this.pageStack.pushPathByName('LineEdit', p);
+              });
+          }
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 16, bottom: 12 })
@@ -381,57 +403,9 @@ export struct LineListView {
           });
         }
       }
-      }
+    }
     .width('100%')
     .height('100%')
     .backgroundColor('#F5F7FA');
-
-    // Delete confirmation overlay
-    if (this.viewModel.showDeleteConfirm) {
-      Stack() {
-        Column() {
-          Text('确认删除').fontSize(16).fontWeight(FontWeight.Bold).fontColor('#1A1A2E');
-          Text('确定要删除该产线吗？删除后关联的工作站和工艺关联也将被移除。')
-            .fontSize(13).fontColor('#5A5A6E').margin({ top: 8, bottom: 16 })
-            .textAlign(TextAlign.Center);
-
-          Row({ space: 12 }) {
-            Button('取消')
-              .fontSize(13).fontWeight(FontWeight.Medium).fontColor('#5A5A6E')
-              .layoutWeight(1).height(40)
-              .backgroundColor('#F5F7FA').borderRadius(10)
-              .onClick(() => {
-                this.viewModel.showDeleteConfirm = false;
-                this.viewModel.deletingLineId = 0;
-              });
-
-            Button('删除')
-              .fontSize(13).fontWeight(FontWeight.Medium).fontColor('#FFFFFF')
-              .layoutWeight(1).height(40)
-              .backgroundColor('#D32F2F').borderRadius(10)
-              .enabled(!this.viewModel.isSaving)
-              .onClick(async () => {
-                const ok = await this.viewModel.deleteLine(this.viewModel.deletingLineId);
-                if (ok) {
-                  this.viewModel.showDeleteConfirm = false;
-                  this.viewModel.deletingLineId = 0;
-                  this.syncLines();
-                }
-              });
-          }
-          .width('100%');
-        }
-        .width('80%').padding(20).backgroundColor('#FFFFFF').borderRadius(16)
-        .shadow({ radius: 8, color: 'rgba(0,0,0,0.15)' });
-      }
-      .width('100%').height('100%')
-      .backgroundColor('rgba(0,0,0,0.4)')
-      .position({ x: 0, y: 0 })
-      .onClick(() => {
-        this.viewModel.showDeleteConfirm = false;
-        this.viewModel.deletingLineId = 0;
-      });
-    }
-    }
   }
 }
