@@ -8,6 +8,7 @@ import org.example.service.ProcessService;
 import org.example.service.ProcessStepService;
 import org.example.service.ProductService;
 import org.example.vo.ProcessStepVO;
+import org.example.vo.ProcessVO;
 import org.example.vo.ProcessWithStepsVO;
 import org.example.vo.ProductVO;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -91,5 +92,20 @@ public class ProductController {
         }).collect(Collectors.toList()));
 
         return R.ok(vo);
+    }
+
+    @GetMapping("/processes")
+    public R<List<ProcessVO>> listProcesses() {
+        List<Process> processes = processService.lambdaQuery()
+                .eq(Process::getIsDeleted, 0)
+                .list();
+        List<ProcessVO> vos = processes.stream().map(p -> {
+            ProcessVO vo = new ProcessVO();
+            vo.setId(p.getId());
+            vo.setCode(p.getCode());
+            vo.setName(p.getName());
+            return vo;
+        }).collect(Collectors.toList());
+        return R.ok(vos);
     }
 }

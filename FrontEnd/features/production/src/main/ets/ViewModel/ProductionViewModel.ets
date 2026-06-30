@@ -1,8 +1,12 @@
-import { LineApi, ExceptionApi } from '@ohos/network';
+import { LineApi, ExceptionApi, WorkshopApi, ProcessApi } from '@ohos/network';
 import { WebSocketService } from '@ohos/network';
 import { LineModel } from '../Model/LineModel';
 import { StationModel } from '../Model/StationModel';
 import { LineDetailModel, WorkOrderSummary } from '../Model/LineDetailModel';
+import { WorkshopModel } from '../Model/WorkshopModel';
+import { ProcessModel } from '../Model/ProcessModel';
+import { CreateLineRequest } from '../Model/CreateLineRequest';
+import { UpdateLineRequest } from '../Model/UpdateLineRequest';
 
 @ObservedV2
 export class ProductionViewModel {
@@ -21,6 +25,18 @@ export class ProductionViewModel {
   @Trace errorDialogMessage: string = '';
   @Trace isDataStale: boolean = false;
   @Trace dataVersion: number = 0;
+
+  // 表单状态
+  @Trace formName: string = '';
+  @Trace formWorkshopId: number = 0;
+  @Trace formCurrentProcessId: number = 0;
+  @Trace formError: string = '';
+  @Trace isSaving: boolean = false;
+  @Trace showDeleteConfirm: boolean = false;
+  @Trace deletingLineId: number = 0;
+  @Trace editingLineId: number = 0;
+  @Trace workshops: WorkshopModel[] = [];
+  @Trace processes: ProcessModel[] = [];
 
   private activeLineId: number = 0;
   private subscribedLineIds: Set<number> = new Set();
@@ -416,5 +432,107 @@ export class ProductionViewModel {
 
   get ngCount(): number {
     return this.lineDetail.ngCount;
+  }
+
+  async loadWorkshops(): Promise<void> {
+    try {
+      this.workshops = await WorkshopApi.getWorkshops() as WorkshopModel[];
+    } catch (e) {
+      // 静默失败，下拉列表为空
+    }
+  }
+
+  async loadProcesses(): Promise<void> {
+    try {
+      this.processes = await ProcessApi.getProcesses() as ProcessModel[];
+    } catch (e) {
+      // 静默失败
+    }
+  }
+
+  openAddForm(): void {
+    this.editingLineId = 0;
+    this.formName = '';
+    this.formWorkshopId = 0;
+    this.formCurrentProcessId = 0;
+    this.formError = '';
+    this.isSaving = false;
+  }
+
+  openEditForm(line: LineModel): void {
+    this.editingLineId = line.id;
+    this.formName = line.name;
+    this.formWorkshopId = line.workshopId;
+    this.formCurrentProcessId = line.currentProcessId ?? 0;
+    this.formError = '';
+    this.isSaving = false;
+  }
+
+  async createLine(): Promise<boolean> {
+    if (!this.formName.trim()) {
+      this.formError = '产线名称不能为空';
+      return false;
+    }
+    if (this.formWorkshopId <= 0) {
+      this.formError = '请选择所属车间';
+      return false;
+    }
+    if (this.formCurrentProcessId <= 0) {
+      this.formError = '请选择工艺';
+      return false;
+    }
+    this.isSaving = true;
+    this.formError = '';
+    try {
+      const body = new CreateLineRequest();
+      body.name = this.formName.trim();
+      body.workshopId = this.formWorkshopId;
+      body.currentProcessId = this.formCurrentProcessId;
+      await LineApi.createLine(body);
+      await this.loadLines();
+      return true;
+    } catch (e) {
+      this.formError = (e as Error).message;
+      return false;
+    } finally {
+      this.isSaving = false;
+    }
+  }
+
+  async updateLine(): Promise<boolean> {
+    if (!this.formName.trim()) {
+      this.formError = '产线名称不能为空';
+      return false;
+    }
+    this.isSaving = true;
+    this.formError = '';
+    try {
+      const body = new UpdateLineRequest();
+      body.name = this.formName.trim();
+      body.workshopId = this.formWorkshopId > 0 ? this.formWorkshopId : undefined;
+      body.currentProcessId = this.formCurrentProcessId > 0 ? this.formCurrentProcessId : undefined;
+      await LineApi.updateLine(this.editingLineId, body);
+      await this.loadLines();
+      return true;
+    } catch (e) {
+      this.formError = (e as Error).message;
+      return false;
+    } finally {
+      this.isSaving = false;
+    }
+  }
+
+  async deleteLine(id: number): Promise<boolean> {
+    this.isSaving = true;
+    try {
+      await LineApi.deleteLine(id);
+      await this.loadLines();
+      return true;
+    } catch (e) {
+      this.errorMessage = (e as Error).message;
+      return false;
+    } finally {
+      this.isSaving = false;
+    }
   }
 }

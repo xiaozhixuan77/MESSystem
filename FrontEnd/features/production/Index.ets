@@ -1,7 +1,12 @@
 export { LineListView } from './src/main/ets/View/LineListView';
 export { LineDetailView } from './src/main/ets/View/LineDetailView';
 export { StationDetailView } from './src/main/ets/View/StationDetailView';
+export { LineEditView } from './src/main/ets/View/LineEditView';
 export { ProductionViewModel } from './src/main/ets/ViewModel/ProductionViewModel';
 export { LineModel } from './src/main/ets/Model/LineModel';
 export { StationModel } from './src/main/ets/Model/StationModel';
 export { LineDetailModel, WorkOrderSummary } from './src/main/ets/Model/LineDetailModel';
+export { CreateLineRequest } from './src/main/ets/Model/CreateLineRequest';
+export { UpdateLineRequest } from './src/main/ets/Model/UpdateLineRequest';
+export { ProcessModel } from './src/main/ets/Model/ProcessModel';
+export { WorkshopModel } from './src/main/ets/Model/WorkshopModel';

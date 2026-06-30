@@ -1,4 +1,4 @@
-import { LineListView, LineDetailView, StationDetailView, ProductionViewModel } from '@ohos/production';
+import { LineListView, LineDetailView, StationDetailView, LineEditView, ProductionViewModel } from '@ohos/production';
 import { InspectionListView, InspectionDetailView, DashboardView, ExceptionListView, ExceptionDetailView } from '@ohos/quality';
 import { Colors, DeepLinkInfo } from '@ohos/utils';
 
@@ -38,6 +38,8 @@ export struct DataTabDestination {
         ExceptionListView()
       } else if (name === 'ExceptionDetail') {
         ExceptionDetailView()
+      } else if (name === 'LineEdit') {
+        LineEditView()
       }
     }
     .hideTitleBar(true)

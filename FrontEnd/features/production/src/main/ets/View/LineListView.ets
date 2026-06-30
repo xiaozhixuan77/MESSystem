@@ -1,6 +1,7 @@
 import { ProductionViewModel } from '../ViewModel/ProductionViewModel';
 import { LineModel } from '../Model/LineModel';
 import { ErrorState } from '@ohos/uicomponents';
+import { PermissionUtil } from '@ohos/utils';
 
 @ComponentV2
 struct LineCard {
@@ -8,6 +9,9 @@ struct LineCard {
   @Param dataVersion: number = 0;
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('detailStack') detailStack: NavPathStack | null = null;
+  @Consumer('sharedVm') viewModel: ProductionViewModel = new ProductionViewModel();
+  @Consumer('currentRole') currentRole: string = '';
+  @Event onDelete: () => void = () => {};
 
   private getIconBgColor(status: string): [string, string] {
     if (status === '生产中') return ['#42A5F5', '#1565C0'];
@@ -133,6 +137,28 @@ struct LineCard {
           .fontColor('#5A5A6E')
           .layoutWeight(1);
 
+        if (this.line.status === '空闲' && PermissionUtil.hasPermission('line.update', this.currentRole)) {
+          Text('编辑')
+            .fontSize(11).fontWeight(FontWeight.Medium).fontColor('#1565C0')
+            .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+            .backgroundColor('#E3F2FD').borderRadius(6)
+            .onClick(() => {
+              const p: Record<string, Object> = { 'mode': 'edit', 'lineId': this.line.id };
+              this.pageStack.pushPathByName('LineEdit', p);
+            });
+        }
+        if (this.line.status === '空闲' && PermissionUtil.hasPermission('line.delete', this.currentRole)) {
+          Text('删除')
+            .fontSize(11).fontWeight(FontWeight.Medium).fontColor('#D32F2F')
+            .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+            .backgroundColor('#FFEBEE').borderRadius(6)
+            .margin({ left: 6 })
+            .onClick(() => {
+              this.viewModel.showDeleteConfirm = true;
+              this.viewModel.deletingLineId = this.line.id;
+            });
+        }
+
         Text('查看详情')
           .fontSize(12)
           .fontWeight(FontWeight.Bold)
@@ -140,6 +166,7 @@ struct LineCard {
           .padding({ left: 14, right: 14, top: 6, bottom: 6 })
           .backgroundColor('#1565C0')
           .borderRadius(8)
+          .margin({ left: 8 })
           .onClick(() => {
             const p: Record<string, number> = { 'lineId': this.line.id };
             const targetStack = this.detailStack ?? this.pageStack;
@@ -160,6 +187,7 @@ struct LineCard {
 export struct LineListView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('sharedVm') viewModel: ProductionViewModel = new ProductionViewModel();
+  @Consumer('currentRole') currentRole: string = '';
   @Local activeTab: string = '全部';
   @Local isRefreshing: boolean = false;
   @Local lines: LineModel[] = [];
@@ -220,6 +248,7 @@ export struct LineListView {
   }
 
   build() {
+    Stack() {
     Column() {
       if (this.viewModel.dataVersion >= 0) {
         // Header
@@ -227,7 +256,23 @@ export struct LineListView {
         Text('产线数据')
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#1A1A2E');
+            .fontColor('#1A1A2E')
+            .layoutWeight(1);
+
+        if (PermissionUtil.hasPermission('line.create', this.currentRole)) {
+          Button('+ 新增')
+            .fontSize(12)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#FFFFFF')
+            .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+            .backgroundColor('#1565C0')
+            .borderRadius(8)
+            .onClick(() => {
+              this.viewModel.openAddForm();
+              const p: Record<string, string> = { 'mode': 'add' };
+              this.pageStack.pushPathByName('LineEdit', p);
+            });
+        }
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 16, bottom: 12 })
@@ -340,5 +385,53 @@ export struct LineListView {
     .width('100%')
     .height('100%')
     .backgroundColor('#F5F7FA');
+
+    // Delete confirmation overlay
+    if (this.viewModel.showDeleteConfirm) {
+      Stack() {
+        Column() {
+          Text('确认删除').fontSize(16).fontWeight(FontWeight.Bold).fontColor('#1A1A2E');
+          Text('确定要删除该产线吗？删除后关联的工作站和工艺关联也将被移除。')
+            .fontSize(13).fontColor('#5A5A6E').margin({ top: 8, bottom: 16 })
+            .textAlign(TextAlign.Center);
+
+          Row({ space: 12 }) {
+            Button('取消')
+              .fontSize(13).fontWeight(FontWeight.Medium).fontColor('#5A5A6E')
+              .layoutWeight(1).height(40)
+              .backgroundColor('#F5F7FA').borderRadius(10)
+              .onClick(() => {
+                this.viewModel.showDeleteConfirm = false;
+                this.viewModel.deletingLineId = 0;
+              });
+
+            Button('删除')
+              .fontSize(13).fontWeight(FontWeight.Medium).fontColor('#FFFFFF')
+              .layoutWeight(1).height(40)
+              .backgroundColor('#D32F2F').borderRadius(10)
+              .enabled(!this.viewModel.isSaving)
+              .onClick(async () => {
+                const ok = await this.viewModel.deleteLine(this.viewModel.deletingLineId);
+                if (ok) {
+                  this.viewModel.showDeleteConfirm = false;
+                  this.viewModel.deletingLineId = 0;
+                  this.syncLines();
+                }
+              });
+          }
+          .width('100%');
+        }
+        .width('80%').padding(20).backgroundColor('#FFFFFF').borderRadius(16)
+        .shadow({ radius: 8, color: 'rgba(0,0,0,0.15)' });
+      }
+      .width('100%').height('100%')
+      .backgroundColor('rgba(0,0,0,0.4)')
+      .position({ x: 0, y: 0 })
+      .onClick(() => {
+        this.viewModel.showDeleteConfirm = false;
+        this.viewModel.deletingLineId = 0;
+      });
+    }
+    }
   }
 }

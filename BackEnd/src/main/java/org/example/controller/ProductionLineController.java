@@ -1,6 +1,8 @@
 package org.example.controller;
 
+import org.example.dto.request.CreateProductionLineRequest;
 import org.example.dto.request.LineStartRequest;
+import org.example.dto.request.UpdateProductionLineRequest;
 import org.example.dto.response.R;
 import org.example.entity.Process;
 import org.example.entity.Product;
@@ -21,9 +23,11 @@ import org.example.vo.LineDetailVO;
 import org.example.vo.ProductionLineVO;
 import org.example.vo.StationVO;
 import org.example.websocket.LineBroadcaster;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -313,6 +317,28 @@ public class ProductionLineController {
 
         simulatorManager.stop(id);
 
+        return R.ok();
+    }
+
+    @PostMapping("/lines")
+    @RequiresPermission("line.create")
+    public R<ProductionLineVO> create(@Valid @RequestBody CreateProductionLineRequest request) {
+        ProductionLineVO vo = productionLineService.createLine(request);
+        return R.ok(vo);
+    }
+
+    @PutMapping("/lines/{id}")
+    @RequiresPermission("line.update")
+    public R<ProductionLineVO> update(@PathVariable Long id,
+                                       @RequestBody UpdateProductionLineRequest request) {
+        ProductionLineVO vo = productionLineService.updateLine(id, request);
+        return R.ok(vo);
+    }
+
+    @DeleteMapping("/lines/{id}")
+    @RequiresPermission("line.delete")
+    public R<Void> delete(@PathVariable Long id) {
+        productionLineService.deleteLine(id);
         return R.ok();
     }
 }

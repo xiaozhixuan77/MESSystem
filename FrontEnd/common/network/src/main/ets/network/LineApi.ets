@@ -22,4 +22,7 @@ export class LineApi {
     const body: Record<string, string> = { 'description': description };
     return httpClient.post(`/lines/${id}/exception`, body);
   }
+  static async createLine(body: Object): Promise<Object> { return httpClient.post('/lines', body); }
+  static async updateLine(id: number, body: Object): Promise<Object> { return httpClient.put(`/lines/${id}`, body); }
+  static async deleteLine(id: number): Promise<Object> { return httpClient.delete(`/lines/${id}`); }
 }
