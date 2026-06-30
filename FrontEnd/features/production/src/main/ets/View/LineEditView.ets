@@ -6,10 +6,15 @@ export struct LineEditView {
   @Consumer('pageStack') pageStack: NavPathStack = new NavPathStack();
   @Consumer('sharedVm') vm: ProductionViewModel = new ProductionViewModel();
   @Consumer('currentRole') currentRole: string = '';
-  @Param mode: string = 'add';
-  @Param lineId: number = 0;
+  @Local mode: string = 'add';
+  @Local lineId: number = 0;
 
   aboutToAppear(): void {
+    const navInfo = this.queryNavDestinationInfo();
+    const param = navInfo?.param as Record<string, Object>;
+    this.mode = (param?.['mode'] as string) ?? 'add';
+    this.lineId = (param?.['lineId'] as number) ?? 0;
+
     this.vm.loadWorkshops();
     this.vm.loadProcesses();
     if (this.mode === 'edit' && this.lineId > 0) {
