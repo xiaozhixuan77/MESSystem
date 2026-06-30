@@ -40,6 +40,7 @@ export class ProductionViewModel {
 
   private activeLineId: number = 0;
   private subscribedLineIds: Set<number> = new Set();
+  private subscribedListTopic: boolean = false;
   private lineListListeners: Array<() => void> = [];
   isActive: boolean = false;
 
@@ -254,6 +255,12 @@ export class ProductionViewModel {
 
   subscribeLineList(): void {
     const ws = WebSocketService.getInstance();
+    // 订阅产线列表变更广播（仅需一次）
+    if (!this.subscribedListTopic) {
+      ws.subscribe('/topic/lines');
+      WebSocketService.addListener('/topic/lines', this.onLineListBroadcast);
+      this.subscribedListTopic = true;
+    }
     let newCount = 0;
     let skipCount = 0;
     for (let i = 0; i < this.lines.length; i++) {
@@ -286,6 +293,11 @@ export class ProductionViewModel {
       WebSocketService.removeListener(stationTopic, this.onLineListStationUpdate);
     });
     this.subscribedLineIds.clear();
+    if (this.subscribedListTopic) {
+      ws.unsubscribe('/topic/lines');
+      WebSocketService.removeListener('/topic/lines', this.onLineListBroadcast);
+      this.subscribedListTopic = false;
+    }
   }
 
   onLineListStatusUpdate = (payload: Object): void => {
@@ -369,6 +381,13 @@ export class ProductionViewModel {
     this.lines = [...this.lines];
     this.dataVersion++;
     this.notifyLineListListeners();
+  };
+
+  onLineListBroadcast = (payload: Object): void => {
+    const envelope = payload as Record<string, Object>;
+    if (envelope['type'] === 'LINE_LIST_CHANGED') {
+      this.loadLines();
+    }
   };
 
   onLineStatusUpdate = (payload: Object): void => {

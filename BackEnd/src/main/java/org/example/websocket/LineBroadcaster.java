@@ -197,4 +197,22 @@ public class LineBroadcaster {
         messagingTemplate.convertAndSend("/topic/home", message);
         log.debug("HOME_REFRESH 已广播: trigger={}", trigger);
     }
+
+    /**
+     * 产线列表变更广播（新增/编辑/删除）→ /topic/lines。
+     * 通知所有客户端重新加载产线列表。
+     */
+    public void broadcastLineListChanged(String action, Long lineId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("action", action);
+        data.put("lineId", lineId);
+
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "LINE_LIST_CHANGED");
+        message.put("timestamp", System.currentTimeMillis());
+        message.put("data", data);
+
+        messagingTemplate.convertAndSend("/topic/lines", message);
+        log.info("LINE_LIST_CHANGED 已广播: action={}, lineId={}", action, lineId);
+    }
 }

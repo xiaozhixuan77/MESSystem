@@ -20,6 +20,7 @@ import org.example.service.WorkOrderService;
 import org.example.service.WorkshopService;
 import org.example.service.WorkstationService;
 import org.example.vo.ProductionLineVO;
+import org.example.websocket.LineBroadcaster;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -38,19 +39,22 @@ public class ProductionLineServiceImpl extends ServiceImpl<ProductionLineMapper,
     private final WorkstationService workstationService;
     private final LineProcessSupportService lineProcessSupportService;
     private final WorkOrderService workOrderService;
+    private final LineBroadcaster lineBroadcaster;
 
     public ProductionLineServiceImpl(WorkshopService workshopService,
                                       ProcessService processService,
                                       ProcessStepService processStepService,
                                       WorkstationService workstationService,
                                       LineProcessSupportService lineProcessSupportService,
-                                      @Lazy WorkOrderService workOrderService) {
+                                      @Lazy WorkOrderService workOrderService,
+                                      LineBroadcaster lineBroadcaster) {
         this.workshopService = workshopService;
         this.processService = processService;
         this.processStepService = processStepService;
         this.workstationService = workstationService;
         this.lineProcessSupportService = lineProcessSupportService;
         this.workOrderService = workOrderService;
+        this.lineBroadcaster = lineBroadcaster;
     }
 
     @Override
@@ -110,7 +114,9 @@ public class ProductionLineServiceImpl extends ServiceImpl<ProductionLineMapper,
         lps.setProcessId(request.getCurrentProcessId());
         lineProcessSupportService.save(lps);
 
-        return buildVO(line, workshop.getName());
+        ProductionLineVO vo = buildVO(line, workshop.getName());
+        lineBroadcaster.broadcastLineListChanged("CREATED", line.getId());
+        return vo;
     }
 
     @Override
@@ -218,7 +224,9 @@ public class ProductionLineServiceImpl extends ServiceImpl<ProductionLineMapper,
             workshopName = workshop != null ? workshop.getName() : "";
         }
 
-        return buildVO(line, workshopName);
+        ProductionLineVO vo = buildVO(line, workshopName);
+        lineBroadcaster.broadcastLineListChanged("UPDATED", line.getId());
+        return vo;
     }
 
     @Override
@@ -261,6 +269,8 @@ public class ProductionLineServiceImpl extends ServiceImpl<ProductionLineMapper,
                 .eq(WorkOrder::getLineId, id)
                 .set(WorkOrder::getLineId, null)
                 .update();
+
+        lineBroadcaster.broadcastLineListChanged("DELETED", id);
     }
 
     private ProductionLineVO buildVO(ProductionLine line, String workshopName) {
