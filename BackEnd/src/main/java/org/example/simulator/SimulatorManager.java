@@ -339,14 +339,6 @@ public class SimulatorManager {
                 .set(Workstation::getDeviceStatus, "待机")
                 .update();
 
-        ProductionLine line = productionLineService.lambdaQuery()
-                .eq(ProductionLine::getId, lineId)
-                .one();
-        if (line != null) {
-            line.setStatus("空闲");
-            productionLineService.updateById(line);
-        }
-
         Workstation lastStation = stations.stream()
                 .max(Comparator.comparing(Workstation::getCode))
                 .orElse(null);
@@ -369,7 +361,7 @@ public class SimulatorManager {
                 planQty = wo.getPlanQty();
             }
         }
-        lineBroadcaster.broadcastLineStatus(lineId, "空闲", woId, finished, ng, "生产完成",
+        lineBroadcaster.broadcastLineStatus(lineId, "生产完成", woId, finished, ng, "生产完成",
                 woCode, planQty);
 
         log.info("产线 {} 完工清理完成，良品: {}, NG: {}", lineId, finished, ng);

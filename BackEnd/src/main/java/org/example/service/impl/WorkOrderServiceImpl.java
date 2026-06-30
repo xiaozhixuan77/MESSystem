@@ -457,12 +457,13 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 .one();
         if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
             if (simulatorManager.isRunning(line.getId())) {
-                simulatorManager.stop(line.getId(), "空闲", "生产完成");
+                simulatorManager.stop(line.getId(), "生产完成", "生产完成");
+            } else {
+                productionLineService.lambdaUpdate()
+                        .eq(ProductionLine::getId, line.getId())
+                        .set(ProductionLine::getStatus, "生产完成")
+                        .update();
             }
-            productionLineService.lambdaUpdate()
-                    .eq(ProductionLine::getId, line.getId())
-                    .set(ProductionLine::getCurrentWorkorderId, null)
-                    .update();
         }
     }
 
@@ -499,8 +500,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         if (line != null && wo.getId().equals(line.getCurrentWorkorderId())) {
             productionLineService.lambdaUpdate()
                     .eq(ProductionLine::getId, line.getId())
-                    .set(ProductionLine::getStatus, "空闲")
-                    .set(ProductionLine::getCurrentWorkorderId, null)
+                    .set(ProductionLine::getStatus, "生产完成")
                     .update();
         }
     }
@@ -682,8 +682,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                     .last("FOR UPDATE")
                     .one();
             if (line != null && workOrderId.equals(line.getCurrentWorkorderId())) {
-                line.setStatus("空闲");
-                line.setCurrentWorkorderId(null);
+                line.setStatus("完工");
                 productionLineService.updateById(line);
             }
         }
