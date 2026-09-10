@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=393, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>生产任务</title>
+    <style>
+        :root {
+            --primary: #1565C0;
+            --primary-light: #42A5F5;
+            --primary-dark: #0D47A1;
+            --primary-subtle: #E3F2FD;
+            --bg: #F5F7FA;
+            --surface: #FFFFFF;
+            --fg: #1A1A2E;
+            --fg-muted: #5A5A6E;
+            --fg-subtle: #9A9AA8;
+            --border: #E8EBF0;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --font-sans: -apple-system, BlinkMacSystemFont, 'HarmonyOS Sans', 'PingFang SC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .device-frame {
+            width: 393px;
+            height: 852px;
+            background: var(--bg);
+            border-radius: 40px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4), inset 0 0 0 8px #1a1a1a;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dynamic-island {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 34px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 1000;
+        }
+
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 54px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 14px 28px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+            z-index: 100;
+        }
+
+        .page-header {
+            background: var(--surface);
+            padding: 70px 16px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: var(--fg);
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--fg);
+            flex: 1;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 100px;
+        }
+
+        .content::-webkit-scrollbar { display: none; }
+
+        /* Tab切换 */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tab {
+            flex: 1;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--fg-muted);
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* 任务卡片 */
+        .task-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .task-code {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .task-status {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .task-status.pending {
+            background: var(--primary-subtle);
+            color: var(--primary);
+        }
+
+        .task-status.running {
+            background: #E8F5E9;
+            color: var(--success);
+        }
+
+        .task-status.done {
+            background: #ECEFF1;
+            color: var(--fg-muted);
+        }
+
+        .task-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 4px;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: var(--fg-muted);
+            margin-bottom: 12px;
+        }
+
+        .task-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .task-count {
+            font-size: 12px;
+            color: var(--fg-muted);
+        }
+
+        .task-count strong {
+            color: var(--fg);
+        }
+
+        .task-action {
+            padding: 6px 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .task-action.secondary {
+            background: var(--bg);
+            color: var(--fg);
+        }
+
+        /* SN扫码 */
+        .sn-scan {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--primary-subtle);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+        }
+
+        .sn-scan-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .sn-scan-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .sn-scan-text {
+            flex: 1;
+        }
+
+        .sn-scan-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .sn-scan-desc {
+            font-size: 11px;
+            color: var(--fg-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="dynamic-island"></div>
+
+        <div class="status-bar">
+            <span>9:41</span>
+            <div style="display:flex;gap:4px;align-items:center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+        </div>
+
+        <div class="page-header">
+            <div class="back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5m7 7l-7-7 7-7"/>
+                </svg>
+            </div>
+            <h1 class="page-title">生产任务</h1>
+        </div>
+
+        <main class="content">
+            <div class="tabs">
+                <div class="tab active">待执行</div>
+                <div class="tab">进行中</div>
+                <div class="tab">已报工</div>
+            </div>
+
+            <div class="sn-scan">
+                <div class="sn-scan-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M8 7h8M8 12h8M8 17h5"/>
+                    </svg>
+                </div>
+                <div class="sn-scan-text">
+                    <div class="sn-scan-title">扫码开工</div>
+                    <div class="sn-scan-desc">扫描产品SN码快速开始生产</div>
+                </div>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+            </div>
+
+            <div class="task-card">
+                <div class="task-header">
+                    <span class="task-code">WO-2024-0118</span>
+                    <span class="task-status pending">待执行</span>
+                </div>
+                <div class="task-title">控制器主板组装</div>
+                <div class="task-meta">PCB-CTRL-V2.1 · L1柔性线 · 今天14:00</div>
+                <div class="task-footer">
+                    <span class="task-count">计划 <strong>200</strong> 件</span>
+                    <button class="task-action">开始生产</button>
+                </div>
+            </div>
+
+            <div class="task-card">
+                <div class="task-header">
+                    <span class="task-code">WO-2024-0120</span>
+                    <span class="task-status pending">待执行</span>
+                </div>
+                <div class="task-title">电源模块测试</div>
+                <div class="task-meta">PWR-MOD-V1.5 · L2标准线 · 今天16:00</div>
+                <div class="task-footer">
+                    <span class="task-count">计划 <strong>150</strong> 件</span>
+                    <button class="task-action">开始生产</button>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

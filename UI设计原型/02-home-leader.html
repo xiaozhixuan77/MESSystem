@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=393, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>工作台 - 班组长</title>
+    <style>
+        :root {
+            --primary: #1565C0;
+            --primary-light: #42A5F5;
+            --primary-dark: #0D47A1;
+            --primary-subtle: #E3F2FD;
+            --bg: #F5F7FA;
+            --surface: #FFFFFF;
+            --fg: #1A1A2E;
+            --fg-muted: #5A5A6E;
+            --fg-subtle: #9A9AA8;
+            --border: #E8EBF0;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --font-sans: -apple-system, BlinkMacSystemFont, 'HarmonyOS Sans', 'PingFang SC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .device-frame {
+            width: 393px;
+            height: 852px;
+            background: var(--bg);
+            border-radius: 40px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4), inset 0 0 0 8px #1a1a1a;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dynamic-island {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 34px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 1000;
+        }
+
+        /* 状态栏 */
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 54px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 14px 28px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: white;
+            z-index: 100;
+        }
+
+        /* 顶部蓝色区域 */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 70px 20px 20px;
+            position: relative;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .user-greeting { color: white; }
+
+        .user-greeting .name {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .user-greeting .role {
+            font-size: 12px;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+
+        .notification-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.15);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .notification-btn svg {
+            width: 18px;
+            height: 18px;
+            color: white;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 8px;
+            height: 8px;
+            background: var(--error);
+            border-radius: 50%;
+            border: 1.5px solid var(--primary);
+        }
+
+        /* 快捷入口 */
+        .quick-access {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .quick-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 4px;
+            background: rgba(255,255,255,0.12);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.95);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quick-icon svg {
+            width: 16px;
+            height: 16px;
+            color: var(--primary);
+        }
+
+        .quick-label {
+            font-size: 11px;
+            color: white;
+            font-weight: 500;
+        }
+
+        /* 内容区域 */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 100px;
+        }
+
+        .content::-webkit-scrollbar { display: none; }
+
+        .section { margin-bottom: 20px; }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .section-more {
+            font-size: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* 待办卡片 */
+        .todo-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow-sm);
+            border-left: 3px solid transparent;
+        }
+
+        .todo-card.urgent { border-left-color: var(--error); }
+        .todo-card.warning { border-left-color: var(--warning); }
+        .todo-card.normal { border-left-color: var(--primary); }
+
+        .todo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .todo-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .todo-type.dispatch {
+            background: var(--primary-subtle);
+            color: var(--primary);
+        }
+
+        .todo-type.exception {
+            background: #FFEBEE;
+            color: var(--error);
+        }
+
+        .todo-time {
+            font-size: 11px;
+            color: var(--fg-subtle);
+        }
+
+        .todo-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 4px;
+        }
+
+        .todo-desc {
+            font-size: 12px;
+            color: var(--fg-muted);
+            line-height: 1.4;
+        }
+
+        .todo-meta {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .todo-meta-item {
+            font-size: 11px;
+            color: var(--fg-muted);
+        }
+
+        .todo-meta-item strong {
+            color: var(--fg);
+            font-weight: 600;
+        }
+
+        /* 产线状态 */
+        .line-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .line-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .line-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .line-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .line-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .line-status.running { background: var(--success); }
+        .line-status.idle { background: var(--fg-subtle); }
+        .line-status.error { background: var(--error); }
+
+        .line-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .line-stat {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+        }
+
+        .line-stat-label { color: var(--fg-muted); }
+        .line-stat-value { color: var(--fg); font-weight: 500; }
+
+        /* 底部导航 */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 28px;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 4px 16px;
+            cursor: pointer;
+        }
+
+        .nav-item.active .nav-icon { color: var(--primary); }
+        .nav-item.active .nav-label { color: var(--primary); }
+
+        .nav-icon {
+            width: 22px;
+            height: 22px;
+            color: var(--fg-subtle);
+        }
+
+        .nav-label {
+            font-size: 10px;
+            color: var(--fg-subtle);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="dynamic-island"></div>
+
+        <div class="status-bar">
+            <span>9:41</span>
+            <div style="display:flex;gap:4px;align-items:center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+        </div>
+
+        <header class="header">
+            <div class="header-top">
+                <div class="user-greeting">
+                    <div class="name">张班长</div>
+                    <div class="role">A班组组长 · 早班</div>
+                </div>
+                <div class="notification-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span class="notification-badge"></span>
+                </div>
+            </div>
+
+            <div class="quick-access">
+                <div class="quick-item">
+                    <div class="quick-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <line x1="9" y1="3" x2="9" y2="21"/>
+                        </svg>
+                    </div>
+                    <span class="quick-label">基础数据</span>
+                </div>
+                <div class="quick-item">
+                    <div class="quick-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                    </div>
+                    <span class="quick-label">工单</span>
+                </div>
+                <div class="quick-item">
+                    <div class="quick-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <circle cx="9" cy="9" r="2"/>
+                            <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                        </svg>
+                    </div>
+                    <span class="quick-label">质检看板</span>
+                </div>
+                <div class="quick-item">
+                    <div class="quick-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <span class="quick-label">历史记录</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="content">
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">待办事项</h2>
+                    <a href="#" class="section-more">查看全部</a>
+                </div>
+
+                <div class="todo-card urgent">
+                    <div class="todo-header">
+                        <span class="todo-type exception">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            异常待处理
+                        </span>
+                        <span class="todo-time">10分钟前</span>
+                    </div>
+                    <div class="todo-title">产线L3工作站传送带故障</div>
+                    <div class="todo-desc">3号柔性产线第5工作站检测到传送带速度异常</div>
+                    <div class="todo-meta">
+                        <span class="todo-meta-item">产线：<strong>L3柔性线</strong></span>
+                        <span class="todo-meta-item">工位：<strong>WS-05</strong></span>
+                    </div>
+                </div>
+
+                <div class="todo-card normal">
+                    <div class="todo-header">
+                        <span class="todo-type dispatch">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                            </svg>
+                            待派工
+                        </span>
+                        <span class="todo-time">30分钟前</span>
+                    </div>
+                    <div class="todo-title">WO-2024-0118 控制器组装工单</div>
+                    <div class="todo-desc">新产品试产批次，需指派熟练操作员</div>
+                    <div class="todo-meta">
+                        <span class="todo-meta-item">数量：<strong>200件</strong></span>
+                        <span class="todo-meta-item">计划：<strong>今天 14:00</strong></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">产线状态</h2>
+                    <a href="#" class="section-more">全部产线</a>
+                </div>
+
+                <div class="line-grid">
+                    <div class="line-card">
+                        <div class="line-card-header">
+                            <span class="line-name">L1 柔性线</span>
+                            <span class="line-status running"></span>
+                        </div>
+                        <div class="line-stats">
+                            <div class="line-stat"><span class="line-stat-label">当前工单</span><span class="line-stat-value">WO-0116</span></div>
+                            <div class="line-stat"><span class="line-stat-label">完成进度</span><span class="line-stat-value">78%</span></div>
+                            <div class="line-stat"><span class="line-stat-label">良品率</span><span class="line-stat-value">98.5%</span></div>
+                        </div>
+                    </div>
+                    <div class="line-card">
+                        <div class="line-card-header">
+                            <span class="line-name">L2 柔性线</span>
+                            <span class="line-status running"></span>
+                        </div>
+                        <div class="line-stats">
+                            <div class="line-stat"><span class="line-stat-label">当前工单</span><span class="line-stat-value">WO-0115</span></div>
+                            <div class="line-stat"><span class="line-stat-label">完成进度</span><span class="line-stat-value">45%</span></div>
+                            <div class="line-stat"><span class="line-stat-label">良品率</span><span class="line-stat-value">97.2%</span></div>
+                        </div>
+                    </div>
+                    <div class="line-card">
+                        <div class="line-card-header">
+                            <span class="line-name">L3 柔性线</span>
+                            <span class="line-status error"></span>
+                        </div>
+                        <div class="line-stats">
+                            <div class="line-stat"><span class="line-stat-label">当前工单</span><span class="line-stat-value">WO-0114</span></div>
+                            <div class="line-stat"><span class="line-stat-label">状态</span><span class="line-stat-value" style="color:var(--error)">故障</span></div>
+                            <div class="line-stat"><span class="line-stat-label">故障点</span><span class="line-stat-value">WS-05</span></div>
+                        </div>
+                    </div>
+                    <div class="line-card">
+                        <div class="line-card-header">
+                            <span class="line-name">L4 柔性线</span>
+                            <span class="line-status idle"></span>
+                        </div>
+                        <div class="line-stats">
+                            <div class="line-stat"><span class="line-stat-label">当前工单</span><span class="line-stat-value">—</span></div>
+                            <div class="line-stat"><span class="line-stat-label">状态</span><span class="line-stat-value">待机</span></div>
+                            <div class="line-stat"><span class="line-stat-label">上次运行</span><span class="line-stat-value">2h前</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span class="nav-label">工作台</span>
+            </div>
+            <div class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <line x1="9" y1="3" x2="9" y2="21"/>
+                </svg>
+                <span class="nav-label">数据</span>
+            </div>
+            <div class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span class="nav-label">工单</span>
+            </div>
+            <div class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span class="nav-label">我的</span>
+            </div>
+        </nav>
+    </div>
+</body>
+</html>

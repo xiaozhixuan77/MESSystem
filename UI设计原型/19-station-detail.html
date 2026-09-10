@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=393, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>工作站详情 - SMT贴片</title>
+    <style>
+        :root {
+            --primary: #1565C0;
+            --primary-light: #42A5F5;
+            --primary-dark: #0D47A1;
+            --primary-subtle: #E3F2FD;
+            --bg: #F5F7FA;
+            --surface: #FFFFFF;
+            --fg: #1A1A2E;
+            --fg-muted: #5A5A6E;
+            --fg-subtle: #9A9AA8;
+            --border: #E8EBF0;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --font-sans: -apple-system, BlinkMacSystemFont, 'HarmonyOS Sans', 'PingFang SC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .device-frame {
+            width: 393px;
+            height: 852px;
+            background: var(--bg);
+            border-radius: 40px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4), inset 0 0 0 8px #1a1a1a;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dynamic-island {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 34px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 1000;
+        }
+
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 54px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 14px 28px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: white;
+            z-index: 100;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 70px 16px 16px;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.15);
+            cursor: pointer;
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        .station-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            flex: 1;
+        }
+
+        .station-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(76,175,80,0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #81C784;
+            font-weight: 500;
+        }
+
+        .station-status svg {
+            width: 8px;
+            height: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .station-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.85);
+        }
+
+        .station-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .station-meta-item svg {
+            width: 14px;
+            height: 14px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* 操作按钮 */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            border: none;
+        }
+
+        .action-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.95);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-icon svg {
+            width: 16px;
+            height: 16px;
+            color: var(--primary);
+        }
+
+        .action-label {
+            font-size: 10px;
+            color: white;
+            font-weight: 500;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 20px;
+        }
+
+        .content::-webkit-scrollbar { display: none; }
+
+        .section { margin-bottom: 16px; }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 12px;
+        }
+
+        /* 设备状态 */
+        .device-status-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 12px;
+        }
+
+        .device-status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .device-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .device-state {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        .device-state svg {
+            width: 8px;
+            height: 8px;
+        }
+
+        .device-state.running svg { color: var(--success); }
+
+        .device-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .device-metric {
+            text-align: center;
+            padding: 10px 4px;
+            background: var(--bg);
+            border-radius: var(--radius-md);
+        }
+
+        .device-metric-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--fg);
+            margin-bottom: 2px;
+        }
+
+        .device-metric-label {
+            font-size: 10px;
+            color: var(--fg-muted);
+        }
+
+        /* 传送带状态 */
+        .conveyor-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 12px;
+        }
+
+        .conveyor-visual {
+            height: 40px;
+            background: var(--bg);
+            border-radius: var(--radius-md);
+            position: relative;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .conveyor-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--border);
+            transform: translateY(-50%);
+        }
+
+        .conveyor-items {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 20px;
+            animation: conveyor-move 3s linear infinite;
+        }
+
+        @keyframes conveyor-move {
+            0% { left: -40px; }
+            100% { left: 100%; }
+        }
+
+        .conveyor-item {
+            width: 24px;
+            height: 24px;
+            background: var(--primary-light);
+            border-radius: var(--radius-sm);
+            flex-shrink: 0;
+        }
+
+        .conveyor-item.ng {
+            background: var(--error);
+        }
+
+        .conveyor-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--fg-muted);
+        }
+
+        /* 计数器 */
+        .counter-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .counter-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px 8px;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+
+        .counter-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+        }
+
+        .counter-icon.raw { background: var(--primary-subtle); }
+        .counter-icon.raw svg { color: var(--primary); }
+        .counter-icon.good { background: #E8F5E9; }
+        .counter-icon.good svg { color: var(--success); }
+        .counter-icon.ng { background: #FFEBEE; }
+        .counter-icon.ng svg { color: var(--error); }
+
+        .counter-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .counter-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--fg);
+            margin-bottom: 4px;
+        }
+
+        .counter-label {
+            font-size: 11px;
+            color: var(--fg-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="dynamic-island"></div>
+
+        <div class="status-bar">
+            <span>9:41</span>
+            <div style="display:flex;gap:4px;align-items:center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+        </div>
+
+        <header class="header">
+            <div class="header-top">
+                <div class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5m7 7l-7-7 7-7"/>
+                    </svg>
+                </div>
+                <h1 class="station-title">SMT贴片工作站</h1>
+                <div class="station-status">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                    运行中
+                </div>
+            </div>
+            <div class="station-meta">
+                <div class="station-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    </svg>
+                    L1 柔性线 · 工位2
+                </div>
+                <div class="station-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    王操作员
+                </div>
+            </div>
+
+            <div class="action-grid">
+                <div class="action-btn">
+                    <div class="action-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                    </div>
+                    <span class="action-label">启动</span>
+                </div>
+                <div class="action-btn">
+                    <div class="action-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="6" y="4" width="4" height="16"/>
+                            <rect x="14" y="4" width="4" height="16"/>
+                        </svg>
+                    </div>
+                    <span class="action-label">停止</span>
+                </div>
+                <div class="action-btn">
+                    <div class="action-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                    </div>
+                    <span class="action-label">复位</span>
+                </div>
+                <div class="action-btn">
+                    <div class="action-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <span class="action-label">异常</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="content">
+            <div class="section">
+                <h2 class="section-title">设备状态</h2>
+                <div class="device-status-card">
+                    <div class="device-status-header">
+                        <span class="device-name">自动贴片机 SPM-2000</span>
+                        <span class="device-state running">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                            运行正常
+                        </span>
+                    </div>
+                    <div class="device-metrics">
+                        <div class="device-metric">
+                            <div class="device-metric-value">2,400</div>
+                            <div class="device-metric-label">转速 RPM</div>
+                        </div>
+                        <div class="device-metric">
+                            <div class="device-metric-value">45°C</div>
+                            <div class="device-metric-label">温度</div>
+                        </div>
+                        <div class="device-metric">
+                            <div class="device-metric-value">98%</div>
+                            <div class="device-metric-label">稼动率</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="device-status-card">
+                    <div class="device-status-header">
+                        <span class="device-name">供料器 Feeder-01</span>
+                        <span class="device-state running">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                            正常
+                        </span>
+                    </div>
+                    <div class="device-metrics">
+                        <div class="device-metric">
+                            <div class="device-metric-value">1,200</div>
+                            <div class="device-metric-label">剩余料数</div>
+                        </div>
+                        <div class="device-metric">
+                            <div class="device-metric-value">85%</div>
+                            <div class="device-metric-label">料带进度</div>
+                        </div>
+                        <div class="device-metric">
+                            <div class="device-metric-value">12</div>
+                            <div class="device-metric-label">料站数</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">传送带状态</h2>
+                <div class="conveyor-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 14px; font-weight: 600; color: var(--fg);">主传送带</span>
+                        <span style="font-size: 12px; color: var(--success); font-weight: 600;">运行中</span>
+                    </div>
+                    <div class="conveyor-visual">
+                        <div class="conveyor-track"></div>
+                        <div class="conveyor-items">
+                            <div class="conveyor-item"></div>
+                            <div class="conveyor-item"></div>
+                            <div class="conveyor-item ng"></div>
+                            <div class="conveyor-item"></div>
+                        </div>
+                    </div>
+                    <div class="conveyor-info">
+                        <span>速度：0.5m/s</span>
+                        <span>方向：正向</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">产出统计</h2>
+                <div class="counter-grid">
+                    <div class="counter-card">
+                        <div class="counter-icon raw">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            </svg>
+                        </div>
+                        <div class="counter-value">200</div>
+                        <div class="counter-label">来料数</div>
+                    </div>
+                    <div class="counter-card">
+                        <div class="counter-icon good">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                        <div class="counter-value" style="color: var(--success)">196</div>
+                        <div class="counter-label">良品数</div>
+                    </div>
+                    <div class="counter-card">
+                        <div class="counter-icon ng">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </div>
+                        <div class="counter-value" style="color: var(--error)">4</div>
+                        <div class="counter-label">不良数</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=393, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>人员管理</title>
+    <style>
+        :root {
+            --primary: #1565C0;
+            --primary-light: #42A5F5;
+            --primary-dark: #0D47A1;
+            --primary-subtle: #E3F2FD;
+            --bg: #F5F7FA;
+            --surface: #FFFFFF;
+            --fg: #1A1A2E;
+            --fg-muted: #5A5A6E;
+            --fg-subtle: #9A9AA8;
+            --border: #E8EBF0;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --font-sans: -apple-system, BlinkMacSystemFont, 'HarmonyOS Sans', 'PingFang SC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .device-frame {
+            width: 393px;
+            height: 852px;
+            background: var(--bg);
+            border-radius: 40px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4), inset 0 0 0 8px #1a1a1a;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dynamic-island {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 34px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 1000;
+        }
+
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 54px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 14px 28px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+            z-index: 100;
+        }
+
+        .page-header {
+            background: var(--surface);
+            padding: 70px 16px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: var(--fg);
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--fg);
+            flex: 1;
+        }
+
+        .add-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .add-btn svg {
+            width: 18px;
+            height: 18px;
+            color: white;
+        }
+
+        /* 搜索栏 */
+        .search-bar {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-wrapper svg {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: var(--fg-subtle);
+        }
+
+        .search-input {
+            width: 100%;
+            height: 40px;
+            padding: 0 16px 0 40px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--fg);
+            background: var(--bg);
+        }
+
+        .search-input::placeholder {
+            color: var(--fg-subtle);
+        }
+
+        /* 角色标签 */
+        .role-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .role-tabs::-webkit-scrollbar { display: none; }
+
+        .role-tab {
+            padding: 6px 14px;
+            background: var(--bg);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--fg-muted);
+            white-space: nowrap;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .role-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* 内容区 */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px 20px;
+        }
+
+        .content::-webkit-scrollbar { display: none; }
+
+        /* 人员卡片 */
+        .employee-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .employee-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .employee-avatar.operator {
+            background: linear-gradient(135deg, #66BB6A, var(--success));
+        }
+
+        .employee-avatar.inspector {
+            background: linear-gradient(135deg, #FFA726, var(--warning));
+        }
+
+        .employee-avatar.admin {
+            background: linear-gradient(135deg, #EF5350, var(--error));
+        }
+
+        .employee-info {
+            flex: 1;
+        }
+
+        .employee-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 2px;
+        }
+
+        .employee-meta {
+            font-size: 12px;
+            color: var(--fg-muted);
+        }
+
+        .employee-role {
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .employee-role.leader {
+            background: var(--primary-subtle);
+            color: var(--primary);
+        }
+
+        .employee-role.operator {
+            background: #E8F5E9;
+            color: var(--success);
+        }
+
+        .employee-role.inspector {
+            background: #FFF3E0;
+            color: var(--warning);
+        }
+
+        .employee-role.admin {
+            background: #FFEBEE;
+            color: var(--error);
+        }
+
+        /* 底部导航 */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 28px;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 4px 16px;
+            cursor: pointer;
+        }
+
+        .nav-item.active .nav-icon { color: var(--primary); }
+        .nav-item.active .nav-label { color: var(--primary); }
+
+        .nav-icon {
+            width: 22px;
+            height: 22px;
+            color: var(--fg-subtle);
+        }
+
+        .nav-label {
+            font-size: 10px;
+            color: var(--fg-subtle);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="dynamic-island"></div>
+
+        <div class="status-bar">
+            <span>9:41</span>
+            <div style="display:flex;gap:4px;align-items:center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+        </div>
+
+        <div class="page-header">
+            <div class="header-top">
+                <div class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5m7 7l-7-7 7-7"/>
+                    </svg>
+                </div>
+                <h1 class="page-title">人员管理</h1>
+                <div class="add-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="search-bar">
+                <div class="search-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="搜索姓名或工号">
+                </div>
+            </div>
+        </div>
+
+        <div class="role-tabs">
+            <div class="role-tab active">全部</div>
+            <div class="role-tab">班组长</div>
+            <div class="role-tab">操作员</div>
+            <div class="role-tab">质检员</div>
+            <div class="role-tab">管理员</div>
+        </div>
+
+        <main class="content">
+            <div class="employee-card">
+                <div class="employee-avatar admin">刘</div>
+                <div class="employee-info">
+                    <div class="employee-name">刘管理员</div>
+                    <div class="employee-meta">工号：AD001 · 系统部</div>
+                </div>
+                <span class="employee-role admin">管理员</span>
+            </div>
+
+            <div class="employee-card">
+                <div class="employee-avatar">张</div>
+                <div class="employee-info">
+                    <div class="employee-name">张班长</div>
+                    <div class="employee-meta">工号：LE001 · A班组 · 早班</div>
+                </div>
+                <span class="employee-role leader">班组长</span>
+            </div>
+
+            <div class="employee-card">
+                <div class="employee-avatar operator">王</div>
+                <div class="employee-info">
+                    <div class="employee-name">王操作员</div>
+                    <div class="employee-meta">工号：OP001 · A班组 · WS-03</div>
+                </div>
+                <span class="employee-role operator">操作员</span>
+            </div>
+
+            <div class="employee-card">
+                <div class="employee-avatar operator">李</div>
+                <div class="employee-info">
+                    <div class="employee-name">李操作员</div>
+                    <div class="employee-meta">工号：OP002 · A班组 · WS-05</div>
+                </div>
+                <span class="employee-role operator">操作员</span>
+            </div>
+
+            <div class="employee-card">
+                <div class="employee-avatar operator">赵</div>
+                <div class="employee-info">
+                    <div class="employee-name">赵操作员</div>
+                    <div class="employee-meta">工号：OP003 · B班组 · WS-02</div>
+                </div>
+                <span class="employee-role operator">操作员</span>
+            </div>
+
+            <div class="employee-card">
+                <div class="employee-avatar inspector">李</div>
+                <div class="employee-info">
+                    <div class="employee-name">李质检员</div>
+                    <div class="employee-meta">工号：IN001 · 质检部</div>
+                </div>
+                <span class="employee-role inspector">质检员</span>
+            </div>
+
+            <div class="employee-card">
+                <div class="employee-avatar inspector">陈</div>
+                <div class="employee-info">
+                    <div class="employee-name">陈质检员</div>
+                    <div class="employee-meta">工号：IN002 · 质检部</div>
+                </div>
+                <span class="employee-role inspector">质检员</span>
+            </div>
+        </main>
+
+        <nav class="bottom-nav">
+            <div class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span class="nav-label">工作台</span>
+            </div>
+            <div class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <line x1="9" y1="3" x2="9" y2="21"/>
+                </svg>
+                <span class="nav-label">数据</span>
+            </div>
+            <div class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span class="nav-label">工单</span>
+            </div>
+            <div class="nav-item active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span class="nav-label">我的</span>
+            </div>
+        </nav>
+    </div>
+</body>
+</html>

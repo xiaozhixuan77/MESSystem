@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=393, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>工单详情 - 已派工</title>
+    <style>
+        :root {
+            --primary: #1565C0;
+            --primary-light: #42A5F5;
+            --primary-dark: #0D47A1;
+            --primary-subtle: #E3F2FD;
+            --bg: #F5F7FA;
+            --surface: #FFFFFF;
+            --fg: #1A1A2E;
+            --fg-muted: #5A5A6E;
+            --fg-subtle: #9A9AA8;
+            --border: #E8EBF0;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --font-sans: -apple-system, BlinkMacSystemFont, 'HarmonyOS Sans', 'PingFang SC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .device-frame {
+            width: 393px;
+            height: 852px;
+            background: var(--bg);
+            border-radius: 40px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4), inset 0 0 0 8px #1a1a1a;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dynamic-island {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 34px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 1000;
+        }
+
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 54px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 14px 28px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+            z-index: 100;
+        }
+
+        .page-header {
+            background: var(--surface);
+            padding: 70px 16px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: var(--fg);
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--fg);
+            flex: 1;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 100px;
+        }
+
+        .content::-webkit-scrollbar { display: none; }
+
+        .status-card {
+            background: linear-gradient(135deg, var(--success) 0%, #2E7D32 100%);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .wo-code {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .wo-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .wo-product {
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        .info-section {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: var(--fg-subtle);
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .operator-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--primary-subtle);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--primary-light);
+        }
+
+        .operator-avatar-large {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .operator-details {
+            flex: 1;
+        }
+
+        .operator-name-large {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--fg);
+            margin-bottom: 4px;
+        }
+
+        .operator-id {
+            font-size: 13px;
+            color: var(--fg-muted);
+            margin-bottom: 4px;
+        }
+
+        .operator-team {
+            font-size: 12px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .dispatch-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border);
+            font-size: 12px;
+            color: var(--fg-muted);
+        }
+
+        .dispatch-info svg {
+            width: 14px;
+            height: 14px;
+            color: var(--success);
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            position: relative;
+        }
+
+        .timeline-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 36px;
+            width: 2px;
+            height: calc(100% - 24px);
+            background: var(--border);
+        }
+
+        .timeline-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        .timeline-dot.completed {
+            background: var(--success);
+        }
+
+        .timeline-dot.pending {
+            background: var(--border);
+        }
+
+        .timeline-dot svg {
+            width: 12px;
+            height: 12px;
+            color: white;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 2px;
+        }
+
+        .timeline-time {
+            font-size: 12px;
+            color: var(--fg-subtle);
+        }
+
+        .process-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .process-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .process-item:last-child {
+            border-bottom: none;
+        }
+
+        .process-index {
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .process-content {
+            flex: 1;
+        }
+
+        .process-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 2px;
+        }
+
+        .process-desc {
+            font-size: 12px;
+            color: var(--fg-muted);
+        }
+
+        .action-tip {
+            background: var(--bg);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--fg-muted);
+        }
+
+        .action-tip svg {
+            width: 18px;
+            height: 18px;
+            color: var(--primary);
+            flex-shrink: 0;
+        }
+
+        .bottom-actions {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 12px 16px 28px;
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .btn {
+            height: 46px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            background: var(--bg);
+            color: var(--fg);
+        }
+
+        .btn-primary {
+            flex: 2;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="dynamic-island"></div>
+
+        <div class="status-bar">
+            <span>9:41</span>
+            <div style="display:flex;gap:4px;align-items:center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+        </div>
+
+        <div class="page-header">
+            <div class="back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5m7 7l-7-7 7-7"/>
+                </svg>
+            </div>
+            <h1 class="page-title">工单详情</h1>
+        </div>
+
+        <main class="content">
+            <div class="status-card">
+                <div class="status-header">
+                    <div class="status-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        已派工
+                    </div>
+                    <span class="wo-code">WO-2024-0118</span>
+                </div>
+                <div class="wo-title">控制器主板组装</div>
+                <div class="wo-product">SMT贴片工序 · PCB-CTRL-V2.1</div>
+            </div>
+
+            <div class="info-section">
+                <h2 class="section-title">派工信息</h2>
+                <div class="operator-card">
+                    <div class="operator-avatar-large">王</div>
+                    <div class="operator-details">
+                        <div class="operator-name-large">王操作员</div>
+                        <div class="operator-id">工号：OP001</div>
+                        <div class="operator-team">A班组 · 装配一车间</div>
+                    </div>
+                </div>
+                <div class="dispatch-info">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    派工时间：2024-01-18 09:30
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2 class="section-title">状态时间线</h2>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-dot completed">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">工单创建</div>
+                            <div class="timeline-time">2024-01-18 08:00</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot completed">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">工单派工</div>
+                            <div class="timeline-time">2024-01-18 09:30 · 班组长 张组长</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot pending"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-title" style="color:var(--fg-subtle)">开始生产</div>
+                            <div class="timeline-time">等待操作员开始...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2 class="section-title">工单信息</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">计划数量</span>
+                        <span class="info-value">200 件</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">计划工时</span>
+                        <span class="info-value">4 小时</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">计划开始</span>
+                        <span class="info-value">今天 14:00</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">计划完成</span>
+                        <span class="info-value">今天 18:00</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">产线</span>
+                        <span class="info-value">L1 柔性线</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">优先级</span>
+                        <span class="info-value" style="color: var(--warning)">高</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2 class="section-title">工艺流程</h2>
+                <div class="process-flow">
+                    <div class="process-item">
+                        <div class="process-index">1</div>
+                        <div class="process-content">
+                            <div class="process-name">SMT贴片</div>
+                            <div class="process-desc">预计 2小时 · 自动贴片机</div>
+                        </div>
+                    </div>
+                    <div class="process-item">
+                        <div class="process-index">2</div>
+                        <div class="process-content">
+                            <div class="process-name">回流焊</div>
+                            <div class="process-desc">预计 0.5小时 · 回流炉</div>
+                        </div>
+                    </div>
+                    <div class="process-item">
+                        <div class="process-index">3</div>
+                        <div class="process-content">
+                            <div class="process-name">AOI检测</div>
+                            <div class="process-desc">预计 0.5小时 · 自动光学检测</div>
+                        </div>
+                    </div>
+                    <div class="process-item">
+                        <div class="process-index">4</div>
+                        <div class="process-content">
+                            <div class="process-name">功能测试</div>
+                            <div class="process-desc">预计 1小时 · 测试工位</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-tip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4M12 8h.01"/>
+                </svg>
+                操作员开始生产后，工单状态将变为"生产中"
+            </div>
+        </main>
+
+        <div class="bottom-actions">
+            <button class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                编辑
+            </button>
+            <button class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                查看详情
+            </button>
+        </div>
+    </div>
+</body>
+</html>

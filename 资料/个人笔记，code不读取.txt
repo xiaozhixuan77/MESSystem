@@ -1,0 +1,9 @@
+docker-compose up -d --build backend
+docker-compose restart backend
+docker-compose logs -f backend （日志）
+ 外部 Broker ？以后要不要做多实例部署
+P4完成要修复的问题：
+1.实时更新问题，工单列表不能实时更新，每次修改工单状态后返回到工单列表依然是旧数据旧状态。
+2.修改和复制工单时，工单编号没有传过来，产线显示为空。
+3.要添加一个删除工单的按钮，同时工单为完工和报废才能删除。
+4.工单列表组件要占满除上下不可动的区域外的全部区域，不能只有有卡片的区域能活动。

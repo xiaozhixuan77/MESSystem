@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=393, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>质检看板</title>
+    <style>
+        :root {
+            --primary: #1565C0;
+            --primary-light: #42A5F5;
+            --primary-dark: #0D47A1;
+            --primary-subtle: #E3F2FD;
+            --bg: #F5F7FA;
+            --surface: #FFFFFF;
+            --fg: #1A1A2E;
+            --fg-muted: #5A5A6E;
+            --fg-subtle: #9A9AA8;
+            --border: #E8EBF0;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+            --teal: #00897B;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --font-sans: -apple-system, BlinkMacSystemFont, 'HarmonyOS Sans', 'PingFang SC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .device-frame {
+            width: 393px;
+            height: 852px;
+            background: var(--bg);
+            border-radius: 40px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4), inset 0 0 0 8px #1a1a1a;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dynamic-island {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 34px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 1000;
+        }
+
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 54px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 14px 28px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: white;
+            z-index: 100;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 70px 16px 20px;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.15);
+            cursor: pointer;
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            flex: 1;
+        }
+
+        .header-date {
+            font-size: 13px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* KPI 卡片 */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .kpi-card {
+            background: rgba(255,255,255,0.12);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 6px;
+        }
+
+        .kpi-trend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .kpi-trend svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 20px;
+        }
+
+        .content::-webkit-scrollbar { display: none; }
+
+        .section { margin-bottom: 16px; }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-more {
+            font-size: 12px;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* 图表卡片 */
+        .chart-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 12px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: var(--fg-muted);
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+
+        .legend-dot.plan { background: var(--primary-light); }
+        .legend-dot.actual { background: var(--success); }
+
+        /* 柱状图 Canvas */
+        .chart-canvas {
+            width: 100%;
+            height: 160px;
+        }
+
+        /* 质检统计 */
+        .quality-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .quality-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 14px 8px;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+
+        .quality-ring {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 8px;
+            position: relative;
+        }
+
+        .quality-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .ring-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--fg);
+        }
+
+        .quality-label {
+            font-size: 11px;
+            color: var(--fg-muted);
+        }
+
+        /* 不良类型排行 */
+        .defect-list {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .defect-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .defect-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .defect-rank {
+            width: 24px;
+            height: 24px;
+            background: var(--bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--fg-muted);
+        }
+
+        .defect-rank.top {
+            background: var(--error);
+            color: white;
+        }
+
+        .defect-info {
+            flex: 1;
+        }
+
+        .defect-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 2px;
+        }
+
+        .defect-bar-bg {
+            height: 6px;
+            background: var(--bg);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .defect-bar-fill {
+            height: 100%;
+            background: var(--error);
+            border-radius: 3px;
+        }
+
+        .defect-count {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--fg-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="dynamic-island"></div>
+
+        <div class="status-bar">
+            <span>9:41</span>
+            <div style="display:flex;gap:4px;align-items:center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+        </div>
+
+        <header class="header">
+            <div class="header-top">
+                <div class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5m7 7l-7-7 7-7"/>
+                    </svg>
+                </div>
+                <h1 class="page-title">质检看板</h1>
+            </div>
+            <div class="header-date">2024年1月 · 本月数据概览</div>
+
+            <div class="kpi-grid" style="margin-top: 16px;">
+                <div class="kpi-card">
+                    <div class="kpi-label">抽检总数</div>
+                    <div class="kpi-value">328</div>
+                    <div class="kpi-trend">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                        </svg>
+                        ↑ 12% 较上月
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">一次合格率</div>
+                    <div class="kpi-value">97.8%</div>
+                    <div class="kpi-trend">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+                        </svg>
+                        ↓ 0.3% 较上月
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">不良品数</div>
+                    <div class="kpi-value">7</div>
+                    <div class="kpi-trend">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+                        </svg>
+                        ↓ 2 较上月
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">待抽检工单</div>
+                    <div class="kpi-value">5</div>
+                    <div class="kpi-trend">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                        </svg>
+                        实时更新
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="content">
+            <div class="section">
+                <div class="section-title">
+                    <span>本月计划达成率趋势</span>
+                    <span class="section-more">查看更多</span>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <span class="chart-title">计划 vs 实际产量</span>
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <div class="legend-dot plan"></div>
+                                计划
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot actual"></div>
+                                实际
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="trendChart" class="chart-canvas" width="345" height="160"></canvas>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">工序合格率</div>
+                <div class="quality-stats">
+                    <div class="quality-card">
+                        <div class="quality-ring">
+                            <svg width="50" height="50" viewBox="0 0 50 50">
+                                <circle cx="25" cy="25" r="20" fill="none" stroke="var(--border)" stroke-width="5"/>
+                                <circle cx="25" cy="25" r="20" fill="none" stroke="var(--success)" stroke-width="5"
+                                    stroke-dasharray="125.6" stroke-dashoffset="6.3" stroke-linecap="round"/>
+                            </svg>
+                            <div class="ring-value">95%</div>
+                        </div>
+                        <div class="quality-label">SMT贴片</div>
+                    </div>
+                    <div class="quality-card">
+                        <div class="quality-ring">
+                            <svg width="50" height="50" viewBox="0 0 50 50">
+                                <circle cx="25" cy="25" r="20" fill="none" stroke="var(--border)" stroke-width="5"/>
+                                <circle cx="25" cy="25" r="20" fill="none" stroke="var(--success)" stroke-width="5"
+                                    stroke-dasharray="125.6" stroke-dashoffset="3.8" stroke-linecap="round"/>
+                            </svg>
+                            <div class="ring-value">97%</div>
+                        </div>
+                        <div class="quality-label">回流焊</div>
+                    </div>
+                    <div class="quality-card">
+                        <div class="quality-ring">
+                            <svg width="50" height="50" viewBox="0 0 50 50">
+                                <circle cx="25" cy="25" r="20" fill="none" stroke="var(--border)" stroke-width="5"/>
+                                <circle cx="25" cy="25" r="20" fill="none" stroke="var(--primary)" stroke-width="5"
+                                    stroke-dasharray="125.6" stroke-dashoffset="12.6" stroke-linecap="round"/>
+                            </svg>
+                            <div class="ring-value">90%</div>
+                        </div>
+                        <div class="quality-label">功能测试</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">常见不良类型 TOP5</div>
+                <div class="defect-list">
+                    <div class="defect-item">
+                        <div class="defect-rank top">1</div>
+                        <div class="defect-info">
+                            <div class="defect-name">外观缺陷</div>
+                            <div class="defect-bar-bg">
+                                <div class="defect-bar-fill" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        <div class="defect-count">12</div>
+                    </div>
+                    <div class="defect-item">
+                        <div class="defect-rank top">2</div>
+                        <div class="defect-info">
+                            <div class="defect-name">尺寸偏差</div>
+                            <div class="defect-bar-bg">
+                                <div class="defect-bar-fill" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <div class="defect-count">9</div>
+                    </div>
+                    <div class="defect-item">
+                        <div class="defect-rank">3</div>
+                        <div class="defect-info">
+                            <div class="defect-name">功能失效</div>
+                            <div class="defect-bar-bg">
+                                <div class="defect-bar-fill" style="width: 40%"></div>
+                            </div>
+                        </div>
+                        <div class="defect-count">6</div>
+                    </div>
+                    <div class="defect-item">
+                        <div class="defect-rank">4</div>
+                        <div class="defect-info">
+                            <div class="defect-name">装配不良</div>
+                            <div class="defect-bar-bg">
+                                <div class="defect-bar-fill" style="width: 27%"></div>
+                            </div>
+                        </div>
+                        <div class="defect-count">4</div>
+                    </div>
+                    <div class="defect-item">
+                        <div class="defect-rank">5</div>
+                        <div class="defect-info">
+                            <div class="defect-name">焊接不良</div>
+                            <div class="defect-bar-bg">
+                                <div class="defect-bar-fill" style="width: 13%"></div>
+                            </div>
+                        </div>
+                        <div class="defect-count">2</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 绘制柱状图
+        const canvas = document.getElementById('trendChart');
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = 345 * dpr;
+        canvas.height = 160 * dpr;
+        ctx.scale(dpr, dpr);
+
+        const width = 345;
+        const height = 160;
+        const padding = { top: 10, right: 10, bottom: 30, left: 40 };
+        const chartW = width - padding.left - padding.right;
+        const chartH = height - padding.top - padding.bottom;
+
+        const labels = ['1日', '5日', '10日', '15日', '20日', '25日', '30日'];
+        const planData = [180, 200, 190, 210, 200, 220, 200];
+        const actualData = [175, 198, 188, 208, 195, 218, 196];
+        const maxVal = 250;
+
+        // 绘制坐标轴
+        ctx.strokeStyle = '#E8EBF0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, padding.top);
+        ctx.lineTo(padding.left, height - padding.bottom);
+        ctx.lineTo(width - padding.right, height - padding.bottom);
+        ctx.stroke();
+
+        // Y轴刻度
+        ctx.fillStyle = '#9A9AA8';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'right';
+        for (let i = 0; i <= 5; i++) {
+            const y = padding.top + chartH - (i / 5) * chartH;
+            ctx.fillText((i * 50).toString(), padding.left - 6, y + 3);
+            if (i > 0) {
+                ctx.strokeStyle = '#F5F7FA';
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+            }
+        }
+
+        // X轴标签
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#9A9AA8';
+        const barGroupW = chartW / labels.length;
+        labels.forEach((label, i) => {
+            const x = padding.left + i * barGroupW + barGroupW / 2;
+            ctx.fillText(label, x, height - padding.bottom + 16);
+        });
+
+        // 绘制柱状图
+        const barW = barGroupW * 0.3;
+        const gap = 4;
+
+        labels.forEach((_, i) => {
+            const x = padding.left + i * barGroupW + (barGroupW - barW * 2 - gap) / 2;
+
+            // 计划值
+            const planH = (planData[i] / maxVal) * chartH;
+            ctx.fillStyle = '#42A5F5';
+            ctx.fillRect(x, padding.top + chartH - planH, barW, planH);
+
+            // 实际值
+            const actualH = (actualData[i] / maxVal) * chartH;
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(x + barW + gap, padding.top + chartH - actualH, barW, actualH);
+        });
+    </script>
+</body>
+</html>

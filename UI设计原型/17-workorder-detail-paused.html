@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=393, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>工单详情 - 暂停中</title>
+    <style>
+        :root {
+            --primary: #1565C0;
+            --primary-light: #42A5F5;
+            --primary-dark: #0D47A1;
+            --primary-subtle: #E3F2FD;
+            --bg: #F5F7FA;
+            --surface: #FFFFFF;
+            --fg: #1A1A2E;
+            --fg-muted: #5A5A6E;
+            --fg-subtle: #9A9AA8;
+            --border: #E8EBF0;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --font-sans: -apple-system, BlinkMacSystemFont, 'HarmonyOS Sans', 'PingFang SC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .device-frame {
+            width: 393px;
+            height: 852px;
+            background: var(--bg);
+            border-radius: 40px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4), inset 0 0 0 8px #1a1a1a;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dynamic-island {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 34px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 1000;
+        }
+
+        .status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 54px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 14px 28px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+            z-index: 100;
+        }
+
+        .page-header {
+            background: var(--surface);
+            padding: 70px 16px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+        }
+
+        .back-btn svg { width: 20px; height: 20px; color: var(--fg); }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--fg);
+            flex: 1;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 100px;
+        }
+
+        .content::-webkit-scrollbar { display: none; }
+
+        .status-card {
+            background: linear-gradient(135deg, var(--warning) 0%, #E65100 100%);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .wo-code { font-size: 13px; opacity: 0.9; }
+        .wo-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .wo-product { font-size: 13px; opacity: 0.85; }
+
+        .pause-banner {
+            background: rgba(255,255,255,0.15);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            margin-top: 14px;
+        }
+
+        .pause-title {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-bottom: 6px;
+        }
+
+        .pause-reason {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .pause-time {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        .info-section {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: var(--fg-subtle);
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .progress-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .progress-card {
+            background: var(--bg);
+            border-radius: var(--radius-md);
+            padding: 14px 8px;
+            text-align: center;
+        }
+
+        .progress-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--fg);
+            margin-bottom: 4px;
+        }
+
+        .progress-label {
+            font-size: 10px;
+            color: var(--fg-muted);
+        }
+
+        .exception-alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px;
+            background: #FFEBEE;
+            border-radius: var(--radius-md);
+            border: 1px solid #FFCDD2;
+        }
+
+        .exception-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--error);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .exception-icon svg {
+            width: 18px;
+            height: 18px;
+            color: white;
+        }
+
+        .exception-content { flex: 1; }
+
+        .exception-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--error);
+            margin-bottom: 4px;
+        }
+
+        .exception-desc {
+            font-size: 12px;
+            color: var(--fg-muted);
+            line-height: 1.5;
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding-left: 12px;
+            border-left: 2px solid var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: 10px 0 10px 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -17px;
+            top: 14px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--warning);
+            border: 2px solid var(--surface);
+        }
+
+        .timeline-item.completed::before { background: var(--success); }
+
+        .timeline-time {
+            font-size: 11px;
+            color: var(--fg-subtle);
+            margin-bottom: 2px;
+        }
+
+        .timeline-text {
+            font-size: 13px;
+            color: var(--fg);
+        }
+
+        .bottom-actions {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 12px 16px 28px;
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .btn {
+            height: 46px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            background: var(--bg);
+            color: var(--fg);
+        }
+
+        .btn-primary {
+            flex: 2;
+            background: linear-gradient(135deg, var(--success) 0%, #2E7D32 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            flex: 1;
+            background: linear-gradient(135deg, var(--error) 0%, #B71C1C 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="dynamic-island"></div>
+
+        <div class="status-bar">
+            <span>9:41</span>
+            <div style="display:flex;gap:4px;align-items:center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+        </div>
+
+        <div class="page-header">
+            <div class="back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5m7 7l-7-7 7-7"/>
+                </svg>
+            </div>
+            <h1 class="page-title">工单详情</h1>
+        </div>
+
+        <main class="content">
+            <div class="status-card">
+                <div class="status-header">
+                    <div class="status-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                            <rect x="6" y="4" width="4" height="16"/>
+                            <rect x="14" y="4" width="4" height="16"/>
+                        </svg>
+                        暂停中
+                    </div>
+                    <span class="wo-code">WO-2024-0115</span>
+                </div>
+                <div class="wo-title">电源模块测试</div>
+                <div class="wo-product">功能测试工序 · PWR-MOD-V1.2</div>
+
+                <div class="pause-banner">
+                    <div class="pause-title">暂停原因</div>
+                    <div class="pause-reason">设备故障 — 测试仪通信中断</div>
+                    <div class="pause-time">暂停时间：今天 11:20 · 已暂停 47 分钟</div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2 class="section-title">异常信息</h2>
+                <div class="exception-alert">
+                    <div class="exception-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <div class="exception-content">
+                        <div class="exception-title">测试工作站通信异常</div>
+                        <div class="exception-desc">测试仪与MES系统通信中断，已通知设备维护人员处理。建议检查网络连接及测试仪状态。</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2 class="section-title">当前进度</h2>
+                <div class="progress-summary">
+                    <div class="progress-card">
+                        <div class="progress-value">100</div>
+                        <div class="progress-label">计划数量</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="progress-value" style="color: var(--success)">96</div>
+                        <div class="progress-label">已完成</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="progress-value" style="color: var(--error)">4</div>
+                        <div class="progress-label">剩余</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2 class="section-title">工单信息</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">操作员</span>
+                        <span class="info-value">李操作员</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">产线</span>
+                        <span class="info-value">L2 测试线</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">实际开始</span>
+                        <span class="info-value">今天 08:00</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">良品率</span>
+                        <span class="info-value" style="color: var(--success)">98.2%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2 class="section-title">状态流转记录</h2>
+                <div class="timeline">
+                    <div class="timeline-item completed">
+                        <div class="timeline-time">今天 08:00</div>
+                        <div class="timeline-text">开始生产</div>
+                    </div>
+                    <div class="timeline-item completed">
+                        <div class="timeline-time">今天 10:30</div>
+                        <div class="timeline-text">已完成 96 件，进度正常</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">今天 11:20</div>
+                        <div class="timeline-text">设备故障，工单暂停</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">待处理</div>
+                        <div class="timeline-text">等待故障修复后恢复生产</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="bottom-actions">
+            <button class="btn btn-danger">报废</button>
+            <button class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                恢复生产
+            </button>
+        </div>
+    </div>
+</body>
+</html>

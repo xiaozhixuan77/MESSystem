@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸿蒙MES系统界面设计 - 设计稿预览</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'HarmonyOS Sans', 'PingFang SC', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 48px; }
+        .header h1 { font-size: 32px; font-weight: 700; color: white; margin-bottom: 8px; }
+        .header p { font-size: 16px; color: #9a9aa8; }
+        .section { margin-bottom: 48px; }
+        .section-title {
+            font-size: 20px; font-weight: 600; color: white;
+            margin-bottom: 24px; padding-left: 16px;
+            border-left: 4px solid #1565C0;
+        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .card {
+            background: #252538; border-radius: 16px; overflow: hidden;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none;
+        }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+        .card-preview {
+            height: 140px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 48px; color: white;
+        }
+        .card-preview.blue { background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%); }
+        .card-preview.purple { background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%); }
+        .card-preview.green { background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); }
+        .card-preview.orange { background: linear-gradient(135deg, #FF9800 0%, #E65100 100%); }
+        .card-preview.red { background: linear-gradient(135deg, #F44336 0%, #B71C1C 100%); }
+        .card-preview.teal { background: linear-gradient(135deg, #0097A7 0%, #006064 100%); }
+        .card-preview.cyan { background: linear-gradient(135deg, #00BCD4 0%, #00838F 100%); }
+        .card-info { padding: 16px; }
+        .card-title { font-size: 15px; font-weight: 600; color: white; margin-bottom: 4px; }
+        .card-desc { font-size: 12px; color: #9a9aa8; }
+        .specs {
+            background: #252538; border-radius: 16px;
+            padding: 24px; margin-bottom: 48px;
+        }
+        .specs h2 { font-size: 18px; font-weight: 600; color: white; margin-bottom: 16px; }
+        .specs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .spec-item { display: flex; flex-direction: column; gap: 4px; }
+        .spec-label { font-size: 12px; color: #9a9aa8; }
+        .spec-value { font-size: 14px; font-weight: 600; color: white; }
+        @media (max-width: 768px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>鸿蒙MES系统界面设计</h1>
+            <p>柔性组装制造执行系统 · 手机端393×852 · 21个核心页面</p>
+        </div>
+
+        <div class="specs">
+            <h2>设计规范</h2>
+            <div class="specs-grid">
+                <div class="spec-item"><span class="spec-label">设备尺寸</span><span class="spec-value">393 × 852 px（手机竖屏）</span></div>
+                <div class="spec-item"><span class="spec-label">主色调</span><span class="spec-value">#1565C0 钴蓝色</span></div>
+                <div class="spec-item"><span class="spec-label">系统字体</span><span class="spec-value">HarmonyOS Sans</span></div>
+                <div class="spec-item"><span class="spec-label">圆角规范</span><span class="spec-value">卡片16px / 按钮12px</span></div>
+                <div class="spec-item"><span class="spec-label">页面数量</span><span class="spec-value">21个核心页面</span></div>
+                <div class="spec-item"><span class="spec-label">支持角色</span><span class="spec-value">班组长/操作员/质检员/管理员</span></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">01 · 登录模块</h2>
+            <div class="grid">
+                <a href="01-login.html" class="card"><div class="card-preview blue">01</div><div class="card-info"><div class="card-title">登录页</div><div class="card-desc">账号密码登录、角色切换</div></div></a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">02-05 · 工作台首页（4个角色）</h2>
+            <div class="grid">
+                <a href="02-home-leader.html" class="card"><div class="card-preview blue">02</div><div class="card-info"><div class="card-title">班组长工作台</div><div class="card-desc">待办、产线状态、快捷入口</div></div></a>
+                <a href="03-home-operator.html" class="card"><div class="card-preview green">03</div><div class="card-info"><div class="card-title">操作员工作台</div><div class="card-desc">当前任务、扫码开工</div></div></a>
+                <a href="04-home-inspector.html" class="card"><div class="card-preview orange">04</div><div class="card-info"><div class="card-title">质检员工作台</div><div class="card-desc">KPI、待抽检、产线监控</div></div></a>
+                <a href="05-home-admin.html" class="card"><div class="card-preview red">05</div><div class="card-info"><div class="card-title">管理员工作台</div><div class="card-desc">全局KPI、异常告警</div></div></a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">06-08 · 工单管理与产线</h2>
+            <div class="grid">
+                <a href="06-workorder-list.html" class="card"><div class="card-preview blue">06</div><div class="card-info"><div class="card-title">工单列表</div><div class="card-desc">状态筛选、搜索、工单卡片</div></div></a>
+                <a href="07-workorder-detail-pending.html" class="card"><div class="card-preview blue">07</div><div class="card-info"><div class="card-title">工单详情-待派工</div><div class="card-desc">工艺流程、操作员选择、派工</div></div></a>
+                <a href="08-line-list.html" class="card"><div class="card-preview blue">08</div><div class="card-info"><div class="card-title">产线列表</div><div class="card-desc">4条产线状态、故障提醒</div></div></a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">09-12 · 产线执行与工单维护</h2>
+            <div class="grid">
+                <a href="09-line-detail.html" class="card"><div class="card-preview blue">09</div><div class="card-info"><div class="card-title">产线详情</div><div class="card-desc">整线控制、工作站列表、实时数据</div></div></a>
+                <a href="10-inspection-input.html" class="card"><div class="card-preview orange">10</div><div class="card-info"><div class="card-title">抽检录入</div><div class="card-desc">抽检数量、不良类型、备注</div></div></a>
+                <a href="11-employee-list.html" class="card"><div class="card-preview purple">11</div><div class="card-info"><div class="card-title">人员管理</div><div class="card-desc">按角色筛选、搜索、人员卡片</div></div></a>
+                <a href="12-workorder-add.html" class="card"><div class="card-preview blue">12</div><div class="card-info"><div class="card-title">新增/编辑工单</div><div class="card-desc">表单录入、工艺路线预览、复制</div></div></a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">13-17 · 工单状态详情（5个状态）</h2>
+            <div class="grid">
+                <a href="13-workorder-detail-assigned.html" class="card"><div class="card-preview purple">13</div><div class="card-info"><div class="card-title">已派工详情</div><div class="card-desc">派工信息、操作员、时间线</div></div></a>
+                <a href="14-workorder-detail-running.html" class="card"><div class="card-preview green">14</div><div class="card-info"><div class="card-title">生产中详情</div><div class="card-desc">进度环、实时产量、工作站状态</div></div></a>
+                <a href="15-workorder-detail-completed.html" class="card"><div class="card-preview orange">15</div><div class="card-info"><div class="card-title">待报工详情</div><div class="card-desc">自动生产结果、提交报工表单</div></div></a>
+                <a href="16-workorder-detail-reported.html" class="card"><div class="card-preview teal">16</div><div class="card-info"><div class="card-title">已报工/确认工时</div><div class="card-desc">报工数据、质检状态、确认/报废</div></div></a>
+                <a href="17-workorder-detail-paused.html" class="card"><div class="card-preview orange">17</div><div class="card-info"><div class="card-title">暂停中详情</div><div class="card-desc">暂停原因、异常信息、恢复/报废</div></div></a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">18-21 · 生产任务与质检看板</h2>
+            <div class="grid">
+                <a href="18-production-tasks.html" class="card"><div class="card-preview green">18</div><div class="card-info"><div class="card-title">生产任务列表</div><div class="card-desc">待执行/进行中/已报工、SN扫码</div></div></a>
+                <a href="19-station-detail.html" class="card"><div class="card-preview blue">19</div><div class="card-info"><div class="card-title">工作站详情</div><div class="card-desc">设备状态、传送带、计数器、操作</div></div></a>
+                <a href="20-dashboard.html" class="card"><div class="card-preview teal">20</div><div class="card-info"><div class="card-title">质检看板</div><div class="card-desc">KPI指标、趋势图、不良类型TOP5</div></div></a>
+                <a href="21-profile.html" class="card"><div class="card-preview cyan">21</div><div class="card-info"><div class="card-title">个人中心</div><div class="card-desc">个人信息、统计、菜单、退出登录</div></div></a>
+            </div>
+        </div>
+
+        <footer style="text-align: center; padding: 40px 0; color: #9a9aa8; font-size: 14px;">
+            <p>鸿蒙MES系统界面设计 · 适配 HarmonyOS NEXT · 393×852 · 21 Pages</p>
+        </footer>
+    </div>
+</body>
+</html>
